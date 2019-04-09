@@ -1,6 +1,6 @@
-baseurl = "http://localhost:1313/"
+baseurl = "indogermanschool.netlify.com"
 title = "Indo German School"
-author = "Daniel Zaragoza (Danielkvist)"
+author = " "
 googleAnalytics = ""
 defaultContentLanguage = "en"
 language = "en-US"
