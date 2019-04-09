@@ -1,0 +1,17 @@
+<header class="header">
+    <div class="header__title">
+        <a href="{{ $.Site.BaseURL }}" class="header__title__link" alt="Home">
+
+                <div class="header__title__link" style="width: 250px;"><h2>  {{ $.Site.Title }} </h2> </div>
+
+           <!--  {{ if $.Site.Params.logo }}
+            <img src="{{ $.Site.BaseURL }}{{ $.Site.Params.logo }}" class="header__title__logo" alt="{{ $.Site.Title }}">
+            {{ else }}
+         <div class="header__title__link" style="width:100px;"><h2>  {{ $.Site.Title }} </h2> </div> 
+            {{ end }} -->
+        </a>
+    </div>
+
+    {{ partial "menu.html" . }}
+    {{ partial "hamburger-menu.html" . }}
+</header>
