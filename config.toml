@@ -34,7 +34,7 @@ theme = "hugo-terrassa-theme"
 
 [params.form] # Contact form
     netlify = true # Use only if you are using Netlify
-    action = "https://formspree.io/your@email.com"
+    action = "https://formspree.io/indogermanschool@outlook.com"
     method = "POST"
     inputNameName = "name"
     inputNameLabel = "Name"
@@ -54,7 +54,7 @@ theme = "hugo-terrassa-theme"
     dateFormat = "Monday, Jan, 2006"
 
 [params.contact] # Contact info
-    email = "info@indogermanschool.com"
+    email = "indogermanschool@outlook.com"
     phone = "+91 80 414 422 38"
     skype = ""
     address = "  № 8/P  1st A cross  3rd Main Road Kasturinagar Bangalore – 560043"
