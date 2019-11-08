@@ -17,12 +17,13 @@ We do not have a selection process and students are admitted purely on a first c
 To make an appointment during the summer break, please call Mithula Umesh +91 812 301 7763.
 <br>
 <br>
+<!--
 To download the application form click on the button below.
 <br>
 <br>
 
 <a href="/images/IGS Logo ideas.pdf" target="_blank" class="ripple-btn cta__btn" alt="sss" aria-label=" " style= "font-size: 1.1rem; overflow: hidden; "> Application Form </a> 
- 
+ -->
 <br>
 
  </div>
