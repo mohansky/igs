@@ -1,12 +1,13 @@
 ---
-title: "Contact"
-description: "Visit our school!"
+title: Contact
+description: Visit our school!!
 images: []
-draft: false
-menu: main
-weight: 4
----
+weight: "4"
+menu:
+  main:
+    weight: 4
 
+---
 <div style="text-align:center; overflow: hidden;"> 
   <h5> Address </h5>
  № 8/P  1st A cross  3rd Main Road <br>Kasturinagar <br> Bangalore – 560043
