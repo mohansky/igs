@@ -1,0 +1,28 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# SQLite local DB
+*.db
+*.db-journal
+
+# Content Collections generated
+.content-collections/
+
+# Local environment files
+.env.local
+.env.*.local
+
+# Logs
+LOCALNOTES.md
+scripts/seed-admin.ts

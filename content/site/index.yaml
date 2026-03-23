@@ -1,0 +1,348 @@
+meta:
+  title: Indo-German School
+  description: >-
+    Nurturing young minds through a blend of Indian values and global learning.
+    Nursery, LKG & UKG admissions open for 2026-27 in Kasturi Nagar, Bengaluru.
+  url: https://indogermanschool.com
+
+header:
+  logoSrc: /public/igslogo.svg
+  logoAlt: Indo-German School Logo
+  phone: "+91 9845 678 901"
+  email: info@indogermanschool.com
+  nav:
+    - label: Home
+      to: /
+    - label: About Us
+      to: /about
+    - label: Admissions
+      to: /admissions
+    # - label: Blog
+    #   to: /blog
+    - label: Contact
+      to: /contact
+
+footer:
+  schoolName: Indo-German School
+  tagline: >-
+    Nurturing young minds through a blend of Indian values and global learning
+    standards.
+  quickLinks:
+    - label: Home
+      to: /
+    - label: About Us
+      to: /about
+    - label: Admissions
+      to: /admissions
+    # - label: Blog
+    #   to: /blog
+    - label: Contact
+      to: /contact
+  contact:
+    email: info@indogermanschool.com
+    phone: "+91 9876 543 210"
+    hours:
+      - "Monday - Friday: 8:00 AM - 3:00 PM"
+      - "Saturday: 9:00 AM - 12:00 PM"
+  copyright: Indo-German School. All rights reserved.
+
+home:
+  hero:
+    kicker: Welcome to Indo-German School
+    image: hero6.jpg
+    title: Where little minds bloom into big dreams.
+    description: >-
+      A nurturing preschool experience blending Indian values with global
+      learning standards. We offer Nursery, LKG, and UKG programmes designed to
+      build a strong foundation for your child's future.
+    primaryCta:
+      label: Apply Now
+      to: /admissions
+    secondaryCta:
+      label: Learn More
+      to: /about
+  programmes:
+    kicker: Our Programmes
+    title: Building foundations, one step at a time
+    items:
+      - title: Nursery
+        age: Ages 2.5 - 3.5 years
+        desc: >-
+          A gentle introduction to school life through play-based learning,
+          sensory activities, and social interaction in a safe, caring
+          environment.
+      - title: LKG (Lower Kindergarten)
+        age: Ages 3.5 - 4.5 years
+        desc: >-
+          Developing early literacy, numeracy, and creative expression through
+          structured activities, stories, rhymes, and hands-on exploration.
+      - title: UKG (Upper Kindergarten)
+        age: Ages 4.5 - 5.5 years
+        desc: >-
+          Preparing children for primary school with reading readiness, writing
+          practice, basic maths, environmental awareness, and collaborative
+          projects.
+  whyUs:
+    kicker: Why Indo-German School
+    title: What makes us different
+    items:
+      - title: Experienced Faculty
+        desc: >-
+          Trained and caring teachers who understand the needs of young learners
+          and create a warm classroom atmosphere.
+      - title: Safe Environment
+        desc: >-
+          CCTV-monitored campus with child-friendly infrastructure, hygienic
+          facilities, and a secure pick-up and drop-off process.
+      - title: Holistic Development
+        desc: >-
+          A balanced curriculum covering academics, arts, music, physical
+          activity, and value education for well-rounded growth.
+      - title: Activity-Based Learning
+        desc: >-
+          Learning through play, projects, and real-world exploration that keeps
+          children engaged, curious, and confident.
+  cta:
+    title: Admissions are open for 2025-26
+    description: >-
+      Give your child the best start in life. Visit our campus or apply online
+      to secure a seat in Nursery, LKG, or UKG.
+    primaryCta:
+      label: View Admission Process
+      to: /admissions
+    secondaryCta:
+      label: Contact Us
+      to: /contact
+
+about:
+  intro:
+    kicker: About Us
+    image: hero7.jpg
+    title: "Nurturing tomorrow's leaders, today."
+    description: >-
+      Indo-German School is a preschool dedicated to providing a strong
+      educational foundation for children aged 2.5 to 5.5 years. We believe
+      that every child is unique and deserves a learning environment that is
+      safe, stimulating, and filled with joy.
+  mission:
+    title: Our Mission
+    description: >-
+      To nurture curious, confident, and compassionate children by providing an
+      enriching early education experience that blends the best of Indian
+      cultural values with internationally recognised teaching practices.
+  vision:
+    title: Our Vision
+    description: >-
+      To be a leading preschool that inspires a lifelong love of learning, where
+      children develop the skills, knowledge, and character to thrive in an
+      ever-changing world.
+  approach:
+    kicker: Our Approach
+    title: The Indo-German way of learning
+    paragraphs:
+      - >-
+        Our curriculum draws inspiration from both Indian pedagogical traditions
+        and German early-childhood education philosophy. We emphasise structured
+        play, hands-on exploration, and experiential learning that lets children
+        discover concepts at their own pace.
+      - >-
+        Every classroom activity is thoughtfully designed to develop cognitive,
+        motor, social, and emotional skills. From storytelling sessions rooted
+        in Indian folklore to nature walks and science experiments, we make
+        learning a joyful adventure.
+      - >-
+        Our low student-to-teacher ratio ensures that each child receives
+        personalised attention. Teachers act as facilitators, guiding children
+        through discovery rather than rote memorisation.
+  team:
+    kicker: Our Team
+    groups:
+      - title: Meet our Staff
+        columns: "3"
+        members:
+          - name: Mrs. Vimala Hariprasad
+            role: Principal
+            img: teachers/vimala.jpg
+          - name: Mrs. Reena Charles
+            role: UKG Teacher
+            img: teachers/reena.jpg
+          - name: Ms. Rajeshwari
+            role: LKG Teacher
+            img: teachers/rajeshwari.jpg
+          - name: Mrs. Shibija
+            role: Nursery Teacher
+            img: teachers/shibija.jpg
+          - name: Mrs. Pavana
+            role: Nursery Teacher
+            img: teachers/pavana.jpg
+      - title: Meet our Support Staff
+        columns: "2"
+        members:
+          - name: Mrs. Dharini
+            role: Support Staff
+            img: staff/dharini.jpg
+          - name: Mrs. Monica
+            role: Support Staff
+            img: staff/monica.jpg
+  campus:
+    kicker: Our Campus
+    title: A space designed for little explorers
+    items:
+      - title: Bright Classrooms
+        img: campus/classroom.jpg
+        desc: >-
+          Spacious, well-ventilated rooms with age-appropriate furniture,
+          learning aids, and colourful displays.
+      - title: Safe Play Areas
+        img: campus/play.jpg
+        desc: >-
+          Outdoor and indoor play zones with soft flooring, climbing frames,
+          slides, and sandpits.
+      - title: Activity Rooms
+        img: campus/activityroom.jpg
+        desc: >-
+          Dedicated spaces for art, music, dance, and storytelling to encourage
+          creative expression.
+      - title: Hygienic Facilities
+        img: campus/hygienic.jpg
+        desc: >-
+          Clean washrooms, a dedicated sick room, and regular sanitisation
+          across the campus.
+      - title: CCTV Monitoring
+        img: campus/cctv.jpg
+        desc: Round-the-clock camera surveillance for the safety and security of every child.
+      # - title: Transport
+      #   img: campus/safe-play-areas.jpg
+      #   desc: >-
+      #     GPS-tracked school buses with trained attendants covering major routes
+      #     across the city.
+  cta:
+    title: Come visit us
+    description: >-
+      We'd love to show you around our campus. Schedule a visit or get in touch
+      to learn more about our school.
+    label: Get in Touch
+    to: /contact
+
+admissions:
+  header:
+    kicker: Admissions 2025-26
+    title: "Begin your child's learning journey"
+    description: >-
+      We welcome applications throughout the year, subject to availability. Our
+      admission process is simple and designed to help us understand your
+      child's needs so we can provide the best learning experience.
+  eligibility:
+    kicker: Eligibility
+    title: Age criteria for each programme
+    items:
+      - programme: Nursery
+        age: 2.5 - 3.5 years
+        note: Child should be 2.5 years old as on 1st April of the academic year.
+      - programme: LKG
+        age: 3.5 - 4.5 years
+        note: Child should be 3.5 years old as on 1st April of the academic year.
+      - programme: UKG
+        age: 4.5 - 5.5 years
+        note: Child should be 4.5 years old as on 1st April of the academic year.
+  process:
+    kicker: How to Apply
+    title: Step-by-step admission process
+    steps:
+      - step: "1"
+        title: Enquiry & Campus Visit
+        desc: >-
+          Contact us by phone, email, or visit our campus to learn about our
+          programmes. We encourage parents to take a tour of the school to see
+          our facilities and meet our teachers.
+      - step: "2"
+        title: Fill the Application Form
+        desc: >-
+          Collect the application form from the school office or request one via
+          email. Fill in the required details about the child and the family.
+      - step: "3"
+        title: Submit Documents
+        desc: >-
+          Submit the completed application form along with the required
+          documents (listed below) to the school office.
+      - step: "4"
+        title: Interaction Session
+        desc: >-
+          A short, informal interaction session will be scheduled with the child
+          and parents. This is not a test — it helps us understand your child's
+          readiness and needs.
+      - step: "5"
+        title: Admission Confirmation
+        desc: >-
+          Upon successful completion of the interaction session, you will
+          receive an admission offer. Complete the fee payment to confirm your
+          child's seat.
+  documents:
+    kicker: Checklist
+    title: Documents required
+    items:
+      - Completed application form
+      - Birth certificate of the child (original + photocopy)
+      - 4 recent passport-size photographs of the child
+      - Aadhaar card of the child (if available)
+      - Aadhaar card of both parents (photocopy)
+      - Proof of residence (electricity bill / rental agreement)
+      - Previous school transfer certificate (for LKG/UKG lateral entry)
+      - Immunisation / vaccination record
+      - Any medical records if the child has special health needs
+  dates:
+    kicker: Academic Calendar
+    title: Important dates
+    items:
+      - label: Application Period
+        value: October - March (or until seats are filled)
+      - label: Interaction Sessions
+        value: November - March (scheduled individually)
+      - label: Academic Year Begins
+        value: April / June (as per state guidelines)
+      - label: Orientation Day
+        value: One week before classes begin
+  cta:
+    title: Ready to apply?
+    description: >-
+      Contact us to collect the application form or to schedule a campus visit.
+      We're happy to answer any questions you may have.
+    label: Contact Us
+    to: /contact
+
+contact:
+  header:
+    kicker: Contact Us
+    title: "We'd love to hear from you"
+  address:
+    title: School Address
+    lines:
+      - Indo-German School
+      - "#8/P, 1st A Main, 3rd D Cross Road"
+      - "Kasturi Nagar"
+      - "Bengaluru - 560043"
+      - India
+  details:
+    title: Contact Details
+    items:
+      - label: "Phone:"
+        value: "+91 987 654 3210"
+      - label: "Email:"
+        value: info@indogermanschool.com
+      - label: "WhatsApp:"
+        value: "+91 987 654 3210"
+  officeHours:
+    title: Office Hours
+    hours:
+      - "Monday - Friday: 8:00 AM - 1:00 PM"
+      - "Saturday: 9:00 AM - 12:00 PM"
+      - "Sunday & Public Holidays: Closed"
+  form:
+    title: Send us a message
+    subjects:
+      - Admission Enquiry
+      - Campus Visit
+      - Fee Structure
+      - General Query
+    successTitle: Thank you for reaching out!
+    successMessage: "We'll get back to you within 1-2 business days."

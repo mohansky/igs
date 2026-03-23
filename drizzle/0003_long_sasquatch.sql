@@ -1,0 +1,1 @@
+ALTER TABLE `student_profiles` ADD `parent_user_id` text REFERENCES user(id);

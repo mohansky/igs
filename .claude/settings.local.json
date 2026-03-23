@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:ui.shadcn.com)",
+      "WebSearch",
+      "Bash(npx shadcn@latest:*)",
+      "Bash(curl:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:base-ui.com)",
+      "Bash(pnpm add:*)",
+      "Bash(pnpm remove:*)",
+      "Bash(pnpm run:*)",
+      "Bash(xargs grep:*)",
+      "Bash(pnpm dlx:*)",
+      "Bash(pnpm db:push:*)",
+      "Bash(npx tsc:*)"
+    ]
+  }
+}
