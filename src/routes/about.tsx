@@ -60,7 +60,7 @@ function About() {
       >
         <CardContent className="space-y-4">
           {approach.paragraphs.map((paragraph) => (
-            <CardDescription key={paragraph.slice(0, 40)}>
+            <CardDescription className='text-xl mb-6' key={paragraph.slice(0, 40)}>
               {paragraph}
             </CardDescription>
           ))}

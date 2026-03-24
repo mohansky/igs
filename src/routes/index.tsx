@@ -46,15 +46,15 @@ function Home() {
         kicker={programmes.kicker}
         title={programmes.title}
         items={programmes.items}
-        columns="3"
+        columns="5"
         cardClassName="p-6"
         getKey={(prog) => prog.title}
         className="mt-20"
         renderItem={(prog) => (
           <>
             {/* <p className="island-kicker mb-1">{prog.age}</p>  */}
-            <CardTitle>{prog.title}</CardTitle> 
-            {/* <CardDescription>{prog.desc}</CardDescription> */}
+            <CardTitle>{prog.title}</CardTitle>
+            <CardDescription>{prog.desc}</CardDescription>
           </>
         )}
       />
@@ -64,13 +64,13 @@ function Home() {
         kicker={whyUs.kicker}
         title={whyUs.title}
         items={whyUs.items}
-        columns="4"
+        variant="list"
+        columns="1"
         getKey={(item) => item.title}
         className="mt-20"
         renderItem={(item) => (
           <>
-            <CardTitle>{item.title}</CardTitle>
-            {/* <CardDescription>{item.desc}</CardDescription> */}
+            <li className='list-disc list-inside text-2xl'> {item.title}</li>
           </>
         )}
       />

@@ -6,7 +6,8 @@ interface CardGroupProps<T> {
   kicker?: string
   title?: string
   items: T[]
-  columns?: '2' | '3' | '4'
+  columns?: '1' | '2' | '3' | '4' | '5'
+  variant?: 'card' | 'list'
   cardVariant?: VariantProps<typeof cardVariants>['variant']
   cardClassName?: string
   renderItem: (item: T, index: number) => React.ReactNode
@@ -20,6 +21,7 @@ export function CardGroup<T>({
   title,
   items,
   columns = '3',
+  variant = 'card',
   cardVariant = 'feature',
   cardClassName,
   renderItem,
@@ -28,9 +30,11 @@ export function CardGroup<T>({
   staggerMs = 90,
 }: CardGroupProps<T>) {
   const colsClass = {
+    '1': 'sm:grid-cols-1',
     '2': 'sm:grid-cols-2',
     '3': 'sm:grid-cols-2 lg:grid-cols-3',
     '4': 'sm:grid-cols-2 lg:grid-cols-4',
+    '5': 'sm:grid-cols-2 lg:grid-cols-5',
   }[columns]
 
   return (
@@ -41,18 +45,32 @@ export function CardGroup<T>({
           {title}
         </h2>
       )}
-      <div className={cn('grid gap-4', colsClass)}>
-        {items.map((item, index) => (
-          <Card
-            key={getKey(item)}
-            variant={cardVariant}
-            className={cn('rise-in rounded-2xl p-5', cardClassName)}
-            style={{ animationDelay: `${index * staggerMs + 80}ms` }}
-          >
-            {renderItem(item, index)}
-          </Card>
-        ))}
-      </div>
+      {variant === 'list' ? (
+        <ul className={cn('grid list-none gap-4 p-0', colsClass)}>
+          {items.map((item, index) => (
+            <li
+              key={getKey(item)}
+              className={cn('rise-in', cardClassName)}
+              style={{ animationDelay: `${index * staggerMs + 80}ms` }}
+            >
+              {renderItem(item, index)}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <div className={cn('grid gap-4', colsClass)}>
+          {items.map((item, index) => (
+            <Card
+              key={getKey(item)}
+              variant={cardVariant}
+              className={cn('rise-in rounded-2xl p-5', cardClassName)}
+              style={{ animationDelay: `${index * staggerMs + 80}ms` }}
+            >
+              {renderItem(item, index)}
+            </Card>
+          ))}
+        </div>
+      )}
     </section>
   )
 }

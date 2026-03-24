@@ -33,7 +33,7 @@ export function Hero({
   kicker,
   title,
   description,
-  overlay = 'bg-black/50',
+  overlay = 'bg-black/30',
   size,
   className,
   children,

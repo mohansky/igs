@@ -1,9 +1,9 @@
 import { createFileRoute } from '@tanstack/react-router'
 import { site, SITE_TITLE } from '#/lib/site'
 import { CtaBanner } from '#/components/sections/CtaBanner'
-import { CardGroup } from '#/components/sections/CardGroup'
+// import { CardGroup } from '#/components/sections/CardGroup'
 import { SectionCard } from '#/components/sections/SectionCard'
-import { CardDescription, CardSubtitle, CardTitle } from '#/components/ui/card'
+import { CardDescription, CardTitle } from '#/components/ui/card'
 
 export const Route = createFileRoute('/admissions')({
   head: () => ({
@@ -12,7 +12,7 @@ export const Route = createFileRoute('/admissions')({
   component: Admissions,
 })
 
-const { header, eligibility, process, documents, dates, cta } = site.admissions
+const { header, process, documents, dates, cta } = site.admissions
 
 function Admissions() {
   return (

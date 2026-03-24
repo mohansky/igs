@@ -8,7 +8,7 @@ meta:
 header:
   logoSrc: /public/igslogo.svg
   logoAlt: Indo-German School Logo
-  phone: "+91 9845 678 901"
+  phone: '+91 9845 678 901'
   email: info@indogermanschool.com
   nav:
     - label: Home
@@ -36,11 +36,11 @@ footer:
       to: /contact
   contact:
     email: info@indogermanschool.com
-    phone: "+91 9876 543 210"
+    phone: '+91 9876 543 210'
     hours:
-      - "Monday - Friday: 9:00 AM - 1:00 PM"
-      - "Saturday: Closed"
-      - "Sunday & Public Holidays: Closed"
+      - 'Monday - Friday: 9:00 AM - 1:00 PM'
+      - 'Saturday: Closed'
+      - 'Sunday & Public Holidays: Closed'
   copyright: Indo-German School. All rights reserved.
 
 home:
@@ -48,6 +48,9 @@ home:
     kicker: Welcome to Indo-German School
     image: hero6.jpg
     title: Where little minds bloom into big dreams.
+    description: >-
+      Indo-German School is a preschool in Kasturi Nagar offering early years learning in a structured and supervised environment.
+      The school operates from a 10,000 sq. ft. campus, including a 4,000 sq. ft. outdoor play area, with space for both classroom activities and daily play.
     primaryCta:
       label: Apply Now
       to: /contact
@@ -58,34 +61,29 @@ home:
     kicker: Our Programmes
     title: Building foundations, one step at a time
     items:
+      - title: Playgroup
+        age: Ages 4.5 - 5.5 years
+        desc: >-
+          A play-based setting where children engage in simple activities that support movement, interaction, and early exploration.
+      - title: Nursery
+        age: Ages 3.5 - 4.5 years
+        desc: >-
+          Introduces early learning through stories, activities, and play, with exposure to basic literacy and number concepts.
+      - title: Lower Kindergarten
+        age: Ages 2.5 - 3.5 years
+        desc: >-
+          Builds early skills in reading, writing, and numbers through structured classroom activities.
+      - title: Upper Kindergarten
+        age: Ages 3.5 - 4.5 years
+        desc: >-
+          Prepares children for primary school with continued work in language, mathematics, and classroom routines.
       - title: Daycare
         age: Ages 4.5 - 5.5 years
         desc: >-
-          A caring space for young children with supervised routines, play, and rest. 
-          The focus is on comfort, familiarity, and gradual social interaction.
-      - title: Playgroup
-        age: Ages 3.5 - 4.5 years
-        desc: >-
-          A play-based setting where children engage in simple activities that 
-          support movement, interaction, and early exploration.
-      - title: Nursery
-        age: Ages 2.5 - 3.5 years
-        desc: >-
-          Introduces basic pre-learning skills through stories, activities, and play. 
-          Children are exposed to early literacy and number concepts in a simple, structured way.
-      - title: LKG (Lower Kindergarten)
-        age: Ages 3.5 - 4.5 years
-        desc: >-
-          Builds on early learning with reading, writing, and basic number work. 
-          Activities include group participation and simple problem-solving tasks.
-      - title: UKG (Upper Kindergarten)
-        age: Ages 4.5 - 5.5 years
-        desc: >-
-          Prepares children for primary school with continued work in language and 
-          mathematics, along with classroom routines and independent participation.
+          A supervised environment with routines for play, rest, and daily care.
   whyUs:
     kicker: Why Indo-German School
-    title: What we offer
+    title: What to expect
     items:
       - title: Small group learning
         desc: >-
@@ -95,7 +93,7 @@ home:
         desc: >-
           Trained and caring teachers who understand the needs of young learners
           and create a warm classroom atmosphere.
-      - title: Ample space for indoor and outdoor activities
+      - title: 10,000 sq. ft. campus with outdoor play area
         desc: >-
           A balanced curriculum covering academics, arts, music, physical
           activity, and value education for well-rounded growth.
@@ -121,45 +119,34 @@ about:
     image: hero7.jpg
     title: "Nurturing tomorrow's leaders, today."
     description: >-
-      Indo-German School is a preschool dedicated to providing a strong
-      educational foundation for children aged 2.5 to 5.5 years. We believe
-      that every child is unique and deserves a learning environment that is
-      safe, stimulating, and filled with joy.
+      Indo-German School is a preschool in Kasturi Nagar offering early years education in a structured setting.
+      The school operates from a 10,000 sq. ft. campus, including a 4,000 sq. ft. outdoor play area, with space for both classroom learning and play.
+      Children learn in small groups, allowing teachers to give closer attention through regular routines and guided activities.
+
   mission:
-    title: Our Mission
+    title: Approach
     description: >-
-      To nurture curious, confident, and compassionate children by providing an
-      enriching early education experience that blends the best of Indian
-      cultural values with internationally recognised teaching practices.
+      The school follows a structured, activity-based approach for early learning. Children are introduced to basic skills through classroom routines, activities, and play.
   vision:
-    title: Our Vision
+    title: Inclusive Learning
     description: >-
-      To be a leading preschool that inspires a lifelong love of learning, where
-      children develop the skills, knowledge, and character to thrive in an
-      ever-changing world.
+      The school is working towards building a more inclusive learning environment, where children with different learning needs are supported within the classroom.
+      This is a developing area of focus, and the school is gradually strengthening its approach to inclusion.
   approach:
-    kicker: Our Approach
-    title: The Indo-German way of learning
+    kicker: IGS
+    title: About the School
     paragraphs:
       - >-
-        Our curriculum draws inspiration from both Indian pedagogical traditions
-        and German early-childhood education philosophy. We emphasise structured
-        play, hands-on exploration, and experiential learning that lets children
-        discover concepts at their own pace.
+        Indo-German School is a preschool in Kasturi Nagar offering early years education in a structured setting.
       - >-
-        Every classroom activity is thoughtfully designed to develop cognitive,
-        motor, social, and emotional skills. From storytelling sessions rooted
-        in Indian folklore to nature walks and science experiments, we make
-        learning a joyful adventure.
+        The school operates from a 10,000 sq. ft. campus, including a 4,000 sq. ft. outdoor play area, with space for both classroom learning and play.
       - >-
-        Our low student-to-teacher ratio ensures that each child receives
-        personalised attention. Teachers act as facilitators, guiding children
-        through discovery rather than rote memorisation.
+        Children learn in small groups, allowing teachers to give closer attention through regular routines and guided activities.
   team:
     kicker: Our Team
     groups:
       - title: Meet our Staff
-        columns: "3"
+        columns: '3'
         members:
           - name: Vimala Hariprasad
             role: Principal
@@ -177,7 +164,7 @@ about:
             role: Nursery Teacher
             img: teachers/pavana.jpg
       - title: Meet our Support Staff
-        columns: "2"
+        columns: '2'
         members:
           - name: Dharini
             role: Support Staff
@@ -218,7 +205,7 @@ about:
 admissions:
   header:
     kicker: 2026-27
-    title: "Admissions are open for 2026-27"
+    title: 'Admissions are open for 2026-27'
     description: >-
       Our admission process is simple and designed to help us understand your
       child's needs so we can provide the best learning experience.
@@ -239,28 +226,28 @@ admissions:
     kicker: How to Apply
     title: Step-by-step admission process
     steps:
-      - step: "1"
+      - step: '1'
         title: Enquiry & Campus Visit
         desc: >-
           Contact us by phone, email, or visit our campus to learn about our
           programmes. We encourage parents to take a tour of the school to see
           our facilities and meet our teachers.
-      - step: "2"
+      - step: '2'
         title: Fill the Application Form
         desc: >-
           Collect the application form from the school office or request one via
           email. Fill in the required details about the child and the family.
-      - step: "3"
+      - step: '3'
         title: Submit Documents
         desc: >-
           Submit the completed application form along with the required
           documents (listed below) to the school office.
-      - step: "4"
+      - step: '4'
         title: Interaction Session
         desc: >-
           A short, informal interaction session will be scheduled with the child
           and parents.
-      - step: "5"
+      - step: '5'
         title: Admission Confirmation
         desc: >-
           Upon successful completion of the interaction session, you will
@@ -273,7 +260,7 @@ admissions:
       - Completed application form
       - Birth certificate of the child (original + photocopy)
       - 2 recent passport-size photographs of the child
-      - Aadhaar card of parents (photocopy) 
+      - Aadhaar card of parents (photocopy)
   dates:
     kicker: Academic Calendar
     title: Important dates
@@ -302,25 +289,25 @@ contact:
     title: School Address
     lines:
       - Indo-German School
-      - "#8/P, 1st A Main, 3rd D Cross Road"
-      - "Kasturi Nagar"
-      - "Bengaluru - 560043"
+      - '#8/P, 1st A Main, 3rd D Cross Road'
+      - 'Kasturi Nagar'
+      - 'Bengaluru - 560043'
       - India
   details:
     title: Contact Details
     items:
-      - label: "Phone:"
-        value: "+91 987 654 3210"
-      - label: "Email:"
+      - label: 'Phone:'
+        value: '+91 987 654 3210'
+      - label: 'Email:'
         value: info@indogermanschool.com
-      - label: "WhatsApp:"
-        value: "+91 987 654 3210"
+      - label: 'WhatsApp:'
+        value: '+91 987 654 3210'
   officeHours:
     title: Office Hours
     hours:
-      - "Monday - Friday: 9:00 AM - 1:00 PM"
-      - "Saturday: Closed"
-      - "Sunday & Public Holidays: Closed"
+      - 'Monday - Friday: 9:00 AM - 1:00 PM'
+      - 'Saturday: Closed'
+      - 'Sunday & Public Holidays: Closed'
   form:
     title: Send us a message
     successTitle: Thank you for reaching out!
