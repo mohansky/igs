@@ -88,21 +88,21 @@ home:
           projects.
   whyUs:
     kicker: Why Indo-German School
-    title: What makes us different
+    title: What we offer
     items:
-      - title: Established in 1990
-        desc: >-
-          Trained and caring teachers who understand the needs of young learners
-          and create a warm classroom atmosphere.
-      - title: 10,000 sq. ft. campus
+      - title: Small group learning
         desc: >-
           CCTV-monitored campus with child-friendly infrastructure, hygienic
           facilities, and a secure pick-up and drop-off process.
-      - title: 4,000 sq. ft. play area
+      - title: Experienced teachers
+        desc: >-
+          Trained and caring teachers who understand the needs of young learners
+          and create a warm classroom atmosphere.
+      - title: Ample space for indoor and outdoor activities
         desc: >-
           A balanced curriculum covering academics, arts, music, physical
           activity, and value education for well-rounded growth.
-      - title: Located in Kasturi Nagar
+      - title: Recognised by the Government of Karnataka
         desc: >-
           Learning through play, projects, and real-world exploration that keeps
           children engaged, curious, and confident.
