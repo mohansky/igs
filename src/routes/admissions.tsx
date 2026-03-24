@@ -28,7 +28,7 @@ function Admissions() {
       </SectionCard>
 
       {/* Eligibility */}
-      <CardGroup
+      {/* <CardGroup
         kicker={eligibility.kicker}
         title={eligibility.title}
         items={eligibility.items}
@@ -43,7 +43,7 @@ function Admissions() {
             <CardDescription>{item.note}</CardDescription>
           </>
         )}
-      />
+      /> */}
 
       {/* Application Process */}
       <SectionCard
@@ -80,7 +80,7 @@ function Admissions() {
       </SectionCard>
 
       {/* Important Dates */}
-      <SectionCard kicker={dates.kicker} title={dates.title} className="mt-20">
+      <SectionCard kicker={dates.kicker} title={dates.title} className="hidden mt-20">
         <div className="grid gap-3 sm:grid-cols-2">
           {dates.items.map((item) => (
             <div

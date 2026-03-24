@@ -70,7 +70,7 @@ const site = defineCollection({
         kicker: z.string(),
         image: z.string(),
         title: z.string(),
-        description: z.string(),
+        description: z.string().optional(),
         primaryCta: ctaSchema,
         secondaryCta: ctaSchema,
       }),
@@ -231,7 +231,6 @@ const site = defineCollection({
       }),
       form: z.object({
         title: z.string(),
-        subjects: z.array(z.string()),
         successTitle: z.string(),
         successMessage: z.string(),
       }),

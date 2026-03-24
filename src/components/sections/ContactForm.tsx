@@ -21,7 +21,6 @@ export function ContactForm() {
       name: formData.get('name') as string,
       phone: formData.get('phone') as string,
       email: formData.get('email') as string,
-      subject: formData.get('subject') as string,
       message: formData.get('message') as string,
     }
 
@@ -102,24 +101,6 @@ export function ContactForm() {
               className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/20"
               placeholder="your@email.com"
             />
-          </div>
-
-          <div>
-            <label
-              htmlFor="subject"
-              className="mb-1 block text-sm font-medium text-secondary-foreground"
-            >
-              Subject
-            </label>
-            <select
-              id="subject"
-              name="subject"
-              className="w-full rounded-xl border border-border bg-background px-4 py-2.5 text-sm text-foreground outline-none transition focus:border-primary focus:ring-2 focus:ring-ring/20"
-            >
-              {form.subjects.map((subject) => (
-                <option key={subject}>{subject}</option>
-              ))}
-            </select>
           </div>
 
           <div>

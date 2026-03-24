@@ -9,7 +9,6 @@ export interface ContactFormData {
   name: string
   phone: string
   email: string
-  subject: string
   message: string
 }
 
@@ -25,7 +24,7 @@ export const submitContactForm = createServerFn({ method: 'POST' })
         name: data.name,
         phone: data.phone,
         email: data.email,
-        subject: data.subject,
+        subject: 'General Enquiry',
         message: data.message,
       })
       .returning()
@@ -38,12 +37,12 @@ export const submitContactForm = createServerFn({ method: 'POST' })
         await resend.emails.send({
           from: process.env.RESEND_FROM_EMAIL ?? 'IGS Contact <noreply@indo-german.school>',
           to: process.env.CONTACT_NOTIFICATION_EMAIL ?? 'admin@indo-german.school',
-          subject: `New Contact: ${data.subject} — ${data.name}`,
+          subject: `New Contact Enquiry — ${data.name}`,
           react: ContactNotification({
             name: data.name,
             email: data.email,
             phone: data.phone,
-            subject: data.subject,
+            subject: 'General Enquiry',
             message: data.message,
             submittedAt: new Date().toLocaleString('en-IN', {
               timeZone: 'Asia/Kolkata',

@@ -29,8 +29,8 @@ function About() {
         image={intro.image}
         kicker={intro.kicker}
         title={intro.title}
-        description={intro.description}
-        size="md"
+        // description={intro.description}
+        size="lg"
       />
 
       {/* Mission & Vision */}

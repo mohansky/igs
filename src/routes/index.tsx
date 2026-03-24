@@ -52,9 +52,9 @@ function Home() {
         className="mt-20"
         renderItem={(prog) => (
           <>
-            <p className="island-kicker mb-1">{prog.age}</p> 
+            {/* <p className="island-kicker mb-1">{prog.age}</p>  */}
             <CardTitle>{prog.title}</CardTitle> 
-            <CardDescription>{prog.desc}</CardDescription>
+            {/* <CardDescription>{prog.desc}</CardDescription> */}
           </>
         )}
       />
@@ -70,7 +70,7 @@ function Home() {
         renderItem={(item) => (
           <>
             <CardTitle>{item.title}</CardTitle>
-            <CardDescription>{item.desc}</CardDescription>
+            {/* <CardDescription>{item.desc}</CardDescription> */}
           </>
         )}
       />

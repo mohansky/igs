@@ -13,5 +13,8 @@
     "hugeicons",
     "Savitri",
     "Shadcn"
+  ],
+  "cSpell.ignorePaths": [
+    "content/**"
   ]
 }
