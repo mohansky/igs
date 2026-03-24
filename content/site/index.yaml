@@ -58,34 +58,31 @@ home:
     kicker: Our Programmes
     title: Building foundations, one step at a time
     items:
-      - title: Nursery
-        age: Ages 2.5 - 3.5 years
-        desc: >-
-          A gentle introduction to school life through play-based learning,
-          sensory activities, and social interaction in a safe, caring
-          environment.
-      - title: LKG (Lower Kindergarten)
-        age: Ages 3.5 - 4.5 years
-        desc: >-
-          Developing early literacy, numeracy, and creative expression through
-          structured activities, stories, rhymes, and hands-on exploration.
-      - title: UKG (Upper Kindergarten)
-        age: Ages 4.5 - 5.5 years
-        desc: >-
-          Preparing children for primary school with reading readiness, writing
-          practice, basic maths, environmental awareness, and collaborative
-          projects.
-      - title: Playgroup
-        age: Ages 3.5 - 4.5 years
-        desc: >-
-          Developing early literacy, numeracy, and creative expression through
-          structured activities, stories, rhymes, and hands-on exploration.
       - title: Daycare
         age: Ages 4.5 - 5.5 years
         desc: >-
-          Preparing children for primary school with reading readiness, writing
-          practice, basic maths, environmental awareness, and collaborative
-          projects.
+          A caring space for young children with supervised routines, play, and rest. 
+          The focus is on comfort, familiarity, and gradual social interaction.
+      - title: Playgroup
+        age: Ages 3.5 - 4.5 years
+        desc: >-
+          A play-based setting where children engage in simple activities that 
+          support movement, interaction, and early exploration.
+      - title: Nursery
+        age: Ages 2.5 - 3.5 years
+        desc: >-
+          Introduces basic pre-learning skills through stories, activities, and play. 
+          Children are exposed to early literacy and number concepts in a simple, structured way.
+      - title: LKG (Lower Kindergarten)
+        age: Ages 3.5 - 4.5 years
+        desc: >-
+          Builds on early learning with reading, writing, and basic number work. 
+          Activities include group participation and simple problem-solving tasks.
+      - title: UKG (Upper Kindergarten)
+        age: Ages 4.5 - 5.5 years
+        desc: >-
+          Prepares children for primary school with continued work in language and 
+          mathematics, along with classroom routines and independent participation.
   whyUs:
     kicker: Why Indo-German School
     title: What we offer
