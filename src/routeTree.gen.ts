@@ -11,6 +11,7 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
+import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AdmissionsRouteImport } from './routes/admissions'
@@ -41,6 +42,11 @@ const SignInRoute = SignInRouteImport.update({
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
   id: '/rss.xml',
   path: '/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GalleryRoute = GalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -157,6 +163,7 @@ export interface FileRoutesByFullPath {
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/gallery': typeof GalleryRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -181,6 +188,7 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
+  '/gallery': typeof GalleryRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -207,6 +215,7 @@ export interface FileRoutesById {
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/gallery': typeof GalleryRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -234,6 +243,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/contact'
     | '/dashboard'
+    | '/gallery'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -258,6 +268,7 @@ export interface FileRouteTypes {
     | '/about'
     | '/admissions'
     | '/contact'
+    | '/gallery'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -283,6 +294,7 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/contact'
     | '/dashboard'
+    | '/gallery'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -309,6 +321,7 @@ export interface RootRouteChildren {
   AdmissionsRoute: typeof AdmissionsRoute
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  GalleryRoute: typeof GalleryRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SignInRoute: typeof SignInRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -330,6 +343,13 @@ declare module '@tanstack/react-router' {
       path: '/rss.xml'
       fullPath: '/rss.xml'
       preLoaderRoute: typeof RssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gallery': {
+      id: '/gallery'
+      path: '/gallery'
+      fullPath: '/gallery'
+      preLoaderRoute: typeof GalleryRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -524,6 +544,7 @@ const rootRouteChildren: RootRouteChildren = {
   AdmissionsRoute: AdmissionsRoute,
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  GalleryRoute: GalleryRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SignInRoute: SignInRoute,
   BlogSlugRoute: BlogSlugRoute,

@@ -27,7 +27,8 @@ interface TeamGridProps {
 }
 
 function TeamGroup({ title, members, columns = '3', cardClassName }: TeamGroupProps) {
-  const colsClass = columns === '2' ? 'sm:grid-cols-2' : 'grid-cols-3'
+  const colsClass =
+    columns === '2' ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3'
 
   return (
     <>
@@ -48,7 +49,7 @@ function TeamGroup({ title, members, columns = '3', cardClassName }: TeamGroupPr
               alt={member.name}
               width={300}
               height={300}
-              className="bg-green-300 relative z-20 aspect-square w-full rounded-md object-cover brightness-90 dark:brightness-75"
+              className="relative z-20 aspect-square w-full rounded-md object-cover brightness-90 dark:brightness-75"
             />
             <CardHeader className='gap-0'>
               <CardTitle className='mb-0'>{member.name}</CardTitle>

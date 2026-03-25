@@ -17,6 +17,8 @@ header:
       to: /about
     - label: Admissions
       to: /admissions
+    - label: Gallery
+      to: /gallery
     - label: Contact
       to: /contact
 
@@ -46,7 +48,10 @@ footer:
 home:
   hero:
     kicker: Welcome to Indo-German School
-    image: hero6.jpg
+    image: hero3.jpg
+    images:
+      - hero6.jpg
+      - hero3.jpg
     title: Where little minds bloom into big dreams.
     description: >-
       Indo-German School is a preschool in Kasturi Nagar offering early years learning in a structured and supervised environment.
@@ -104,8 +109,7 @@ home:
   cta:
     title: Admissions are open for 2025-26
     description: >-
-      Give your child the best start in life. Visit our campus or apply online
-      to secure a seat in Nursery, LKG, or UKG.
+      For enquiries, please contact the school or fill the enquiry form.
     primaryCta:
       label: View Admission Process
       to: /admissions
@@ -207,8 +211,7 @@ admissions:
     kicker: 2026-27
     title: 'Admissions are open for 2026-27'
     description: >-
-      Our admission process is simple and designed to help us understand your
-      child's needs so we can provide the best learning experience.
+      For admissions and enquiries, please contact the school or fill the enquiry form.
   eligibility:
     kicker: Eligibility
     title: Age criteria for each programme
@@ -280,6 +283,35 @@ admissions:
       We're happy to answer any questions you may have.
     label: Contact Us
     to: /contact
+
+gallery:
+  header:
+    kicker: Gallery
+    title: Moments from our school
+    description: >-
+      A glimpse into everyday life at Indo-German School — from classroom activities and celebrations to outdoor play and special events.
+  images:
+    - gallery/IMG_5863.jpg
+    - gallery/IMG_5866.jpg
+    - gallery/IMG_5874.jpg
+    - gallery/IMG_5885.jpg
+    - gallery/IMG_5904.jpg
+    - gallery/IMG_5910.jpg
+    - gallery/IMG_5915.jpg
+    - gallery/IMG_5938.jpg
+    - gallery/IMG_5940.jpg
+    - gallery/IMG_5941.jpg
+    - gallery/IMG_5952.jpg
+    - gallery/IMG_5957.jpg
+    - gallery/IMG_5961.jpg
+    - gallery/IMG_5964.jpg
+    - gallery/IMG_5980.jpg
+    - gallery/activityroom.jpg
+    - gallery/cctv.jpg
+    - gallery/classrooms.jpg
+    - gallery/hero7.jpg
+    - gallery/hygienic.jpg
+    - gallery/play.jpg
 
 contact:
   header:

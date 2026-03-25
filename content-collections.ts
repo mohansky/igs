@@ -69,6 +69,7 @@ const site = defineCollection({
       hero: z.object({
         kicker: z.string(),
         image: z.string(),
+        images: z.array(z.string()).optional(),
         title: z.string(),
         description: z.string().optional(),
         primaryCta: ctaSchema,
@@ -206,6 +207,14 @@ const site = defineCollection({
         label: z.string(),
         to: z.string(),
       }),
+    }),
+    gallery: z.object({
+      header: z.object({
+        kicker: z.string(),
+        title: z.string(),
+        description: z.string().optional(),
+      }),
+      images: z.array(z.string()),
     }),
     contact: z.object({
       header: z.object({

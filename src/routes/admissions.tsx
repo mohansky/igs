@@ -18,7 +18,7 @@ function Admissions() {
   return (
     <main className="page-wrap px-4 py-12">
       {/* Header */}
-      <SectionCard kicker={header.kicker}>
+      <SectionCard  >
         <h1 className="display-title mb-4 text-4xl font-bold text-(--sea-ink) sm:text-5xl">
           {header.title}
         </h1>

@@ -5,6 +5,7 @@ import { Hero } from '#/components/sections/Hero'
 import { CtaBanner } from '#/components/sections/CtaBanner'
 import { CardGroup } from '#/components/sections/CardGroup'
 import { CardDescription, CardTitle } from '#/components/ui/card'
+import CheckIcon from '#/components/icons/CheckIcon'
 
 export const Route = createFileRoute('/')({
   head: () => ({
@@ -20,7 +21,8 @@ function Home() {
     <main className="page-wrap px-4 pb-8 pt-14">
       {/* Hero */}
       <Hero
-        image={hero.image}
+        // image={hero.image}
+        images={hero.images}
         kicker={hero.kicker}
         title={hero.title}
         description={hero.description}
@@ -70,7 +72,7 @@ function Home() {
         className="mt-20"
         renderItem={(item) => (
           <>
-            <li className='list-disc list-inside text-2xl'> {item.title}</li>
+            <li className='list-inside text-2xl'> <CheckIcon className="mr-2 inline-block" /> {item.title}</li>
           </>
         )}
       />
