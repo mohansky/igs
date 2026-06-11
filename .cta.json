@@ -1,0 +1,28 @@
+{
+  "projectName": "igs",
+  "mode": "file-router",
+  "typescript": true,
+  "packageManager": "pnpm",
+  "includeExamples": true,
+  "tailwind": true,
+  "addOnOptions": {
+    "drizzle": {
+      "database": "sqlite"
+    }
+  },
+  "envVarValues": {},
+  "git": false,
+  "routerOnly": false,
+  "version": 1,
+  "framework": "react",
+  "chosenAddOns": [
+    "eslint",
+    "cloudflare",
+    "better-auth",
+    "drizzle",
+    "form",
+    "table",
+    "shadcn",
+    "tanstack-query"
+  ]
+}

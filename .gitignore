@@ -1,0 +1,35 @@
+node_modules
+.DS_Store
+dist
+dist-ssr
+*.local
+.env
+.nitro
+.tanstack
+.wrangler
+.output
+.vinxi
+__unconfig*
+todos.json
+
+# SQLite local DB
+*.db
+*.db-journal
+
+# Content Collections generated
+.content-collections/
+
+# Local environment files
+.env.local
+.env.*.local
+.dev.vars*
+
+# Claude Code personal settings
+.claude/settings.local.json
+
+# Logs
+LOCALNOTES.md
+FONTS.md
+
+# One-off DB scripts (seeders, fixers, resets) — local only, not deployed
+scripts/

@@ -1,0 +1,413 @@
+import { createServerFn } from '@tanstack/react-start'
+import { and, eq, inArray, sql } from 'drizzle-orm'
+import { db } from '#/db'
+import {
+  classes,
+  effectiveClassId,
+  feePayments,
+  fees,
+  studentProfiles,
+  user,
+} from '#/db/schema'
+import { assertDatesUnlocked } from './accounting'
+import { requireRole } from './auth-utils'
+
+const todayDateString = () => new Date().toISOString().slice(0, 10)
+
+// Deleting a fee cascades to its payments, so it must not remove
+// payments recorded in a closed financial year.
+async function assertFeePaymentsUnlocked(feeIds: Array<number>) {
+  if (feeIds.length === 0) return
+  const rows = await db
+    .select({ paidDate: feePayments.paidDate })
+    .from(feePayments)
+    .where(inArray(feePayments.feeId, feeIds))
+  await assertDatesUnlocked(...rows.map((r) => r.paidDate))
+}
+
+// Recompute the fees-row cache from the payment ledger: paidAmount, status,
+// and "latest payment" metadata are all derived from fee_payments rows.
+async function syncFeeFromPayments(feeId: number) {
+  const [existing] = await db
+    .select({ amount: fees.amount })
+    .from(fees)
+    .where(eq(fees.id, feeId))
+    .limit(1)
+  if (!existing) throw new Error('Fee record not found')
+
+  const [{ total }] = await db
+    .select({ total: sql<number>`COALESCE(SUM(${feePayments.amount}), 0)` })
+    .from(feePayments)
+    .where(eq(feePayments.feeId, feeId))
+
+  const [latest] = await db
+    .select()
+    .from(feePayments)
+    .where(eq(feePayments.feeId, feeId))
+    .orderBy(sql`paid_date DESC, id DESC`)
+    .limit(1)
+
+  const paidAmount = Number(total) || 0
+  const status =
+    paidAmount <= 0
+      ? 'pending'
+      : paidAmount >= existing.amount
+        ? 'paid'
+        : 'partial'
+
+  const [updated] = await db
+    .update(fees)
+    .set({
+      paidAmount,
+      status,
+      paidDate: latest?.paidDate ?? null,
+      paymentMethod: latest?.paymentMethod ?? null,
+      receiptNumber: latest?.receiptNumber ?? null,
+      razorpayOrderId: latest?.razorpayOrderId ?? null,
+      razorpayPaymentId: latest?.razorpayPaymentId ?? null,
+      receivedByUserId: latest?.receivedByUserId ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(fees.id, feeId))
+    .returning()
+  return updated
+}
+
+const todayIso = () => new Date().toISOString().slice(0, 10)
+
+const withIsOverdue = <T extends { status: string; dueDate: string }>(
+  row: T,
+  today: string,
+): T & { isOverdue: boolean } => ({
+  ...row,
+  isOverdue: row.status !== 'paid' && row.dueDate < today,
+})
+
+export const createFeeRecord = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      studentUserId: string
+      amount: number
+      dueDate: string
+      description?: string
+      notes?: string
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+    const result = await db.insert(fees).values(data).returning()
+    return result[0]
+  })
+
+export const recordPayment = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      feeId: number
+      paidAmount: number
+      paymentMethod: string
+      paidDate?: string
+      receiptNumber?: string
+      notes?: string
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const session = await requireRole(['admin', 'staff'])
+
+    const paidDate = data.paidDate || todayDateString()
+    await assertDatesUnlocked(paidDate)
+
+    const [payment] = await db
+      .insert(feePayments)
+      .values({
+        feeId: data.feeId,
+        amount: data.paidAmount,
+        paidDate,
+        paymentMethod: data.paymentMethod,
+        receiptNumber: data.receiptNumber ?? null,
+        notes: data.notes ?? null,
+        receivedByUserId: session.user.id,
+      })
+      .returning()
+
+    const updatedFee = await syncFeeFromPayments(data.feeId)
+
+    return { ...updatedFee, paymentId: payment.id }
+  })
+
+export const getStudentFees = createServerFn({ method: 'GET' })
+  .inputValidator(
+    (data: { studentUserId?: string; studentProfileId?: number }) => data,
+  )
+  .handler(async ({ data }) => {
+    const today = todayIso()
+    const buildQuery = () =>
+      db
+        .select({
+          id: fees.id,
+          studentUserId: fees.studentUserId,
+          amount: fees.amount,
+          dueDate: fees.dueDate,
+          paidDate: fees.paidDate,
+          paidAmount: fees.paidAmount,
+          status: fees.status,
+          paymentMethod: fees.paymentMethod,
+          receiptNumber: fees.receiptNumber,
+          razorpayOrderId: fees.razorpayOrderId,
+          razorpayPaymentId: fees.razorpayPaymentId,
+          description: fees.description,
+          notes: fees.notes,
+          receivedByUserId: fees.receivedByUserId,
+          receivedByName: user.name,
+        })
+        .from(fees)
+        .leftJoin(user, eq(user.id, fees.receivedByUserId))
+
+    // If querying by profile ID (for parent viewing child's fees)
+    if (data.studentProfileId) {
+      const result = await buildQuery().where(
+        eq(fees.studentUserId, String(data.studentProfileId)),
+      )
+      return result.map((r) => withIsOverdue(r, today))
+    }
+    if (data.studentUserId) {
+      const result = await buildQuery().where(
+        eq(fees.studentUserId, data.studentUserId),
+      )
+      return result.map((r) => withIsOverdue(r, today))
+    }
+    return []
+  })
+
+export const deleteFeeRecord = createServerFn({ method: 'POST' })
+  .inputValidator((data: { feeId: number }) => data)
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+    await assertFeePaymentsUnlocked([data.feeId])
+    await db.delete(fees).where(eq(fees.id, data.feeId))
+    return { success: true }
+  })
+
+export const updateFeeRecord = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      feeId: number
+      studentUserId?: string
+      amount?: number
+      dueDate?: string
+      description?: string
+      status?: string
+      notes?: string
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    const session = await requireRole(['admin', 'staff'])
+    const { feeId, ...updates } = data
+
+    // If status is being changed, record who did it
+    let statusChangerPatch: { receivedByUserId?: string } = {}
+    if (updates.status) {
+      const [existing] = await db
+        .select({ status: fees.status })
+        .from(fees)
+        .where(eq(fees.id, feeId))
+        .limit(1)
+      if (existing && existing.status !== updates.status) {
+        statusChangerPatch = { receivedByUserId: session.user.id }
+      }
+    }
+
+    const result = await db
+      .update(fees)
+      .set({ ...updates, ...statusChangerPatch, updatedAt: new Date() })
+      .where(eq(fees.id, feeId))
+      .returning()
+    return result[0]
+  })
+
+export const listFees = createServerFn({ method: 'GET' })
+  .inputValidator((data: { status?: string; studentUserId?: string }) => data)
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+
+    const conditions = []
+    if (data.status) {
+      conditions.push(eq(fees.status, data.status))
+    }
+    if (data.studentUserId) {
+      conditions.push(eq(fees.studentUserId, data.studentUserId))
+    }
+
+    const baseQuery = db
+      .select({
+        id: fees.id,
+        studentUserId: fees.studentUserId,
+        studentProfileId: studentProfiles.id,
+        amount: fees.amount,
+        dueDate: fees.dueDate,
+        paidDate: fees.paidDate,
+        paidAmount: fees.paidAmount,
+        status: fees.status,
+        paymentMethod: fees.paymentMethod,
+        receiptNumber: fees.receiptNumber,
+        razorpayOrderId: fees.razorpayOrderId,
+        razorpayPaymentId: fees.razorpayPaymentId,
+        description: fees.description,
+        notes: fees.notes,
+        studentName: studentProfiles.studentName,
+        admissionNumber: studentProfiles.admissionNumber,
+        classId: classes.id,
+        className: classes.name,
+        classSection: classes.section,
+        receivedByUserId: fees.receivedByUserId,
+        receivedByName: user.name,
+      })
+      .from(fees)
+      .leftJoin(studentProfiles, eq(fees.studentUserId, studentProfiles.id))
+      .leftJoin(classes, sql`${classes.id} = ${effectiveClassId}`)
+      .leftJoin(user, eq(user.id, fees.receivedByUserId))
+
+    const result =
+      conditions.length > 0
+        ? await baseQuery.where(and(...conditions))
+        : await baseQuery
+
+    const today = todayIso()
+    return result.map((r) => withIsOverdue(r, today))
+  })
+
+export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: { feeIds: number[]; paymentMethod: string; paidDate: string }) =>
+      data,
+  )
+  .handler(async ({ data }) => {
+    const session = await requireRole(['admin', 'staff'])
+    if (data.feeIds.length === 0) return { updated: 0 }
+    await assertDatesUnlocked(data.paidDate)
+
+    const rows = await db
+      .select()
+      .from(fees)
+      .where(inArray(fees.id, data.feeIds))
+
+    let updated = 0
+    for (const row of rows) {
+      const remaining = row.amount - (row.paidAmount ?? 0)
+      if (remaining > 0) {
+        await db.insert(feePayments).values({
+          feeId: row.id,
+          amount: remaining,
+          paidDate: data.paidDate,
+          paymentMethod: data.paymentMethod,
+          receivedByUserId: session.user.id,
+        })
+      }
+      await syncFeeFromPayments(row.id)
+      updated++
+    }
+    return { updated }
+  })
+
+export const bulkDeleteFees = createServerFn({ method: 'POST' })
+  .inputValidator((data: { feeIds: number[] }) => data)
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+    if (data.feeIds.length === 0) return { deleted: 0 }
+    await assertFeePaymentsUnlocked(data.feeIds)
+    const result = await db
+      .delete(fees)
+      .where(inArray(fees.id, data.feeIds))
+      .returning({ id: fees.id })
+    return { deleted: result.length }
+  })
+
+export const createBulkFees = createServerFn({ method: 'POST' })
+  .inputValidator(
+    (data: {
+      classId: number
+      amount: number
+      dueDate: string
+      description?: string
+    }) => data,
+  )
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+
+    // Get all active students in the class
+    const students = await db
+      .select({
+        id: studentProfiles.id,
+        studentName: studentProfiles.studentName,
+      })
+      .from(studentProfiles)
+      .where(
+        and(
+          sql`${effectiveClassId} = ${data.classId}`,
+          eq(studentProfiles.isActive, true),
+        ),
+      )
+
+    if (students.length === 0) {
+      throw new Error('No active students found in this class')
+    }
+
+    const records = students.map((s) => ({
+      studentUserId: String(s.id),
+      amount: data.amount,
+      dueDate: data.dueDate,
+      description: data.description,
+    }))
+
+    await db.insert(fees).values(records)
+
+    return { created: students.length }
+  })
+
+export const listFeePayments = createServerFn({ method: 'GET' })
+  .inputValidator((data: { feeId: number }) => data)
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+    return db
+      .select({
+        id: feePayments.id,
+        feeId: feePayments.feeId,
+        amount: feePayments.amount,
+        paidDate: feePayments.paidDate,
+        paymentMethod: feePayments.paymentMethod,
+        receiptNumber: feePayments.receiptNumber,
+        razorpayOrderId: feePayments.razorpayOrderId,
+        razorpayPaymentId: feePayments.razorpayPaymentId,
+        notes: feePayments.notes,
+        receivedByUserId: feePayments.receivedByUserId,
+        receivedByName: user.name,
+        createdAt: feePayments.createdAt,
+      })
+      .from(feePayments)
+      .leftJoin(user, eq(user.id, feePayments.receivedByUserId))
+      .where(eq(feePayments.feeId, data.feeId))
+      .orderBy(feePayments.paidDate, feePayments.id)
+  })
+
+export const deleteFeePayment = createServerFn({ method: 'POST' })
+  .inputValidator((data: { paymentId: number }) => data)
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+
+    const [existing] = await db
+      .select({
+        id: feePayments.id,
+        feeId: feePayments.feeId,
+        paidDate: feePayments.paidDate,
+      })
+      .from(feePayments)
+      .where(eq(feePayments.id, data.paymentId))
+      .limit(1)
+    if (!existing) throw new Error('Payment not found')
+    await assertDatesUnlocked(existing.paidDate)
+
+    await db.delete(feePayments).where(eq(feePayments.id, data.paymentId))
+
+    await syncFeeFromPayments(existing.feeId)
+
+    return { success: true }
+  })

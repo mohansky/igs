@@ -1,0 +1,31 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "igs",
+  "compatibility_date": "2026-03-25",
+  "compatibility_flags": ["nodejs_compat"],
+  "main": "@tanstack/react-start/server-entry",
+  "workers_dev": false,
+  "preview_urls": false,
+  "upload_source_maps": true,
+  "placement": { "mode": "smart" },
+  "observability": {
+    "enabled": true,
+  },
+  "routes": [
+    {
+      "pattern": "indogermanschool.com/*",
+      "zone_name": "indogermanschool.com",
+    },
+    {
+      "pattern": "www.indogermanschool.com/*",
+      "zone_name": "indogermanschool.com",
+    },
+  ],
+  "vars": {
+    "BETTER_AUTH_URL": "https://indogermanschool.com",
+    "R2_ACCOUNT_ID": "83d4d6746ea272718c8c962ecf89a8cb",
+    "R2_BUCKET_NAME": "igs",
+    "RESEND_FROM_EMAIL": "IGS <mail@mohankumar.dev>",
+    "CONTACT_NOTIFICATION_EMAIL": "mail@mohankumar.dev",
+  },
+}
