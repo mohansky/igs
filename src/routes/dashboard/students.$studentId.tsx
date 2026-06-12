@@ -130,6 +130,10 @@ interface ParentLink {
 
 function StudentDetailPage() {
   const { studentId } = Route.useParams()
+  const { session } = Route.useRouteContext()
+  // Fees are admin-only; staff see the rest of the student profile
+  const isAdmin =
+    ((session.user as { role?: string }).role ?? 'student') === 'admin'
   const queryClient = useQueryClient()
   const [selectedFee, setSelectedFee] = useState<FeeRecord | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
@@ -167,7 +171,7 @@ function StudentDetailPage() {
         classSection: null,
       })) as FeeRecord[]
     },
-    enabled: !!profile,
+    enabled: !!profile && isAdmin,
   })
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
@@ -368,7 +372,7 @@ function StudentDetailPage() {
       <Tabs defaultValue="profile">
         <TabsList>
           <TabsTrigger value="profile">Profile</TabsTrigger>
-          <TabsTrigger value="fees">Fees</TabsTrigger>
+          {isAdmin && <TabsTrigger value="fees">Fees</TabsTrigger>}
           <TabsTrigger value="attendance">Attendance</TabsTrigger>
           <TabsTrigger value="documents">Documents</TabsTrigger>
         </TabsList>
@@ -642,32 +646,34 @@ function StudentDetailPage() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="fees">
-          <FeeTable
-            fees={fees}
-            onRecordPayment={(fee) => {
-              setSelectedFee(fee)
-              setPaymentOpen(true)
-            }}
-            onEditFee={(fee) => {
-              setEditFee(fee)
-              setEditOpen(true)
-            }}
-            onDeleteFee={(fee) => deleteMutation.mutate(fee.id)}
-          />
-          <RecordPaymentDialog
-            fee={selectedFee}
-            open={paymentOpen}
-            onOpenChange={setPaymentOpen}
-            onPaid={invalidateFees}
-          />
-          <EditFeeDialog
-            fee={editFee}
-            open={editOpen}
-            onOpenChange={setEditOpen}
-            onUpdated={invalidateFees}
-          />
-        </TabsContent>
+        {isAdmin && (
+          <TabsContent value="fees">
+            <FeeTable
+              fees={fees}
+              onRecordPayment={(fee) => {
+                setSelectedFee(fee)
+                setPaymentOpen(true)
+              }}
+              onEditFee={(fee) => {
+                setEditFee(fee)
+                setEditOpen(true)
+              }}
+              onDeleteFee={(fee) => deleteMutation.mutate(fee.id)}
+            />
+            <RecordPaymentDialog
+              fee={selectedFee}
+              open={paymentOpen}
+              onOpenChange={setPaymentOpen}
+              onPaid={invalidateFees}
+            />
+            <EditFeeDialog
+              fee={editFee}
+              open={editOpen}
+              onOpenChange={setEditOpen}
+              onUpdated={invalidateFees}
+            />
+          </TabsContent>
+        )}
 
         <TabsContent value="attendance">
           <AttendanceHistory studentProfileId={Number(studentId)} />

@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router'
+﻿import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -23,6 +23,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import DownloadIcon from '#/components/icons/DownloadIcon'
 
 export const Route = createFileRoute('/dashboard/fees')({
+  beforeLoad: ({ context }) => {
+    // Fees is admin-managed; students/parents see their own fees below.
+    // Staff have no fee access.
+    const userRole =
+      (context.session.user as { role?: string }).role ?? 'student'
+    if (userRole === 'staff') {
+      throw redirect({ to: '/dashboard' })
+    }
+  },
   component: FeesPage,
 })
 
@@ -54,7 +63,7 @@ export interface FeeRecord {
 function FeesPage() {
   const { session } = Route.useRouteContext()
   const userRole = (session.user as { role?: string }).role ?? 'student'
-  const isStaffOrAdmin = userRole === 'admin' || userRole === 'staff'
+  const isAdmin = userRole === 'admin'
   const queryClient = useQueryClient()
 
   const [selectedFee, setSelectedFee] = useState<FeeRecord | null>(null)
@@ -65,7 +74,7 @@ function FeesPage() {
   const { data: fees = [], isLoading: feesLoading } = useQuery({
     queryKey: ['fees'],
     queryFn: () => listFees({ data: {} }) as Promise<FeeRecord[]>,
-    enabled: isStaffOrAdmin,
+    enabled: isAdmin,
   })
 
   const invalidateFees = () =>
@@ -120,7 +129,7 @@ function FeesPage() {
     <div className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h1 className="text-2xl font-bold">Fees</h1>
-        {isStaffOrAdmin && (
+        {isAdmin && (
           <div className="flex flex-wrap gap-2">
             <Button
               variant="outline"
@@ -158,9 +167,9 @@ function FeesPage() {
         )}
       </div>
 
-      {isStaffOrAdmin && feesLoading && <FeeTableSkeleton />}
+      {isAdmin && feesLoading && <FeeTableSkeleton />}
 
-      {isStaffOrAdmin && !feesLoading ? (
+      {isAdmin && !feesLoading ? (
         <>
           <FeeTable
             fees={fees}

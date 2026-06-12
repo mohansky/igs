@@ -50,7 +50,7 @@ const NAV_LINKS: NavLink[] = [
     kind: 'nav',
     label: 'Fees',
     to: '/dashboard/fees',
-    roles: ['admin', 'staff', 'student'],
+    roles: ['admin', 'student'],
     icon: Invoice02Icon,
   },
   {

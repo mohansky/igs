@@ -297,14 +297,6 @@ function StaffDashboard({ stats }: { stats: Stats }) {
           icon={Calendar03Icon}
         />
         <QuickLinkCard
-          title="Fees"
-          description="Manage fee records and payments"
-          to="/dashboard/fees"
-          icon={Invoice02Icon}
-          count={stats.counts.pendingFees}
-          countLabel="pending"
-        />
-        <QuickLinkCard
           title="Students"
           description="View student records"
           to="/dashboard/students"
@@ -378,29 +370,6 @@ function StaffDashboard({ stats }: { stats: Stats }) {
             </CardContent>
           </Card>
         )}
-      </section>
-
-      {/* ── Finance section ── */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold">Finance</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <StatCard
-            title="Fee Collection"
-            value={
-              stats.fees.collectionRate !== null
-                ? `${stats.fees.collectionRate}%`
-                : '-'
-            }
-            subtitle={`${formatCurrency(stats.fees.totalCollected)} of ${formatCurrency(stats.fees.totalDue)}`}
-            icon={Invoice02Icon}
-          />
-          <StatCard
-            title="Pending Fees"
-            value={String(stats.fees.pendingCount)}
-            subtitle={`${stats.fees.paidCount} paid`}
-            icon={Invoice02Icon}
-          />
-        </div>
       </section>
 
       {/* ── Activity / Alerts / Events ── */}

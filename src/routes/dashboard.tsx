@@ -97,8 +97,10 @@ const navItems: NavItem[] = [
   {
     to: '/dashboard/fees',
     label: 'Fees',
-    roles: ['admin', 'staff', 'student'],
-    group: 'main',
+    // Admins see this under Administration; students/parents get it in
+    // their flat nav (they view and pay their own fees). Staff: no access.
+    roles: ['admin', 'student'],
+    group: 'admin',
     icon: Invoice02Icon,
   },
   {
@@ -208,8 +210,17 @@ function DashboardLayout() {
   const [sidebarOpen, setSidebarOpenState] = useState(getSidebarOpen)
 
   const filteredNav = navItems.filter((item) => item.roles.includes(userRole))
-  const mainItems = filteredNav.filter((item) => item.group === 'main')
-  const adminItems = filteredNav.filter((item) => item.group === 'admin')
+  // The Administration group only renders for admins; everyone else gets
+  // their items as one flat list (e.g. Fees is admin-grouped but also
+  // visible to staff/students)
+  const mainItems =
+    userRole === 'admin'
+      ? filteredNav.filter((item) => item.group === 'main')
+      : filteredNav
+  const adminItems =
+    userRole === 'admin'
+      ? filteredNav.filter((item) => item.group === 'admin')
+      : []
 
   const getAvatarUrl = (image: string | null | undefined) => {
     if (!image) return undefined // let AvatarFallback handle it
