@@ -4,12 +4,27 @@ import { eq, sql } from 'drizzle-orm'
 import { db } from '#/db'
 import { feePayments, fees } from '#/db/schema'
 import { auth } from '#/lib/auth'
+import { allowedStudentProfileIds } from './fees'
 
 async function requireSession() {
   const request = getRequest()
   const session = await auth.api.getSession({ headers: request.headers })
   if (!session) throw new Error('Unauthorized')
   return session
+}
+
+// Admins may act on any fee; everyone else only on fees belonging to
+// their own profile or a linked child.
+async function assertCanPayFee(
+  session: Awaited<ReturnType<typeof requireSession>>,
+  feeStudentUserId: string,
+) {
+  const role = (session.user as { role?: string }).role ?? 'student'
+  if (role === 'admin') return
+  const allowed = await allowedStudentProfileIds(session.user.id)
+  if (!allowed.has(String(feeStudentUserId))) {
+    throw new Error('Forbidden')
+  }
 }
 
 function getKeys() {
@@ -26,7 +41,7 @@ function getKeys() {
 export const createRazorpayOrderForFee = createServerFn({ method: 'POST' })
   .inputValidator((data: { feeId: number }) => data)
   .handler(async ({ data }) => {
-    await requireSession()
+    const session = await requireSession()
     const { keyId, keySecret } = getKeys()
 
     const [fee] = await db
@@ -36,6 +51,7 @@ export const createRazorpayOrderForFee = createServerFn({ method: 'POST' })
       .limit(1)
 
     if (!fee) throw new Error('Fee record not found')
+    await assertCanPayFee(session, fee.studentUserId)
     if (fee.status === 'paid') throw new Error('Fee is already paid')
 
     const remaining = fee.amount - (fee.paidAmount ?? 0)
@@ -139,6 +155,7 @@ export const verifyRazorpayPayment = createServerFn({ method: 'POST' })
       .limit(1)
 
     if (!existing) throw new Error('Fee record not found')
+    await assertCanPayFee(session, existing.studentUserId)
     if (existing.status === 'paid') {
       // Idempotency: signature was valid, fee already paid — return success
       return { success: true, alreadyPaid: true }

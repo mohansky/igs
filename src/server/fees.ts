@@ -1,4 +1,4 @@
-import { createServerFn } from '@tanstack/react-start'
+﻿import { createServerFn } from '@tanstack/react-start'
 import { and, eq, inArray, sql } from 'drizzle-orm'
 import { db } from '#/db'
 import {
@@ -6,6 +6,7 @@ import {
   effectiveClassId,
   feePayments,
   fees,
+  studentParents,
   studentProfiles,
   user,
 } from '#/db/schema'
@@ -13,6 +14,22 @@ import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
 
 const todayDateString = () => new Date().toISOString().slice(0, 10)
+
+// Student profile ids (as strings, matching fees.studentUserId) that this
+// user may act on: their own profile plus children linked via student_parents.
+export async function allowedStudentProfileIds(
+  userId: string,
+): Promise<Set<string>> {
+  const own = await db
+    .select({ id: studentProfiles.id })
+    .from(studentProfiles)
+    .where(eq(studentProfiles.userId, userId))
+  const linked = await db
+    .select({ id: studentParents.studentProfileId })
+    .from(studentParents)
+    .where(eq(studentParents.parentUserId, userId))
+  return new Set([...own, ...linked].map((r) => String(r.id)))
+}
 
 // Deleting a fee cascades to its payments, so it must not remove
 // payments recorded in a closed financial year.
@@ -94,7 +111,7 @@ export const createFeeRecord = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
     const result = await db.insert(fees).values(data).returning()
     return result[0]
   })
@@ -111,7 +128,7 @@ export const recordPayment = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const session = await requireRole(['admin', 'staff'])
+    const session = await requireRole(['admin'])
 
     const paidDate = data.paidDate || todayDateString()
     await assertDatesUnlocked(paidDate)
@@ -139,6 +156,23 @@ export const getStudentFees = createServerFn({ method: 'GET' })
     (data: { studentUserId?: string; studentProfileId?: number }) => data,
   )
   .handler(async ({ data }) => {
+    const session = await requireRole(['admin', 'student'])
+    const role = (session.user as { role?: string }).role ?? 'student'
+
+    // Students/parents may only query their own profile or a linked child;
+    // fees.studentUserId stores the student profile id as a string.
+    if (role !== 'admin') {
+      const requested =
+        data.studentProfileId != null
+          ? String(data.studentProfileId)
+          : data.studentUserId
+      if (!requested) return []
+      const allowed = await allowedStudentProfileIds(session.user.id)
+      if (!allowed.has(String(requested))) {
+        throw new Error('Forbidden')
+      }
+    }
+
     const today = todayIso()
     const buildQuery = () =>
       db
@@ -181,7 +215,7 @@ export const getStudentFees = createServerFn({ method: 'GET' })
 export const deleteFeeRecord = createServerFn({ method: 'POST' })
   .inputValidator((data: { feeId: number }) => data)
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
     await assertFeePaymentsUnlocked([data.feeId])
     await db.delete(fees).where(eq(fees.id, data.feeId))
     return { success: true }
@@ -200,7 +234,7 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    const session = await requireRole(['admin', 'staff'])
+    const session = await requireRole(['admin'])
     const { feeId, ...updates } = data
 
     // If status is being changed, record who did it
@@ -227,7 +261,7 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
 export const listFees = createServerFn({ method: 'GET' })
   .inputValidator((data: { status?: string; studentUserId?: string }) => data)
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
 
     const conditions = []
     if (data.status) {
@@ -281,7 +315,7 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
       data,
   )
   .handler(async ({ data }) => {
-    const session = await requireRole(['admin', 'staff'])
+    const session = await requireRole(['admin'])
     if (data.feeIds.length === 0) return { updated: 0 }
     await assertDatesUnlocked(data.paidDate)
 
@@ -311,7 +345,7 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
 export const bulkDeleteFees = createServerFn({ method: 'POST' })
   .inputValidator((data: { feeIds: number[] }) => data)
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
     if (data.feeIds.length === 0) return { deleted: 0 }
     await assertFeePaymentsUnlocked(data.feeIds)
     const result = await db
@@ -331,7 +365,7 @@ export const createBulkFees = createServerFn({ method: 'POST' })
     }) => data,
   )
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
 
     // Get all active students in the class
     const students = await db
@@ -366,7 +400,7 @@ export const createBulkFees = createServerFn({ method: 'POST' })
 export const listFeePayments = createServerFn({ method: 'GET' })
   .inputValidator((data: { feeId: number }) => data)
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
     return db
       .select({
         id: feePayments.id,
@@ -391,7 +425,7 @@ export const listFeePayments = createServerFn({ method: 'GET' })
 export const deleteFeePayment = createServerFn({ method: 'POST' })
   .inputValidator((data: { paymentId: number }) => data)
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    await requireRole(['admin'])
 
     const [existing] = await db
       .select({

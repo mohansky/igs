@@ -63,19 +63,32 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
       rate: r.total > 0 ? Math.round((Number(r.present) / r.total) * 100) : 0,
     }))
 
-    // Fee collection stats
-    const feeStats = await db
-      .select({
-        totalDue: sql<number>`COALESCE(SUM(${fees.amount}), 0)`,
-        totalCollected: sql<number>`COALESCE(SUM(${fees.paidAmount}), 0)`,
-        pendingCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') THEN 1 ELSE 0 END)`,
-        paidCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'paid' THEN 1 ELSE 0 END)`,
-        overdueCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
-        // Mutually exclusive buckets for the pie chart:
-        pendingOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'pending' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
-        partialOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
-      })
-      .from(fees)
+    // Fee collection stats (admin only — staff have no fee access, so
+    // they get zeros and the UI hides the fee cards/alerts)
+    const feeStats = isAdmin
+      ? await db
+          .select({
+            totalDue: sql<number>`COALESCE(SUM(${fees.amount}), 0)`,
+            totalCollected: sql<number>`COALESCE(SUM(${fees.paidAmount}), 0)`,
+            pendingCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') THEN 1 ELSE 0 END)`,
+            paidCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'paid' THEN 1 ELSE 0 END)`,
+            overdueCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
+            // Mutually exclusive buckets for the pie chart:
+            pendingOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'pending' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
+            partialOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
+          })
+          .from(fees)
+      : [
+          {
+            totalDue: 0,
+            totalCollected: 0,
+            pendingCount: 0,
+            paidCount: 0,
+            overdueCount: 0,
+            pendingOnTimeCount: 0,
+            partialOnTimeCount: 0,
+          },
+        ]
 
     const collectionRate =
       feeStats[0].totalDue > 0
