@@ -114,8 +114,47 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         name: 'twitter:description',
         content: SITE_DESCRIPTION,
       },
+      // PWA
+      {
+        name: 'application-name',
+        content: 'IGS',
+      },
+      {
+        name: 'mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-capable',
+        content: 'yes',
+      },
+      {
+        name: 'apple-mobile-web-app-title',
+        content: 'IGS',
+      },
+      {
+        name: 'apple-mobile-web-app-status-bar-style',
+        content: 'default',
+      },
+      {
+        name: 'theme-color',
+        content: '#f6efe2',
+        media: '(prefers-color-scheme: light)',
+      },
+      {
+        name: 'theme-color',
+        content: '#1c1812',
+        media: '(prefers-color-scheme: dark)',
+      },
     ],
     links: [
+      {
+        rel: 'manifest',
+        href: '/manifest.json',
+      },
+      {
+        rel: 'apple-touch-icon',
+        href: '/logo192.png',
+      },
       {
         rel: 'preload',
         href: '/fonts/nunito-v32-latin-regular.woff2',
@@ -162,6 +201,18 @@ function PreferencesProvider({ children }: { children: React.ReactNode }) {
 }
 
 function RootDocument({ children }: { children: React.ReactNode }) {
+  // The dashboard brings its own chrome (sidebar + header); the marketing
+  // Header/Footer would sit above the fixed sidebar and hide its top items.
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const isDashboard = pathname.startsWith('/dashboard')
+
+  // Register the PWA service worker (production only — a SW in dev caches
+  // aggressively and fights HMR).
+  useEffect(() => {
+    if (!import.meta.env.PROD) return
+    if (!('serviceWorker' in navigator)) return
+    navigator.serviceWorker.register('/sw.js').catch(() => {})
+  }, [])
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
@@ -182,9 +233,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         </noscript>
         <TanStackQueryProvider>
           <PreferencesProvider>
-            <Header />
+            {!isDashboard && <Header />}
             {children}
-            <Footer />
+            {!isDashboard && <Footer />}
           </PreferencesProvider>
           <TanStackDevtools
             config={{
