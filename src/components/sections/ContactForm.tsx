@@ -138,7 +138,7 @@ export function ContactForm() {
           required
           className={inputClass}
           style={fieldStyle}
-          placeholder="Tell us how we can help..."
+          placeholder="Your message..."
         />
       </div>
 

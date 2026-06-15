@@ -191,8 +191,8 @@ function About() {
                           <Image
                             src={m.img}
                             alt={m.name}
-                            width={300}
-                            height={300}
+                            width={480}
+                            height={480}
                             className="h-full w-full rounded-[3px] object-cover"
                           />
                         </div>

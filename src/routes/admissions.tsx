@@ -61,7 +61,7 @@ function Admissions() {
           <div className="contact-card">
             <div>
               <div className="section-eyebrow">Enquiry form</div>
-              <h4>Tell us a little about your family.</h4>
+              <h4>Write to us</h4>
               <p className="text-(--ink-soft) text-[15px] mt-2">
                 We'll write back within a working day to set up a visit.
               </p>
