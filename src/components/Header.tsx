@@ -15,7 +15,7 @@ import {
 import PhoneIcon from './icons/PhoneIcon'
 import MailIcon from './icons/MailIcon'
 import MenuIcon from './icons/MenuIcon'
-import { Image } from './ui/image'
+import Logo from './icons/Logo'
 
 const { header } = site
 
@@ -35,13 +35,7 @@ export default function Header() {
             title={site.meta.title}
             className="flex items-center gap-3"
           >
-            <Image
-              src="igs-logo.svg"
-              alt={`${site.meta.title} logo`}
-              width={240}
-              height={60}
-              className="h-14 w-auto"
-            />
+            <Logo className="h-14 md:h-24 w-auto text-(--sea-ink)" />
             <div className="sr-only">{site.meta.title}</div>
           </Link>
 

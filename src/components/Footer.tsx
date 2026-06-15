@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router'
 import { site } from '#/lib/site'
-import { Image } from './ui/image'
+import Logo from './icons/Logo'
 
 const { footer, home } = site
 
@@ -14,19 +14,8 @@ export default function Footer() {
         <div className="grid grid-cols-1 gap-10 sm:grid-cols-2 md:grid-cols-[2fr_1fr_1fr_1.2fr] mb-14">
           <div>
             <div className="flex items-center gap-3 mb-4">
-              <Image
-                src="igs-logo.svg"
-                alt={`${site.meta.title} logo`}
-                width={480}
-                height={96}
-                className="h-30 w-auto"
-              />
+              <Logo className="h-30 w-auto text-(--sea-ink)" />
               <div className="sr-only">{site.meta.title}</div>
-              {/* <img
-                src="igs-logo.svg"
-                alt={`${site.meta.title} logo`}
-                className="h-30 w-auto"
-              /> */}
             </div>
           </div>
 
