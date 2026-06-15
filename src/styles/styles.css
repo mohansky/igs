@@ -194,6 +194,15 @@ body,
   min-height: 100%;
 }
 
+/* Decorative .float sketches are designed to bleed past their containers;
+   clip horizontal spill so they never trigger a mobile horizontal scroll.
+   `clip` (not `hidden`) avoids creating a scroll container, so the sticky
+   header keeps sticking to the viewport. */
+html,
+body {
+  overflow-x: clip;
+}
+
 :root {
   color-scheme: light;
 }

@@ -35,7 +35,7 @@ function About() {
           headlineMaxWidth="18ch"
           title={
             <>
-              We started with a <em>simple idea</em>: children deserve their own
+              We started with a <em>simple idea</em> children deserve their own
               pace.
             </>
           }

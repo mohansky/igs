@@ -4,8 +4,9 @@ import {
   Outlet,
   redirect,
   useMatchRoute,
+  useRouterState,
 } from '@tanstack/react-router'
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { getSession } from '#/server/auth'
 import { SITE_TITLE } from '#/lib/site'
 import { authClient } from '#/lib/auth-client'
@@ -24,6 +25,7 @@ import {
   SidebarMenuItem,
   SidebarProvider,
   SidebarTrigger,
+  useSidebar,
 } from '#/components/ui/sidebar'
 import {
   Collapsible,
@@ -40,7 +42,6 @@ import {
   DropdownMenuTrigger,
 } from '#/components/ui/dropdown-menu'
 import { Separator } from '#/components/ui/separator'
-import IGSLogo from '#/components/icons/Logo'
 import {
   Home09Icon,
   Calendar03Icon,
@@ -68,6 +69,8 @@ import {
   AvatarImage,
 } from '#/components/ui/avatar'
 import { CommandPalette } from '#/components/dashboard/command-palette'
+import IGSIcon from '#/components/icons/IGSIcon'
+// import Logo from '#/components/icons/Logo'
 
 type UserRole = string
 
@@ -102,6 +105,13 @@ const navItems: NavItem[] = [
     roles: ['admin', 'student'],
     group: 'admin',
     icon: Invoice02Icon,
+  },
+  {
+    to: '/dashboard/expenses',
+    label: 'Expenses',
+    roles: ['admin'],
+    group: 'admin',
+    icon: MoneyReceiveSquareIcon,
   },
   {
     to: '/dashboard/calendar',
@@ -180,13 +190,6 @@ const navItems: NavItem[] = [
     group: 'admin',
     icon: Book02Icon,
   },
-  {
-    to: '/dashboard/expenses',
-    label: 'Expenses',
-    roles: ['admin'],
-    group: 'admin',
-    icon: MoneyReceiveSquareIcon,
-  },
 ]
 
 export const Route = createFileRoute('/dashboard')({
@@ -202,6 +205,27 @@ export const Route = createFileRoute('/dashboard')({
   },
   component: DashboardLayout,
 })
+
+// Close the sidebar after navigating — the off-canvas sheet on mobile, and
+// collapse to the icon rail on desktop. Watches the route so it also fires
+// for the command palette and back/forward, not just sidebar clicks.
+function CloseSidebarOnNavigate() {
+  const { isMobile, setOpen, setOpenMobile } = useSidebar()
+  const pathname = useRouterState({ select: (s) => s.location.pathname })
+  const prevPathname = useRef(pathname)
+
+  useEffect(() => {
+    if (pathname === prevPathname.current) return
+    prevPathname.current = pathname
+    if (isMobile) {
+      setOpenMobile(false)
+    } else {
+      setOpen(false)
+    }
+  }, [pathname, isMobile, setOpen, setOpenMobile])
+
+  return null
+}
 
 function DashboardLayout() {
   const { session } = Route.useRouteContext()
@@ -252,21 +276,17 @@ function DashboardLayout() {
         setSidebarOpen(open)
       }}
     >
+      <CloseSidebarOnNavigate />
       <Sidebar collapsible="icon" variant="inset">
         <SidebarHeader>
           <SidebarMenu>
             <SidebarMenuItem>
               <SidebarMenuButton size="lg" asChild>
-                <Link to="/dashboard">
-                  <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                    <IGSLogo height={16} className="text-primary-foreground" />
-                  </div>
+                <Link to="/">
+                  <IGSIcon className="size-8 shrink-0 text-foreground" />
                   <div className="grid flex-1 text-left text-sm leading-tight">
                     <span className="truncate font-semibold">
-                      IGS Dashboard
-                    </span>
-                    <span className="truncate text-xs capitalize text-muted-foreground">
-                      {userRole}
+                      Back to main site
                     </span>
                   </div>
                 </Link>
@@ -276,7 +296,7 @@ function DashboardLayout() {
         </SidebarHeader>
 
         <SidebarContent>
-          <Collapsible defaultOpen className="group/collapsible mt-10">
+          <Collapsible defaultOpen className="group/collapsible">
             <SidebarGroup>
               <SidebarGroupLabel asChild>
                 <CollapsibleTrigger>

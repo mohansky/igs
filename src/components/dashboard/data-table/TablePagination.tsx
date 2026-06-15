@@ -7,6 +7,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select'
+import NextIcon from '#/components/icons/NextIcon'
+import PrevIcon from '#/components/icons/PrevIcon'
 
 interface TablePaginationProps<TData> {
   table: Table<TData>
@@ -54,7 +56,8 @@ export function TablePagination<TData>({
             onClick={() => table.previousPage()}
             disabled={!table.getCanPreviousPage()}
           >
-            Previous
+            <PrevIcon size={16} />
+            <span className="sr-only">Previous</span>
           </Button>
           <Button
             variant="outline"
@@ -62,7 +65,8 @@ export function TablePagination<TData>({
             onClick={() => table.nextPage()}
             disabled={!table.getCanNextPage()}
           >
-            Next
+            <NextIcon size={16} />
+            <span className="sr-only">Next</span>
           </Button>
         </div>
       </div>
