@@ -264,7 +264,19 @@ function StudentsListPage() {
     {
       accessorKey: 'parentPhone',
       header: 'Parent Phone',
-      cell: ({ row }) => row.getValue('parentPhone') ?? '-',
+      cell: ({ row }) => {
+        const phone = row.getValue('parentPhone') as string | null
+        return phone ? (
+          <a
+            href={`tel:${phone.replace(/\s+/g, '')}`}
+            className="text-primary hover:underline"
+          >
+            {phone}
+          </a>
+        ) : (
+          '-'
+        )
+      },
     },
     {
       id: 'linkedParents',

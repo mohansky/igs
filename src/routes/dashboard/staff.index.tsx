@@ -192,7 +192,19 @@ function StaffListPage() {
     {
       accessorKey: 'phone',
       header: 'Phone',
-      cell: ({ row }) => row.getValue('phone') ?? '-',
+      cell: ({ row }) => {
+        const phone = row.getValue('phone') as string | null
+        return phone ? (
+          <a
+            href={`tel:${phone.replace(/\s+/g, '')}`}
+            className="text-primary hover:underline"
+          >
+            {phone}
+          </a>
+        ) : (
+          '-'
+        )
+      },
     },
     // {
     //   id: 'timings',
