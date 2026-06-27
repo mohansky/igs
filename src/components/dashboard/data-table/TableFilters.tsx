@@ -41,7 +41,7 @@ export function TableFilters<TData>({
   if (filters.length === 0 && !extras) return null
 
   return (
-    <div className="my-2 flex flex-wrap items-end gap-4">
+    <div className="my-2 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap sm:gap-4">
       {filters.map((filter) => {
         const column = table.getColumn(filter.column)
         const current = (column?.getFilterValue() as string) ?? ''
@@ -64,7 +64,7 @@ export function TableFilters<TData>({
                   column?.setFilterValue(value === 'all' ? '' : value)
                 }
               >
-                <SelectTrigger className="w-52">
+                <SelectTrigger className="w-full sm:w-52">
                   <SelectValue placeholder={filter.placeholder} />
                 </SelectTrigger>
                 <SelectContent>
@@ -81,13 +81,17 @@ export function TableFilters<TData>({
                 placeholder={filter.placeholder}
                 value={current}
                 onChange={(event) => column?.setFilterValue(event.target.value)}
-                className="max-w-xs"
+                className="w-full sm:max-w-xs"
               />
             )}
           </div>
         )
       })}
-      {extras && <div className="flex min-h-14 items-end">{extras}</div>}
+      {extras && (
+        <div className="col-span-2 flex min-h-14 items-end sm:col-auto">
+          {extras}
+        </div>
+      )}
     </div>
   )
 }
@@ -117,7 +121,7 @@ function ComboboxFilter<TData>({
           role="combobox"
           aria-expanded={open}
           className={cn(
-            'w-52 justify-between font-normal',
+            'w-full justify-between font-normal sm:w-52',
             !selected && 'text-muted-foreground',
           )}
         >

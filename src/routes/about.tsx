@@ -172,28 +172,18 @@ function About() {
               }) => (
                 <div key={group.title} className="mb-14">
                   <h3 className="font-serif text-2xl mb-6">{group.title}</h3>
-                  <div
-                    className="grid gap-6"
-                    style={{
-                      gridTemplateColumns: `repeat(auto-fill, minmax(240px, 1fr))`,
-                    }}
-                  >
+                  <div className="grid gap-6 grid-cols-[repeat(auto-fill,minmax(300px,1fr))]">
                     {group.members.map((m, i: number) => (
                       <div key={m.name} className="text-center">
                         <div
-                          className="photo-card mx-auto mb-3"
-                          style={{
-                            aspectRatio: '1/1',
-                            width: '100%',
-                            transform: `rotate(${(i % 3) - 1}deg)`,
-                          }}
+                          className={`photo-card mx-auto mb-3 aspect-square w-full ${['-rotate-1', 'rotate-0', 'rotate-1'][i % 3]}`}
                         >
                           <Image
                             src={m.img}
                             alt={m.name}
-                            width={480}
-                            height={480}
-                            className="h-full w-full rounded-[3px] object-cover"
+                            width={360}
+                            height={360}
+                            className="w-full h-auto rounded-[3px] bg-bottom"
                           />
                         </div>
                         <div className="font-serif text-lg leading-tight">
