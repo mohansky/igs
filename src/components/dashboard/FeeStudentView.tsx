@@ -1,17 +1,22 @@
-import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '#/components/ui/badge'
-import { Button } from '#/components/ui/button'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { formatDate, formatCurrency } from '#/lib/utils'
 import { getStudentFees } from '#/server/fees'
-import {
-  createRazorpayOrderForFee,
-  verifyRazorpayPayment,
-} from '#/server/razorpay'
-import { loadRazorpayCheckout } from '#/lib/razorpay'
 import { CustomDataTable } from './CustomDataTable'
+
+// ⚠️ Razorpay online payments are currently DISABLED (potential future addition).
+// To re-enable, restore the imports below, the verify mutation + handlePay flow,
+// and the "Pay Online" column, plus src/server/razorpay.ts and src/lib/razorpay.ts.
+// import { useState } from 'react'
+// import { Button } from '#/components/ui/button'
+// import { useMutation, useQueryClient } from '@tanstack/react-query'
+// import { toast } from 'sonner'
+// import {
+//   createRazorpayOrderForFee,
+//   verifyRazorpayPayment,
+// } from '#/server/razorpay'
+// import { loadRazorpayCheckout } from '#/lib/razorpay'
 
 interface FeeRecord {
   id: number
@@ -44,9 +49,6 @@ export function FeeStudentView({
 }: {
   studentProfileId: number
 }) {
-  const queryClient = useQueryClient()
-  const [payingFeeId, setPayingFeeId] = useState<number | null>(null)
-
   const { data: fees = [], isLoading } = useQuery({
     queryKey: ['fees', 'student', studentProfileId],
     queryFn: () =>
@@ -54,6 +56,12 @@ export function FeeStudentView({
         data: { studentProfileId },
       }) as Promise<FeeRecord[]>,
   })
+
+  // ⚠️ Razorpay online payment flow — disabled. Restore alongside the imports
+  // above and the "Pay Online" column to re-enable.
+  /*
+  const queryClient = useQueryClient()
+  const [payingFeeId, setPayingFeeId] = useState<number | null>(null)
 
   const verifyMutation = useMutation({
     mutationFn: (vars: {
@@ -116,6 +124,7 @@ export function FeeStudentView({
       setPayingFeeId(null)
     }
   }
+  */
 
   const columns: ColumnDef<FeeRecord>[] = [
     {
@@ -163,21 +172,22 @@ export function FeeStudentView({
         )
       },
     },
-    {
-      id: 'pay',
-      header: 'Pay',
-      enableSorting: false,
-      cell: ({ row }) => {
-        const fee = row.original
-        if (fee.status === 'paid') return null
-        const isPaying = payingFeeId === fee.id || verifyMutation.isPending
-        return (
-          <Button size="xs" onClick={() => handlePay(fee)} disabled={isPaying}>
-            {isPaying ? 'Processing...' : 'Pay Online'}
-          </Button>
-        )
-      },
-    },
+    // ⚠️ Razorpay "Pay Online" column — disabled (potential future addition).
+    // {
+    //   id: 'pay',
+    //   header: 'Pay',
+    //   enableSorting: false,
+    //   cell: ({ row }) => {
+    //     const fee = row.original
+    //     if (fee.status === 'paid') return null
+    //     const isPaying = payingFeeId === fee.id || verifyMutation.isPending
+    //     return (
+    //       <Button size="xs" onClick={() => handlePay(fee)} disabled={isPaying}>
+    //         {isPaying ? 'Processing...' : 'Pay Online'}
+    //       </Button>
+    //     )
+    //   },
+    // },
   ]
 
   const totalDue = fees.reduce((sum, f) => sum + f.amount, 0)

@@ -3,6 +3,7 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { Link } from '@tanstack/react-router'
 import { Badge } from '#/components/ui/badge'
 import { setUserRole, removeUser } from '#/server/users'
+import type { UserRole } from '#/lib/roles'
 import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { CustomDataTable } from './CustomDataTable'
@@ -42,7 +43,7 @@ export function UserTable({
 }) {
   const roleMutation = useMutation({
     mutationFn: ({ userId, role }: { userId: string; role: string }) =>
-      setUserRole({ data: { userId, role } }),
+      setUserRole({ data: { userId, role: role as UserRole } }),
     onSuccess: () => {
       toast.success('Role updated')
       onUpdate()
@@ -140,6 +141,7 @@ export function UserTable({
             <SelectContent>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="staff">Staff</SelectItem>
+              <SelectItem value="auditor">Auditor</SelectItem>
               <SelectItem value="student">Student</SelectItem>
             </SelectContent>
           </Select>

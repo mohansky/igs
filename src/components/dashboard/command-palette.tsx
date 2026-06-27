@@ -21,7 +21,7 @@ import {
 } from 'hugeicons-react'
 import { cn } from '#/lib/utils'
 
-type Role = 'admin' | 'staff' | 'student'
+type Role = 'admin' | 'staff' | 'student' | 'auditor'
 
 interface NavLink {
   kind: 'nav'
@@ -160,7 +160,8 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
   const [activeIndex, setActiveIndex] = useState(0)
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
-  const isStaffOrAdmin = userRole === 'admin' || userRole === 'staff'
+  const isStaffOrAdmin =
+    userRole === 'admin' || userRole === 'staff' || userRole === 'auditor'
 
   const { data: students = [] } = useQuery({
     queryKey: ['students'],
@@ -178,7 +179,12 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
     const q = query.trim().toLowerCase()
     const items: ResultItem[] = []
 
-    const navItems = NAV_LINKS.filter((l) => l.roles.includes(userRole))
+    // The view-only auditor sees every link except user management.
+    const navItems = NAV_LINKS.filter(
+      (l) =>
+        l.roles.includes(userRole) ||
+        (userRole === 'auditor' && l.to !== '/dashboard/users'),
+    )
     for (const link of navItems) {
       if (!q || link.label.toLowerCase().includes(q)) {
         items.push({

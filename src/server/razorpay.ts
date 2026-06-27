@@ -1,3 +1,12 @@
+// ⚠️ Razorpay online fee payments are currently DISABLED.
+// Kept here (commented out) as a potential future addition — not active right now.
+// To re-enable: uncomment the block below, restore the imports + "Pay Online"
+// flow in src/components/dashboard/FeeStudentView.tsx, and uncomment
+// src/lib/razorpay.ts.
+
+export {}
+
+/*
 import { createServerFn } from '@tanstack/react-start'
 import { getRequest } from '@tanstack/react-start/server'
 import { eq, sql } from 'drizzle-orm'
@@ -200,3 +209,4 @@ export const verifyRazorpayPayment = createServerFn({ method: 'POST' })
 
     return { success: true, alreadyPaid: false }
   })
+*/

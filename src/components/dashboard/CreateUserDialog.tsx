@@ -12,6 +12,7 @@ import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { createUserByAdmin } from '#/server/users'
+import type { UserRole } from '#/lib/roles'
 import AddIcon from '../icons/AddIcon'
 
 export function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
@@ -24,7 +25,9 @@ export function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
 
   const createMutation = useMutation({
     mutationFn: () =>
-      createUserByAdmin({ data: { name, email, password, role } }),
+      createUserByAdmin({
+        data: { name, email, password, role: role as UserRole },
+      }),
     onSuccess: () => {
       toast.success('User created successfully')
       setOpen(false)
@@ -100,6 +103,7 @@ export function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
             >
               <option value="student">Student</option>
               <option value="staff">Staff</option>
+              <option value="auditor">Auditor (view-only)</option>
               <option value="admin">Admin</option>
             </select>
           </div>

@@ -10,8 +10,13 @@ import {
   studentProfiles,
   user,
 } from '#/db/schema'
+import { z } from 'zod'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
 const todayDateString = () => new Date().toISOString().slice(0, 10)
 
@@ -102,13 +107,13 @@ const withIsOverdue = <T extends { status: string; dueDate: string }>(
 
 export const createFeeRecord = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      studentUserId: string
-      amount: number
-      dueDate: string
-      description?: string
-      notes?: string
-    }) => data,
+    z.object({
+      studentUserId: z.string().min(1),
+      amount: z.number().positive(),
+      dueDate: dateString,
+      description: z.string().max(500).optional(),
+      notes: z.string().max(2000).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -118,14 +123,14 @@ export const createFeeRecord = createServerFn({ method: 'POST' })
 
 export const recordPayment = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      feeId: number
-      paidAmount: number
-      paymentMethod: string
-      paidDate?: string
-      receiptNumber?: string
-      notes?: string
-    }) => data,
+    z.object({
+      feeId: z.number().int().positive(),
+      paidAmount: z.number().positive(),
+      paymentMethod: z.string().min(1).max(50),
+      paidDate: dateString.optional(),
+      receiptNumber: z.string().max(100).optional(),
+      notes: z.string().max(2000).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
@@ -160,8 +165,9 @@ export const getStudentFees = createServerFn({ method: 'GET' })
     const role = (session.user as { role?: string }).role ?? 'student'
 
     // Students/parents may only query their own profile or a linked child;
-    // fees.studentUserId stores the student profile id as a string.
-    if (role !== 'admin') {
+    // fees.studentUserId stores the student profile id as a string. Admin and
+    // the view-only auditor may query any profile.
+    if (role !== 'admin' && role !== 'auditor') {
       const requested =
         data.studentProfileId != null
           ? String(data.studentProfileId)

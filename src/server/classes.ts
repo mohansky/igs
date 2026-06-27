@@ -2,10 +2,11 @@ import { createServerFn } from '@tanstack/react-start'
 import { eq } from 'drizzle-orm'
 import { db } from '#/db'
 import { classes } from '#/db/schema'
-import { requireRole } from './auth-utils'
+import { requireAuth, requireRole } from './auth-utils'
 
 export const listClasses = createServerFn({ method: 'GET' }).handler(
   async () => {
+    await requireAuth()
     const result = await db
       .select()
       .from(classes)

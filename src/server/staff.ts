@@ -371,7 +371,11 @@ export const getSalarySlip = createServerFn({ method: 'GET' })
     if (!salary[0]) return null
 
     const role = (session.user as { role?: string }).role ?? 'staff'
-    if (role !== 'admin' && salary[0].userId !== session.user.id) {
+    if (
+      role !== 'admin' &&
+      role !== 'auditor' &&
+      salary[0].userId !== session.user.id
+    ) {
       throw new Error('Forbidden')
     }
 
@@ -393,7 +397,11 @@ export const getStaffSalaryHistory = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const session = await requireRole(['admin', 'staff'])
     const role = (session.user as { role?: string }).role ?? 'staff'
-    if (role !== 'admin' && data.userId !== session.user.id) {
+    if (
+      role !== 'admin' &&
+      role !== 'auditor' &&
+      data.userId !== session.user.id
+    ) {
       throw new Error('Forbidden')
     }
     return db
@@ -410,7 +418,11 @@ export const getStaffAttendanceHistory = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     const session = await requireRole(['admin', 'staff'])
     const role = (session.user as { role?: string }).role ?? 'staff'
-    if (role !== 'admin' && data.userId !== session.user.id) {
+    if (
+      role !== 'admin' &&
+      role !== 'auditor' &&
+      data.userId !== session.user.id
+    ) {
       throw new Error('Forbidden')
     }
     return db

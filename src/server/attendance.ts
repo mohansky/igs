@@ -132,7 +132,8 @@ export const getStudentAttendance = createServerFn({ method: 'GET' })
     if (!session) throw new Error('Unauthorized')
 
     const userRole = (session.user as { role?: string }).role ?? 'student'
-    const isStaffOrAdmin = userRole === 'admin' || userRole === 'staff'
+    const isStaffOrAdmin =
+      userRole === 'admin' || userRole === 'staff' || userRole === 'auditor'
 
     // If a specific student profile ID is given, verify access
     let studentUserId = session.user.id

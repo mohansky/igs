@@ -233,18 +233,29 @@ function DashboardLayout() {
   const matchRoute = useMatchRoute()
   const [sidebarOpen, setSidebarOpenState] = useState(getSidebarOpen)
 
-  const filteredNav = navItems.filter((item) => item.roles.includes(userRole))
-  // The Administration group only renders for admins; everyone else gets
-  // their items as one flat list (e.g. Fees is admin-grouped but also
+  // The view-only auditor sees every route except user management and the
+  // staff-personal "My …" pages (which have no data for an auditor).
+  const isAuditor = userRole === 'auditor'
+  const auditorHidden = new Set([
+    '/dashboard/users',
+    '/dashboard/my-attendance',
+    '/dashboard/my-salaries',
+  ])
+  const filteredNav = navItems.filter(
+    (item) =>
+      item.roles.includes(userRole) ||
+      (isAuditor && !auditorHidden.has(item.to)),
+  )
+  // The Administration group renders for admins and auditors; everyone else
+  // gets their items as one flat list (e.g. Fees is admin-grouped but also
   // visible to staff/students)
-  const mainItems =
-    userRole === 'admin'
-      ? filteredNav.filter((item) => item.group === 'main')
-      : filteredNav
-  const adminItems =
-    userRole === 'admin'
-      ? filteredNav.filter((item) => item.group === 'admin')
-      : []
+  const showGrouped = userRole === 'admin' || isAuditor
+  const mainItems = showGrouped
+    ? filteredNav.filter((item) => item.group === 'main')
+    : filteredNav
+  const adminItems = showGrouped
+    ? filteredNav.filter((item) => item.group === 'admin')
+    : []
 
   const getAvatarUrl = (image: string | null | undefined) => {
     if (!image) return undefined // let AvatarFallback handle it
@@ -261,6 +272,7 @@ function DashboardLayout() {
       admin: 'bg-red-500',
       staff: 'bg-blue-500',
       student: 'bg-green-600',
+      auditor: 'bg-slate-500',
     }[userRole] ?? 'bg-gray-400'
 
   const handleSignOut = async () => {
@@ -490,7 +502,9 @@ function DashboardLayout() {
           <Outlet />
         </main>
       </SidebarInset>
-      <CommandPalette userRole={userRole as 'admin' | 'staff' | 'student'} />
+      <CommandPalette
+        userRole={userRole as 'admin' | 'staff' | 'student' | 'auditor'}
+      />
     </SidebarProvider>
   )
 }

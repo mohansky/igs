@@ -12,10 +12,14 @@ import {
 } from '#/db/schema'
 import { eq } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
+import { z } from 'zod'
+
+const roleSchema = z.enum(['admin', 'staff', 'student', 'auditor'])
 
 export const listAllUsers = createServerFn({ method: 'GET' }).handler(
   async () => {
-    await requireRole(['admin'])
+    // User management is excluded from the view-only auditor role.
+    await requireRole(['admin'], { allowAuditor: false })
     const users = await db
       .select({
         id: user.id,
@@ -67,8 +71,12 @@ export const listAllUsers = createServerFn({ method: 'GET' }).handler(
 
 export const createUserByAdmin = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { name: string; email: string; password: string; role: string }) =>
-      data,
+    z.object({
+      name: z.string().trim().min(1).max(200),
+      email: z.email().max(320),
+      password: z.string().min(8).max(200),
+      role: roleSchema,
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -128,7 +136,7 @@ export const listParentUsers = createServerFn({ method: 'GET' }).handler(
 )
 
 export const setUserRole = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string; role: string }) => data)
+  .inputValidator(z.object({ userId: z.string().min(1), role: roleSchema }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     await db

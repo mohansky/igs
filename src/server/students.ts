@@ -1,10 +1,13 @@
 import { createServerFn } from '@tanstack/react-start'
 import { eq, and, inArray } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
+import { z } from 'zod'
 import { db } from '#/db'
 import { studentProfiles, studentParents, user, classes } from '#/db/schema'
 import { requireRole } from './auth-utils'
 import { getSession } from './auth'
+
+const optStr = z.string().max(2000).nullish()
 
 // ── List all students (admin/staff) ─────────────────────────
 
@@ -143,6 +146,22 @@ export const deleteStudent = createServerFn({ method: 'POST' })
 export const getStudentProfile = createServerFn({ method: 'GET' })
   .inputValidator((data: { userId?: string; studentId?: number }) => data)
   .handler(async ({ data }) => {
+    const session = await getSession()
+    if (!session) throw new Error('Unauthorized')
+    const userRole = (session.user as { role?: string }).role ?? 'student'
+    const isStaffOrAdmin =
+      userRole === 'admin' || userRole === 'staff' || userRole === 'auditor'
+
+    // Non-staff may only read their own profile or a linked child's.
+    const assertCanRead = async (
+      profile: typeof studentProfiles.$inferSelect,
+    ) => {
+      if (isStaffOrAdmin) return
+      if (profile.userId === session.user.id) return
+      if (await isParentOfStudent(session.user.id, profile.id)) return
+      throw new Error('Forbidden')
+    }
+
     const admittedClass = alias(classes, 'admitted_class')
     const currentClass = alias(classes, 'current_class')
 
@@ -178,6 +197,7 @@ export const getStudentProfile = createServerFn({ method: 'GET' })
         .where(eq(studentProfiles.id, data.studentId))
         .limit(1)
       if (!rows[0]) return null
+      await assertCanRead(rows[0].profile)
       return parseProfile(rows[0])
     }
     if (data.userId) {
@@ -185,6 +205,7 @@ export const getStudentProfile = createServerFn({ method: 'GET' })
         .where(eq(studentProfiles.userId, data.userId))
         .limit(1)
       if (!rows[0]) return null
+      await assertCanRead(rows[0].profile)
       return parseProfile(rows[0])
     }
     return null
@@ -194,36 +215,36 @@ export const getStudentProfile = createServerFn({ method: 'GET' })
 
 export const createStudentProfile = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      studentName: string
-      userId?: string | null
-      classId?: number | null
-      currentClassId?: number | null
-      dateOfBirth?: string | null
-      gender?: string | null
-      bloodGroup?: string | null
-      admissionDate?: string | null
-      admissionNumber?: string | null
-      photoUrl?: string | null
-      parentName?: string | null
-      parentRelation?: string | null
-      parentPhone?: string | null
-      parentEmail?: string | null
-      parentOccupation?: string | null
-      emergencyContact?: string | null
-      emergencyPhone?: string | null
-      address?: string | null
-      languagesSpoken?: string[] | null
-      religion?: string | null
-      caste?: string | null
-      aadhaarNumber?: string | null
-      previousSchool?: string | null
-      transferCertificateNumber?: string | null
-      transportMode?: string | null
-      transportRoute?: string | null
-      medicalNotes?: string | null
-      allergies?: string | null
-    }) => data,
+    z.object({
+      studentName: z.string().trim().min(1).max(200),
+      userId: z.string().nullish(),
+      classId: z.number().int().positive().nullish(),
+      currentClassId: z.number().int().positive().nullish(),
+      dateOfBirth: optStr,
+      gender: optStr,
+      bloodGroup: optStr,
+      admissionDate: optStr,
+      admissionNumber: optStr,
+      photoUrl: optStr,
+      parentName: optStr,
+      parentRelation: optStr,
+      parentPhone: optStr,
+      parentEmail: optStr,
+      parentOccupation: optStr,
+      emergencyContact: optStr,
+      emergencyPhone: optStr,
+      address: optStr,
+      languagesSpoken: z.array(z.string()).nullish(),
+      religion: optStr,
+      caste: optStr,
+      aadhaarNumber: optStr,
+      previousSchool: optStr,
+      transferCertificateNumber: optStr,
+      transportMode: optStr,
+      transportRoute: optStr,
+      medicalNotes: optStr,
+      allergies: optStr,
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
@@ -245,9 +266,64 @@ export const createStudentProfile = createServerFn({ method: 'POST' })
 
 // ── Update student profile ──────────────────────────────────
 
+// Never accept these from the client on an update — they govern identity,
+// enrollment linkage, and audit timestamps.
+const IMMUTABLE_PROFILE_FIELDS = new Set([
+  'id',
+  'userId',
+  'createdAt',
+  'updatedAt',
+])
+
+// Fields a student/parent may edit on their own/child's profile. Enrollment and
+// status fields (classId, currentClassId, admissionNumber, admissionDate,
+// isActive) are intentionally excluded — only admin/staff change those.
+const STUDENT_SELF_EDITABLE_FIELDS = new Set([
+  'studentName',
+  'dateOfBirth',
+  'gender',
+  'bloodGroup',
+  'photoUrl',
+  'parentName',
+  'parentRelation',
+  'parentPhone',
+  'parentEmail',
+  'parentOccupation',
+  'parent2Name',
+  'parent2Relation',
+  'parent2Phone',
+  'parent2Email',
+  'parent2Occupation',
+  'parent3Name',
+  'parent3Relation',
+  'parent3Phone',
+  'parent3Email',
+  'parent3Occupation',
+  'emergencyContact',
+  'emergencyPhone',
+  'address',
+  'languagesSpoken',
+  'religion',
+  'caste',
+  'aadhaarNumber',
+  'previousSchool',
+  'transferCertificateNumber',
+  'transportMode',
+  'transportRoute',
+  'transportPickupPerson',
+  'transportPickupPhone',
+  'transportDropPerson',
+  'transportDropPhone',
+  'medicalNotes',
+  'allergies',
+])
+
 export const updateStudentProfile = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { studentId: number; updates: Record<string, unknown> }) => data,
+    z.object({
+      studentId: z.number().int().positive(),
+      updates: z.record(z.string(), z.unknown()),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await getSession()
@@ -286,7 +362,18 @@ export const updateStudentProfile = createServerFn({ method: 'POST' })
       throw new Error('Forbidden')
     }
 
-    const updates = { ...data.updates }
+    const isPrivileged = userRole === 'admin' || userRole === 'staff'
+
+    // Whitelist the incoming fields: strip immutable keys for everyone, and
+    // restrict non-privileged users to the self-editable set. Prevents mass
+    // assignment of userId, enrollment, and isActive.
+    const updates: Record<string, unknown> = {}
+    for (const [key, value] of Object.entries(data.updates)) {
+      if (IMMUTABLE_PROFILE_FIELDS.has(key)) continue
+      if (!isPrivileged && !STUDENT_SELF_EDITABLE_FIELDS.has(key)) continue
+      updates[key] = value
+    }
+
     if (Array.isArray(updates.languagesSpoken)) {
       updates.languagesSpoken = JSON.stringify(updates.languagesSpoken)
     }
@@ -334,6 +421,7 @@ export const getChildrenByParent = createServerFn({ method: 'GET' }).handler(
 export const getStudentParents = createServerFn({ method: 'GET' })
   .inputValidator((data: { studentProfileId: number }) => data)
   .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
     const parents = await db
       .select({
         id: studentParents.id,

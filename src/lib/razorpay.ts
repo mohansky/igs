@@ -1,3 +1,11 @@
+// ⚠️ Razorpay Checkout loader is currently DISABLED.
+// Kept here (commented out) as a potential future addition — not active right now.
+// To re-enable: uncomment the block below and restore the "Pay Online" flow in
+// src/components/dashboard/FeeStudentView.tsx and src/server/razorpay.ts.
+
+export {}
+
+/*
 // Minimal types for the Razorpay Checkout v1 we use here.
 // Full reference: https://razorpay.com/docs/payments/payment-gateway/web-integration/standard/
 
@@ -70,3 +78,4 @@ export function loadRazorpayCheckout(): Promise<void> {
 
   return loadingPromise
 }
+*/
