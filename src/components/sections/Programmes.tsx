@@ -36,7 +36,8 @@ export function Programmes({
         <div className="programme-grid">
           {items.map((p) => (
             <article className="programme" key={p.title}>
-              <div className="programme-age">{p.age}</div>
+              {/* Age criteria hidden for now — restore to show it again. */}
+              {/* <div className="programme-age">{p.age}</div> */}
               <h3>{p.title}</h3>
               <p>{p.desc}</p>
               <Link to="/admissions" className="programme-link">
