@@ -18,6 +18,14 @@ const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
+// The handle drizzle hands to a `db.transaction()` callback. Money writes take
+// one of these so the ledger row and the cached `fees` row commit together.
+type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
+
+// Amounts are stored as SQLite REAL, so compare with a sub-paisa tolerance
+// rather than exact equality.
+const AMOUNT_EPSILON = 0.005
+
 const todayDateString = () => new Date().toISOString().slice(0, 10)
 
 // Student profile ids (as strings, matching fees.studentUserId) that this
@@ -49,20 +57,20 @@ async function assertFeePaymentsUnlocked(feeIds: Array<number>) {
 
 // Recompute the fees-row cache from the payment ledger: paidAmount, status,
 // and "latest payment" metadata are all derived from fee_payments rows.
-async function syncFeeFromPayments(feeId: number) {
-  const [existing] = await db
+async function syncFeeFromPayments(feeId: number, tx: Tx) {
+  const [existing] = await tx
     .select({ amount: fees.amount })
     .from(fees)
     .where(eq(fees.id, feeId))
     .limit(1)
   if (!existing) throw new Error('Fee record not found')
 
-  const [{ total }] = await db
+  const [{ total }] = await tx
     .select({ total: sql<number>`COALESCE(SUM(${feePayments.amount}), 0)` })
     .from(feePayments)
     .where(eq(feePayments.feeId, feeId))
 
-  const [latest] = await db
+  const [latest] = await tx
     .select()
     .from(feePayments)
     .where(eq(feePayments.feeId, feeId))
@@ -77,7 +85,7 @@ async function syncFeeFromPayments(feeId: number) {
         ? 'paid'
         : 'partial'
 
-  const [updated] = await db
+  const [updated] = await tx
     .update(fees)
     .set({
       paidAmount,
@@ -138,22 +146,43 @@ export const recordPayment = createServerFn({ method: 'POST' })
     const paidDate = data.paidDate || todayDateString()
     await assertDatesUnlocked(paidDate)
 
-    const [payment] = await db
-      .insert(feePayments)
-      .values({
-        feeId: data.feeId,
-        amount: data.paidAmount,
-        paidDate,
-        paymentMethod: data.paymentMethod,
-        receiptNumber: data.receiptNumber ?? null,
-        notes: data.notes ?? null,
-        receivedByUserId: session.user.id,
-      })
-      .returning()
+    // Ledger insert + cached-row sync must commit together, or `fees` drifts
+    // from `fee_payments`.
+    return db.transaction(async (tx) => {
+      const [fee] = await tx
+        .select({ amount: fees.amount, paidAmount: fees.paidAmount })
+        .from(fees)
+        .where(eq(fees.id, data.feeId))
+        .limit(1)
+      if (!fee) throw new Error('Fee record not found')
 
-    const updatedFee = await syncFeeFromPayments(data.feeId)
+      const remaining = fee.amount - (fee.paidAmount ?? 0)
+      if (remaining <= AMOUNT_EPSILON) {
+        throw new Error('This fee is already fully paid.')
+      }
+      if (data.paidAmount > remaining + AMOUNT_EPSILON) {
+        throw new Error(
+          `Payment of ${data.paidAmount} exceeds the outstanding balance of ${remaining}.`,
+        )
+      }
 
-    return { ...updatedFee, paymentId: payment.id }
+      const [payment] = await tx
+        .insert(feePayments)
+        .values({
+          feeId: data.feeId,
+          amount: data.paidAmount,
+          paidDate,
+          paymentMethod: data.paymentMethod,
+          receiptNumber: data.receiptNumber ?? null,
+          notes: data.notes ?? null,
+          receivedByUserId: session.user.id,
+        })
+        .returning()
+
+      const updatedFee = await syncFeeFromPayments(data.feeId, tx)
+
+      return { ...updatedFee, paymentId: payment.id }
+    })
   })
 
 export const getStudentFees = createServerFn({ method: 'GET' })
@@ -330,22 +359,24 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
       .from(fees)
       .where(inArray(fees.id, data.feeIds))
 
-    let updated = 0
-    for (const row of rows) {
-      const remaining = row.amount - (row.paidAmount ?? 0)
-      if (remaining > 0) {
-        await db.insert(feePayments).values({
-          feeId: row.id,
-          amount: remaining,
-          paidDate: data.paidDate,
-          paymentMethod: data.paymentMethod,
-          receivedByUserId: session.user.id,
-        })
+    return db.transaction(async (tx) => {
+      let updated = 0
+      for (const row of rows) {
+        const remaining = row.amount - (row.paidAmount ?? 0)
+        if (remaining > AMOUNT_EPSILON) {
+          await tx.insert(feePayments).values({
+            feeId: row.id,
+            amount: remaining,
+            paidDate: data.paidDate,
+            paymentMethod: data.paymentMethod,
+            receivedByUserId: session.user.id,
+          })
+        }
+        await syncFeeFromPayments(row.id, tx)
+        updated++
       }
-      await syncFeeFromPayments(row.id)
-      updated++
-    }
-    return { updated }
+      return { updated }
+    })
   })
 
 export const bulkDeleteFees = createServerFn({ method: 'POST' })
@@ -445,9 +476,10 @@ export const deleteFeePayment = createServerFn({ method: 'POST' })
     if (!existing) throw new Error('Payment not found')
     await assertDatesUnlocked(existing.paidDate)
 
-    await db.delete(feePayments).where(eq(feePayments.id, data.paymentId))
-
-    await syncFeeFromPayments(existing.feeId)
+    await db.transaction(async (tx) => {
+      await tx.delete(feePayments).where(eq(feePayments.id, data.paymentId))
+      await syncFeeFromPayments(existing.feeId, tx)
+    })
 
     return { success: true }
   })

@@ -414,30 +414,38 @@ export const transactions = sqliteTable('transactions', {
   ),
 })
 
-export const staffSalaries = sqliteTable('staff_salaries', {
-  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
-  userId: text('user_id')
-    .notNull()
-    .references(() => user.id),
-  staffName: text('staff_name').notNull(),
-  designation: text(),
-  month: text().notNull(), // YYYY-MM
-  basicPay: real('basic_pay').notNull(),
-  allowances: real().default(0),
-  deductions: real().default(0),
-  netPay: real('net_pay').notNull(),
-  paidDate: text('paid_date'),
-  paymentMethod: text('payment_method'),
-  status: text().notNull().default('pending'), // pending | paid
-  notes: text(),
-  createdByUserId: text('created_by_user_id').references(() => user.id),
-  createdAt: integer('created_at', { mode: 'timestamp' }).default(
-    sql`(unixepoch())`,
-  ),
-  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
-    sql`(unixepoch())`,
-  ),
-})
+export const staffSalaries = sqliteTable(
+  'staff_salaries',
+  {
+    id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+    userId: text('user_id')
+      .notNull()
+      .references(() => user.id),
+    staffName: text('staff_name').notNull(),
+    designation: text(),
+    month: text().notNull(), // YYYY-MM
+    basicPay: real('basic_pay').notNull(),
+    allowances: real().default(0),
+    deductions: real().default(0),
+    netPay: real('net_pay').notNull(),
+    paidDate: text('paid_date'),
+    paymentMethod: text('payment_method'),
+    status: text().notNull().default('pending'), // pending | paid
+    notes: text(),
+    createdByUserId: text('created_by_user_id').references(() => user.id),
+    createdAt: integer('created_at', { mode: 'timestamp' }).default(
+      sql`(unixepoch())`,
+    ),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+      sql`(unixepoch())`,
+    ),
+  },
+  // One salary row per staff member per month — makes payroll generation
+  // idempotent and prevents duplicate (double) payments.
+  (table) => [
+    uniqueIndex('staff_salaries_user_month_idx').on(table.userId, table.month),
+  ],
+)
 
 export const fees = sqliteTable('fees', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),

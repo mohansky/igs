@@ -32,9 +32,13 @@ export const auth = betterAuth({
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'https://indogermanschool.com',
+    'https://www.indogermanschool.com',
   ],
   emailAndPassword: {
     enabled: true,
+    // Accounts are created by an admin (see createUserByAdmin). Leaving this
+    // off would expose a live public /api/auth/sign-up/email endpoint.
+    disableSignUp: true,
   },
   plugins: [
     tanstackStartCookies(),

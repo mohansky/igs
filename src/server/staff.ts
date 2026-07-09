@@ -305,25 +305,9 @@ export const generatePayroll = createServerFn({ method: 'POST' })
       .from(staffProfiles)
       .where(eq(staffProfiles.isActive, true))
 
-    let created = 0
-    let skipped = 0
+    if (profiles.length === 0) return { created: 0, skipped: 0 }
 
-    for (const p of profiles) {
-      const already = await db
-        .select({ id: staffSalaries.id })
-        .from(staffSalaries)
-        .where(
-          and(
-            eq(staffSalaries.userId, p.userId),
-            eq(staffSalaries.month, data.month),
-          ),
-        )
-        .limit(1)
-      if (already.length > 0) {
-        skipped++
-        continue
-      }
-
+    const rows = profiles.map((p) => {
       const basic = p.basicPay ?? 0
       const allowances =
         (p.hra ?? 0) +
@@ -336,9 +320,8 @@ export const generatePayroll = createServerFn({ method: 'POST' })
         (p.professionalTax ?? 0) +
         (p.tdsDeduction ?? 0) +
         (p.otherDeductions ?? 0)
-      const netPay = basic + allowances - deductions
 
-      await db.insert(staffSalaries).values({
+      return {
         userId: p.userId,
         staffName: p.staffName,
         designation: p.designation,
@@ -346,15 +329,25 @@ export const generatePayroll = createServerFn({ method: 'POST' })
         basicPay: basic,
         allowances,
         deductions,
-        netPay,
+        netPay: basic + allowances - deductions,
         status: 'pending',
         paymentMethod: p.paymentMethod,
         createdByUserId: adminSession.user.id,
-      })
-      created++
-    }
+      }
+    })
 
-    return { created, skipped }
+    // A single conflict-safe insert. The unique index on (user_id, month) makes
+    // this idempotent, so a double-click can't create duplicate salary rows —
+    // unlike the previous check-then-insert, which raced.
+    const inserted = await db
+      .insert(staffSalaries)
+      .values(rows)
+      .onConflictDoNothing({
+        target: [staffSalaries.userId, staffSalaries.month],
+      })
+      .returning({ id: staffSalaries.id })
+
+    return { created: inserted.length, skipped: rows.length - inserted.length }
   })
 
 // ── Salary slip data ────────────────────────────────────────
