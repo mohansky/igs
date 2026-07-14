@@ -31,6 +31,7 @@ import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
 import { listClasses } from '#/server/classes'
 import { getAttendanceByDate, markAttendance } from '#/server/attendance'
+import type { AttendanceStatus } from '#/server/attendance'
 import LoadIcon from '../icons/LoadIcon'
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -43,7 +44,7 @@ const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
 interface StudentRecord {
   studentId: string
   name: string
-  status: string
+  status: AttendanceStatus
 }
 
 export function AttendanceMarker() {
@@ -89,7 +90,8 @@ export function AttendanceMarker() {
         return {
           studentId: profileId,
           name: sp.studentName,
-          status: record?.status ?? 'present',
+          // Rows predate the status enum, so narrow defensively.
+          status: (record?.status as AttendanceStatus | undefined) ?? 'present',
         }
       })
 
@@ -136,13 +138,13 @@ export function AttendanceMarker() {
     [students],
   )
 
-  const setStatus = (studentId: string, status: string) => {
+  const setStatus = (studentId: string, status: AttendanceStatus) => {
     setStudents((prev) =>
       prev.map((s) => (s.studentId === studentId ? { ...s, status } : s)),
     )
   }
 
-  const markAllAs = (status: string) => {
+  const markAllAs = (status: AttendanceStatus) => {
     const visibleIds = new Set(filteredStudents.map((s) => s.studentId))
     setStudents((prev) =>
       prev.map((s) => (visibleIds.has(s.studentId) ? { ...s, status } : s)),

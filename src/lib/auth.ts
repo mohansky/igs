@@ -39,6 +39,26 @@ export const auth = betterAuth({
     // Accounts are created by an admin (see createUserByAdmin). Leaving this
     // off would expose a live public /api/auth/sign-up/email endpoint.
     disableSignUp: true,
+    minPasswordLength: 10,
+  },
+  // Throttle sign-in attempts. Without this, /sign-in/email is an unthrottled
+  // oracle for credential stuffing / brute force.
+  rateLimit: {
+    enabled: true,
+    // Workers isolates don't share memory, so the default in-memory storage
+    // would only throttle per-isolate. Backed by the `rate_limit` table.
+    storage: 'database',
+    window: 60,
+    max: 30,
+    customRules: {
+      '/sign-in/email': { window: 60, max: 5 },
+      '/forget-password': { window: 60, max: 3 },
+      '/reset-password': { window: 60, max: 5 },
+    },
+  },
+  session: {
+    expiresIn: 60 * 60 * 24 * 7, // 7 days
+    updateAge: 60 * 60 * 24, // refresh the expiry at most once a day
   },
   plugins: [
     tanstackStartCookies(),

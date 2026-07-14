@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '#/db'
 import {
   attendance,
@@ -10,19 +11,40 @@ import {
 import { getSession } from './auth'
 import { requireRole } from './auth-utils'
 
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+
+// Previously unconstrained free text. Matches what AttendanceMarker sends and
+// what already exists in the table (present / absent, plus late from the UI).
+const attendanceStatus = z.enum(['present', 'absent', 'late'])
+
+export type AttendanceStatus = z.infer<typeof attendanceStatus>
+
 export const markAttendance = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      date: string
-      records: { studentUserId: string; status: string; notes?: string }[]
-    }) => data,
+    z.object({
+      date: dateString,
+      records: z
+        .array(
+          z.object({
+            studentUserId: z.string().min(1),
+            status: attendanceStatus,
+            notes: z.string().max(1000).optional(),
+          }),
+        )
+        .min(1)
+        .max(500),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin', 'staff'])
     const markedByUserId = session.user.id
 
-    for (const record of data.records) {
-      await db
+    // One round-trip instead of one INSERT per student — a full class was
+    // previously N sequential queries against Turso.
+    const statements = data.records.map((record) =>
+      db
         .insert(attendance)
         .values({
           studentUserId: record.studentUserId,
@@ -39,8 +61,10 @@ export const markAttendance = createServerFn({ method: 'POST' })
             markedByUserId,
             updatedAt: new Date(),
           },
-        })
-    }
+        }),
+    )
+
+    await db.batch(statements as [(typeof statements)[number]])
 
     return { success: true }
   })

@@ -180,6 +180,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     ],
   }),
   shellComponent: RootDocument,
+  errorComponent: RootErrorComponent,
   notFoundComponent: () => (
     <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
       <h1 className="text-4xl font-bold">404</h1>
@@ -190,6 +191,44 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
     </div>
   ),
 })
+
+// Authorization failures are expected and safe to surface. Anything else may
+// carry internals (DB driver text, SQL, stack frames), so show a generic
+// message and keep the detail server-side.
+function RootErrorComponent({ error }: { error: Error }) {
+  const message = error.message ?? ''
+  const isAuthError =
+    message === 'Unauthorized' ||
+    message === 'Forbidden' ||
+    message.startsWith('Books are closed through')
+
+  if (!import.meta.env.DEV && !isAuthError) {
+    console.error('Unhandled route error:', error)
+  }
+
+  return (
+    <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4 px-6 text-center">
+      <h1 className="text-3xl font-bold">
+        {isAuthError ? 'Access denied' : 'Something went wrong'}
+      </h1>
+      <p className="text-lg text-gray-600 dark:text-gray-400 max-w-prose">
+        {isAuthError
+          ? message === 'Unauthorized'
+            ? 'Please sign in to continue.'
+            : "You don't have permission to view this."
+          : 'An unexpected error occurred. Please try again, or contact an administrator if it persists.'}
+      </p>
+      {import.meta.env.DEV && !isAuthError && (
+        <pre className="max-w-full overflow-x-auto rounded-md bg-muted p-4 text-left text-xs">
+          {error.stack ?? message}
+        </pre>
+      )}
+      <a href="/" className="text-blue-500 hover:underline">
+        Go home
+      </a>
+    </div>
+  )
+}
 
 function PreferencesProvider({ children }: { children: React.ReactNode }) {
   const [, bump] = useReducer((v: number) => v + 1, 0)

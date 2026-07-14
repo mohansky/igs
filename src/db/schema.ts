@@ -55,6 +55,16 @@ export const account = sqliteTable('account', {
   updatedAt: integer({ mode: 'timestamp' }).notNull(),
 })
 
+// Backs better-auth's rate limiter. Workers isolates don't share memory, so the
+// default in-memory storage would only throttle per-isolate — this table makes
+// the limit global. Model/field names are fixed by better-auth.
+export const rateLimit = sqliteTable('rate_limit', {
+  id: text().primaryKey(),
+  key: text(),
+  count: integer(),
+  lastRequest: integer('last_request'),
+})
+
 export const verification = sqliteTable('verification', {
   id: text().primaryKey(),
   identifier: text().notNull(),

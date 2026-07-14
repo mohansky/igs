@@ -74,7 +74,9 @@ export const createUserByAdmin = createServerFn({ method: 'POST' })
     z.object({
       name: z.string().trim().min(1).max(200),
       email: z.email().max(320),
-      password: z.string().min(8).max(200),
+      // Keep in sync with emailAndPassword.minPasswordLength in #/lib/auth.
+      // createUserByAdmin hashes directly, so better-auth's own check is bypassed.
+      password: z.string().min(10).max(200),
       role: roleSchema,
     }),
   )

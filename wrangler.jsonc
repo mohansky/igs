@@ -3,7 +3,8 @@
   "name": "igs",
   "compatibility_date": "2026-03-25",
   "compatibility_flags": ["nodejs_compat"],
-  "main": "@tanstack/react-start/server-entry",
+  // Custom entry (wraps the default TanStack Start handler to add security headers)
+  "main": "src/server.ts",
   "workers_dev": false,
   "preview_urls": false,
   "upload_source_maps": true,

@@ -11,6 +11,11 @@ import {
   user,
 } from '#/db/schema'
 import { z } from 'zod'
+import {
+  AMOUNT_EPSILON,
+  deriveFeeStatus,
+  validatePayment,
+} from '#/lib/fee-math'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
 
@@ -21,10 +26,6 @@ const dateString = z
 // The handle drizzle hands to a `db.transaction()` callback. Money writes take
 // one of these so the ledger row and the cached `fees` row commit together.
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-// Amounts are stored as SQLite REAL, so compare with a sub-paisa tolerance
-// rather than exact equality.
-const AMOUNT_EPSILON = 0.005
 
 const todayDateString = () => new Date().toISOString().slice(0, 10)
 
@@ -78,12 +79,7 @@ async function syncFeeFromPayments(feeId: number, tx: Tx) {
     .limit(1)
 
   const paidAmount = Number(total) || 0
-  const status =
-    paidAmount <= 0
-      ? 'pending'
-      : paidAmount >= existing.amount
-        ? 'paid'
-        : 'partial'
+  const status = deriveFeeStatus(paidAmount, existing.amount)
 
   const [updated] = await tx
     .update(fees)
@@ -156,15 +152,12 @@ export const recordPayment = createServerFn({ method: 'POST' })
         .limit(1)
       if (!fee) throw new Error('Fee record not found')
 
-      const remaining = fee.amount - (fee.paidAmount ?? 0)
-      if (remaining <= AMOUNT_EPSILON) {
-        throw new Error('This fee is already fully paid.')
-      }
-      if (data.paidAmount > remaining + AMOUNT_EPSILON) {
-        throw new Error(
-          `Payment of ${data.paidAmount} exceeds the outstanding balance of ${remaining}.`,
-        )
-      }
+      const invalid = validatePayment(
+        data.paidAmount,
+        fee.amount,
+        fee.paidAmount,
+      )
+      if (invalid) throw new Error(invalid)
 
       const [payment] = await tx
         .insert(feePayments)
