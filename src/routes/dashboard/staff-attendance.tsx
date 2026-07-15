@@ -26,6 +26,7 @@ import {
   listStaffAttendance,
 } from '#/server/staff-attendance'
 import LoadIcon from '#/components/icons/LoadIcon'
+import type { StaffAttendanceStatus } from '#/server/staff-attendance'
 
 export const Route = createFileRoute('/dashboard/staff-attendance')({
   beforeLoad: ({ context }) => {
@@ -43,7 +44,7 @@ export const Route = createFileRoute('/dashboard/staff-attendance')({
 interface StaffRecord {
   userId: string
   name: string
-  status: string
+  status: StaffAttendanceStatus
   checkIn: string
   checkOut: string
   notes: string
@@ -81,7 +82,10 @@ function StaffAttendanceMarker() {
         return {
           userId: s.id,
           name: s.name,
-          status: existing?.status ?? 'present',
+          // Rows predate the status enum, so narrow defensively.
+          status:
+            (existing?.status as StaffAttendanceStatus | undefined) ??
+            'present',
           checkIn: existing?.checkIn ?? s.defaultCheckIn ?? '',
           checkOut: existing?.checkOut ?? s.defaultCheckOut ?? '',
           notes: existing?.notes ?? '',
@@ -108,7 +112,7 @@ function StaffAttendanceMarker() {
     [staff],
   )
 
-  const setStatus = (userId: string, status: string) => {
+  const setStatus = (userId: string, status: StaffAttendanceStatus) => {
     setStaff((prev) =>
       prev.map((s) => (s.userId === userId ? { ...s, status } : s)),
     )

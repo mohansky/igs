@@ -133,8 +133,10 @@ export const getContactSubmissions = createServerFn({ method: 'GET' }).handler(
 
 export const updateSubmissionStatus = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { id: number; status: 'new' | 'read' | 'replied' | 'archived' }) =>
-      data,
+    z.object({
+      id: z.number().int().positive(),
+      status: z.enum(['new', 'read', 'replied', 'archived']),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])

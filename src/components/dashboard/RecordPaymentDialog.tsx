@@ -15,6 +15,7 @@ import { Label } from '#/components/ui/label'
 import { recordPayment } from '#/server/fees'
 import { uploadToR2 } from '#/server/upload'
 import { addFeeAttachment } from '#/server/feeAttachments'
+import type { AttachmentType } from '#/server/studentAttachments'
 
 interface FeeRecord {
   id: number
@@ -71,7 +72,7 @@ export function RecordPaymentDialog({
 
       if (hasReceipt) {
         let attachmentUrl: string
-        let attachmentType: string
+        let attachmentType: AttachmentType
 
         if (receiptMode === 'file' && receiptFile) {
           const base64 = await new Promise<string>((resolve, reject) => {

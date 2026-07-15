@@ -15,6 +15,7 @@ import {
   addStudentAttachment,
   deleteStudentAttachment,
 } from '#/server/studentAttachments'
+import type { AttachmentType } from '#/server/studentAttachments'
 import {
   listStaffAttachments,
   addStaffAttachment,
@@ -35,7 +36,7 @@ interface Attachment {
   title: string
   description: string | null
   attachmentUrl: string
-  attachmentType: string
+  attachmentType: AttachmentType
   createdAt: Date | null
 }
 
@@ -84,7 +85,7 @@ export function AttachmentsSection({ profileId, entityType }: Props) {
   const addMutation = useMutation({
     mutationFn: async () => {
       let attachmentUrl: string
-      let attachmentType: string
+      let attachmentType: AttachmentType
 
       if (mode === 'file') {
         if (!file) throw new Error('No file selected')

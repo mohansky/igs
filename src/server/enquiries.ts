@@ -2,14 +2,42 @@ import { createServerFn } from '@tanstack/react-start'
 import { db } from '#/db'
 import { enquiries } from '#/db/schema'
 import { desc, eq } from 'drizzle-orm'
+import { z } from 'zod'
 import { requireRole } from './auth-utils'
 
-export type EnquiryStatus =
-  | 'new'
-  | 'visit-scheduled'
-  | 'visited'
-  | 'applied'
-  | 'closed'
+export const enquiryStatus = z.enum([
+  'new',
+  'visit-scheduled',
+  'visited',
+  'applied',
+  'closed',
+])
+
+export type EnquiryStatus = z.infer<typeof enquiryStatus>
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+
+// `source` is free-form in practice (real rows contain e.g. "Google"), so it's
+// bounded rather than enumerated.
+const enquiryFields = {
+  childName: z.string().trim().min(1).max(200),
+  childDob: dateString.nullish(),
+  parentName: z.string().trim().min(1).max(200),
+  parentOccupation: z.string().max(200).nullish(),
+  parentPhone: z.string().trim().min(1).max(30),
+  parentEmail: z.email().max(320).nullish(),
+  address: z.string().max(1000).nullish(),
+  enquiryDate: dateString,
+  source: z.string().max(100).nullish(),
+  visitDate: dateString.nullish(),
+  visitTime: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/, 'Expected HH:mm')
+    .nullish(),
+  notes: z.string().max(2000).nullish(),
+}
 
 export type Enquiry = typeof enquiries.$inferSelect
 
@@ -25,22 +53,7 @@ export const listEnquiries = createServerFn({ method: 'GET' }).handler(
 // ── Create enquiry ────────────────────────────────────────────
 
 export const createEnquiry = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (data: {
-      childName: string
-      childDob?: string | null
-      parentName: string
-      parentOccupation?: string | null
-      parentPhone: string
-      parentEmail?: string | null
-      address?: string | null
-      enquiryDate: string
-      source?: string | null
-      visitDate?: string | null
-      visitTime?: string | null
-      notes?: string | null
-    }) => data,
-  )
+  .inputValidator(z.object(enquiryFields))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     const [row] = await db.insert(enquiries).values(data).returning()
@@ -51,25 +64,16 @@ export const createEnquiry = createServerFn({ method: 'POST' })
 
 export const updateEnquiry = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      id: number
-      updates: Partial<{
-        childName: string
-        childDob: string | null
-        parentName: string
-        parentOccupation: string | null
-        parentPhone: string
-        parentEmail: string | null
-        address: string | null
-        enquiryDate: string
-        source: string | null
-        visitDate: string | null
-        visitTime: string | null
-        status: EnquiryStatus
-        notes: string | null
-        assignedToUserId: string | null
-      }>
-    }) => data,
+    z.object({
+      id: z.number().int().positive(),
+      updates: z
+        .object({
+          ...enquiryFields,
+          status: enquiryStatus,
+          assignedToUserId: z.string().nullish(),
+        })
+        .partial(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
@@ -84,7 +88,7 @@ export const updateEnquiry = createServerFn({ method: 'POST' })
 // ── Delete enquiry ────────────────────────────────────────────
 
 export const deleteEnquiry = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     await db.delete(enquiries).where(eq(enquiries.id, data.id))

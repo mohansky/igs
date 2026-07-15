@@ -3,9 +3,12 @@ import { eq } from 'drizzle-orm'
 import { db } from '#/db'
 import { studentAttachments } from '#/db/schema'
 import { requireRole } from './auth-utils'
+import { z } from 'zod'
+
+export type AttachmentType = 'file' | 'link'
 
 export const listStudentAttachments = createServerFn({ method: 'GET' })
-  .inputValidator((data: { studentProfileId: number }) => data)
+  .inputValidator(z.object({ studentProfileId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     return db
@@ -17,13 +20,13 @@ export const listStudentAttachments = createServerFn({ method: 'GET' })
 
 export const addStudentAttachment = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      studentProfileId: number
-      title: string
-      description?: string | null
-      attachmentUrl: string
-      attachmentType: string
-    }) => data,
+    z.object({
+      studentProfileId: z.number().int().positive(),
+      title: z.string().trim().min(1).max(300),
+      description: z.string().max(2000).nullish(),
+      attachmentUrl: z.string().min(1).max(1000),
+      attachmentType: z.enum(['file', 'link']),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
@@ -32,7 +35,7 @@ export const addStudentAttachment = createServerFn({ method: 'POST' })
   })
 
 export const deleteStudentAttachment = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     await db

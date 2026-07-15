@@ -13,6 +13,7 @@ import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
 import { updateFeeRecord } from '#/server/fees'
 import { listStudents } from '#/server/students'
+import type { FeeStatusValue } from '#/server/fees'
 
 interface FeeRecord {
   id: number
@@ -48,7 +49,7 @@ export function EditFeeDialog({
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
-  const [status, setStatus] = useState('')
+  const [status, setStatus] = useState<FeeStatusValue | ''>('')
   const [selectedStudentUserId, setSelectedStudentUserId] = useState('')
   const [selectedStudentProfileId, setSelectedStudentProfileId] = useState<
     number | null
@@ -68,7 +69,7 @@ export function EditFeeDialog({
       setAmount(String(fee.amount))
       setDueDate(fee.dueDate)
       setDescription(fee.description ?? '')
-      setStatus(fee.status)
+      setStatus(fee.status as FeeStatusValue)
       setSelectedStudentUserId(fee.studentUserId)
       setSelectedStudentProfileId(fee.studentProfileId)
       setSelectedStudentName(fee.studentName ?? '')
@@ -107,7 +108,7 @@ export function EditFeeDialog({
           amount: Number(amount),
           dueDate,
           description: description || undefined,
-          status,
+          status: status === '' ? undefined : status,
         },
       }),
     onSuccess: () => {
@@ -245,7 +246,9 @@ export function EditFeeDialog({
               <select
                 id="edit-status"
                 value={status}
-                onChange={(e) => setStatus(e.target.value)}
+                onChange={(e) =>
+                  setStatus(e.target.value as FeeStatusValue | '')
+                }
                 className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-xs transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
               >
                 <option value="pending">Pending</option>

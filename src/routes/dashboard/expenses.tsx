@@ -63,6 +63,7 @@ import {
   SelectValue,
 } from '#/components/ui/select'
 import AddIcon from '#/components/icons/AddIcon'
+import type { TransactionType } from '#/server/transactions'
 
 const R2_BASE_URL = import.meta.env.VITE_R2_BASE_URL ?? ''
 
@@ -116,7 +117,7 @@ export const Route = createFileRoute('/dashboard/expenses')({
 
 interface Transaction {
   id: number
-  type: string
+  type: TransactionType
   category: string
   amount: number
   date: string
@@ -126,7 +127,7 @@ interface Transaction {
   vendor: string | null
   notes: string | null
   attachmentUrl: string | null
-  attachmentType: string | null
+  attachmentType: 'file' | 'link' | null
 }
 
 const expenseCategories = [
@@ -163,7 +164,7 @@ function ExpensesPage() {
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
   // Form state
-  const [type, setType] = useState<string>('expense')
+  const [type, setType] = useState<TransactionType>('expense')
   const [category, setCategory] = useState('')
   const [amount, setAmount] = useState('')
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -259,7 +260,7 @@ function ExpensesPage() {
   const saveMutation = useMutation({
     mutationFn: async () => {
       let finalAttachmentUrl: string | null = null
-      let finalAttachmentType: string | null = null
+      let finalAttachmentType: 'file' | 'link' | null = null
 
       if (attachmentMode === 'link' && attachmentLinkUrl.trim()) {
         finalAttachmentUrl = attachmentLinkUrl.trim()
@@ -564,7 +565,7 @@ function ExpensesPage() {
                 <Select
                   value={type}
                   onValueChange={(v) => {
-                    setType(v)
+                    setType(v as TransactionType)
                     setCategory('')
                   }}
                 >

@@ -70,7 +70,12 @@ export const markAttendance = createServerFn({ method: 'POST' })
   })
 
 export const getAttendanceByDate = createServerFn({ method: 'GET' })
-  .inputValidator((data: { date: string; classId?: number }) => data)
+  .inputValidator(
+    z.object({
+      date: dateString,
+      classId: z.number().int().positive().optional(),
+    }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
 
@@ -101,7 +106,11 @@ export const getAttendanceByDate = createServerFn({ method: 'GET' })
 
 export const listAttendance = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { classId?: number; startDate?: string; endDate?: string }) => data,
+    z.object({
+      classId: z.number().int().positive().optional(),
+      startDate: dateString.optional(),
+      endDate: dateString.optional(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])

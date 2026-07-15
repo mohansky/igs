@@ -149,7 +149,7 @@ export const setUserRole = createServerFn({ method: 'POST' })
   })
 
 export const removeUser = createServerFn({ method: 'POST' })
-  .inputValidator((data: { userId: string }) => data)
+  .inputValidator(z.object({ userId: z.string().min(1) }))
   .handler(async ({ data }) => {
     const adminSession = await requireRole(['admin'])
 

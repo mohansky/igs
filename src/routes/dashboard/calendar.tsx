@@ -57,12 +57,17 @@ import {
 import NextIcon from '#/components/icons/NextIcon'
 import PrevIcon from '#/components/icons/PrevIcon'
 import AddIcon from '#/components/icons/AddIcon'
+import type { CalendarEventType } from '#/server/calendar'
 
 export const Route = createFileRoute('/dashboard/calendar')({
   component: CalendarPage,
 })
 
-const EVENT_TYPES = [
+const EVENT_TYPES: {
+  value: CalendarEventType
+  label: string
+  color: string
+}[] = [
   { value: 'event', label: 'Event', color: 'bg-blue-500' },
   { value: 'holiday', label: 'Holiday', color: 'bg-green-500' },
   { value: 'exam', label: 'Exam', color: 'bg-orange-500' },
@@ -94,7 +99,7 @@ interface CalendarEvent {
   description: string | null
   startDate: string
   endDate: string | null
-  type: string
+  type: CalendarEventType
   color: string | null
 }
 
@@ -132,7 +137,7 @@ function CalendarPage() {
       description?: string
       startDate: string
       endDate?: string
-      type: string
+      type: CalendarEventType
     }) => createCalendarEvent({ data }),
     onSuccess: () => {
       invalidate()
@@ -149,7 +154,7 @@ function CalendarPage() {
       description?: string
       startDate?: string
       endDate?: string | null
-      type?: string
+      type?: CalendarEventType
     }) => updateCalendarEvent({ data }),
     onSuccess: () => {
       invalidate()
@@ -564,7 +569,7 @@ function EventFormDialog({
     description?: string
     startDate: string
     endDate?: string
-    type: string
+    type: CalendarEventType
   }) => void
   loading: boolean
 }) {
@@ -572,7 +577,7 @@ function EventFormDialog({
   const [description, setDescription] = useState('')
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
-  const [type, setType] = useState('event')
+  const [type, setType] = useState<CalendarEventType>('event')
 
   // Reset form when dialog opens
   const handleOpenChange = (open: boolean) => {
@@ -623,7 +628,10 @@ function EventFormDialog({
           </div>
           <div className="space-y-2">
             <Label>Type</Label>
-            <Select value={type} onValueChange={setType}>
+            <Select
+              value={type}
+              onValueChange={(v) => setType(v as CalendarEventType)}
+            >
               <SelectTrigger className="w-full">
                 <SelectValue />
               </SelectTrigger>

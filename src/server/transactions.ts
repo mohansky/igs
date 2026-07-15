@@ -1,13 +1,41 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, desc, gte, lte, inArray, sql, isNotNull } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '#/db'
 import { transactions, fees, staffSalaries } from '#/db/schema'
 import { fyEndDate, fyStartDate } from '#/lib/financial-year'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
 
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+
+// `type` drives the income/expense SUM(CASE …) in the year-end summary, so it
+// must be one of exactly two values. `category` is admin-curated (Supplies,
+// Maintenance, …) rather than a fixed set, so it's bounded but not enumerated.
+export const transactionType = z.enum(['income', 'expense'])
+export type TransactionType = z.infer<typeof transactionType>
+const optText = (max = 500) => z.string().max(max).nullish()
+
+const transactionFields = {
+  type: transactionType,
+  category: z.string().trim().min(1).max(100),
+  amount: z.number().positive(),
+  date: dateString,
+  description: optText(),
+  paymentMethod: optText(50),
+  receiptNumber: optText(100),
+  vendor: optText(200),
+  notes: optText(2000),
+  attachmentUrl: optText(1000),
+  attachmentType: z.enum(['file', 'link']).nullish(),
+}
+
 export const listTransactions = createServerFn({ method: 'GET' })
-  .inputValidator((data: { fyStartYear?: number } = {}) => data)
+  .inputValidator(
+    z.object({ fyStartYear: z.number().int().min(2000).max(2100).optional() }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const query = db.select().from(transactions)
@@ -24,21 +52,7 @@ export const listTransactions = createServerFn({ method: 'GET' })
   })
 
 export const createTransaction = createServerFn({ method: 'POST' })
-  .inputValidator(
-    (data: {
-      type: string
-      category: string
-      amount: number
-      date: string
-      description?: string | null
-      paymentMethod?: string | null
-      receiptNumber?: string | null
-      vendor?: string | null
-      notes?: string | null
-      attachmentUrl?: string | null
-      attachmentType?: string | null
-    }) => data,
-  )
+  .inputValidator(z.object(transactionFields))
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
     await assertDatesUnlocked(data.date)
@@ -51,22 +65,12 @@ export const createTransaction = createServerFn({ method: 'POST' })
 
 export const updateTransaction = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      id: number
-      updates: {
-        type?: string
-        category?: string
-        amount?: number
-        date?: string
-        description?: string | null
-        paymentMethod?: string | null
-        receiptNumber?: string | null
-        vendor?: string | null
-        notes?: string | null
-        attachmentUrl?: string | null
-        attachmentType?: string | null
-      }
-    }) => data,
+    z.object({
+      id: z.number().int().positive(),
+      // Whitelisted: only these columns can be written, and only with valid
+      // values — `updates` was previously an unvalidated free-form object.
+      updates: z.object(transactionFields).partial(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -86,7 +90,7 @@ export const updateTransaction = createServerFn({ method: 'POST' })
   })
 
 export const deleteTransaction = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const [existing] = await db
@@ -101,7 +105,9 @@ export const deleteTransaction = createServerFn({ method: 'POST' })
   })
 
 export const bulkDeleteTransactions = createServerFn({ method: 'POST' })
-  .inputValidator((data: { ids: number[] }) => data)
+  .inputValidator(
+    z.object({ ids: z.array(z.number().int().positive()).max(1000) }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     if (data.ids.length === 0) return { deleted: 0 }

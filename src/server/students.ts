@@ -1,9 +1,17 @@
 import { createServerFn } from '@tanstack/react-start'
-import { eq, and, inArray } from 'drizzle-orm'
+import { eq, and, inArray, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { z } from 'zod'
 import { db } from '#/db'
-import { studentProfiles, studentParents, user, classes } from '#/db/schema'
+import {
+  attendance,
+  feePayments,
+  fees,
+  studentProfiles,
+  studentParents,
+  user,
+  classes,
+} from '#/db/schema'
 import { requireRole } from './auth-utils'
 import { getSession } from './auth'
 
@@ -86,7 +94,9 @@ export const listStudents = createServerFn({ method: 'GET' }).handler(
 // ── Toggle student active status ────────────────────────────
 
 export const toggleStudentActive = createServerFn({ method: 'POST' })
-  .inputValidator((data: { studentId: number; isActive: boolean }) => data)
+  .inputValidator(
+    z.object({ studentId: z.number().int().positive(), isActive: z.boolean() }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     const result = await db
@@ -101,7 +111,10 @@ export const toggleStudentActive = createServerFn({ method: 'POST' })
 
 export const bulkSetCurrentClass = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { studentIds: number[]; currentClassId: number | null }) => data,
+    z.object({
+      studentIds: z.array(z.number().int().positive()).max(1000),
+      currentClassId: z.number().int().positive().nullable(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -117,7 +130,12 @@ export const bulkSetCurrentClass = createServerFn({ method: 'POST' })
 // ── Bulk activate / deactivate ──────────────────────────────
 
 export const bulkSetStudentActive = createServerFn({ method: 'POST' })
-  .inputValidator((data: { studentIds: number[]; isActive: boolean }) => data)
+  .inputValidator(
+    z.object({
+      studentIds: z.array(z.number().int().positive()).max(1000),
+      isActive: z.boolean(),
+    }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     if (data.studentIds.length === 0) return { updated: 0 }
@@ -132,19 +150,53 @@ export const bulkSetStudentActive = createServerFn({ method: 'POST' })
 // ── Delete student ──────────────────────────────────────────
 
 export const deleteStudent = createServerFn({ method: 'POST' })
-  .inputValidator((data: { studentId: number }) => data)
+  .inputValidator(z.object({ studentId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    await db
-      .delete(studentProfiles)
-      .where(eq(studentProfiles.id, data.studentId))
+
+    // `fees.studentUserId` and `attendance.studentUserId` hold the student
+    // PROFILE id as text, and neither has a DB-level foreign key — so deleting
+    // the profile alone silently orphans them (and orphaned fees keep counting
+    // toward the year-end summary). Cascade them here instead.
+    const profileId = String(data.studentId)
+
+    // Never destroy financial history. A student who has taken payments must be
+    // deactivated, not deleted — that also keeps closed books intact.
+    const [{ payments }] = await db
+      .select({ payments: sql<number>`COUNT(*)` })
+      .from(feePayments)
+      .innerJoin(fees, eq(fees.id, feePayments.feeId))
+      .where(eq(fees.studentUserId, profileId))
+
+    if (Number(payments) > 0) {
+      throw new Error(
+        'This student has recorded fee payments and cannot be deleted, because it would destroy financial history. Deactivate the student instead.',
+      )
+    }
+
+    await db.transaction(async (tx) => {
+      // Only unpaid fees remain at this point (guarded above); deleting a fee
+      // cascades to fee_payments via its FK.
+      await tx.delete(fees).where(eq(fees.studentUserId, profileId))
+      await tx.delete(attendance).where(eq(attendance.studentUserId, profileId))
+      // student_parents and student_attachments already cascade from this row.
+      await tx
+        .delete(studentProfiles)
+        .where(eq(studentProfiles.id, data.studentId))
+    })
+
     return { success: true }
   })
 
 // ── Get student profile ─────────────────────────────────────
 
 export const getStudentProfile = createServerFn({ method: 'GET' })
-  .inputValidator((data: { userId?: string; studentId?: number }) => data)
+  .inputValidator(
+    z.object({
+      userId: z.string().optional(),
+      studentId: z.number().int().positive().optional(),
+    }),
+  )
   .handler(async ({ data }) => {
     const session = await getSession()
     if (!session) throw new Error('Unauthorized')
@@ -419,7 +471,7 @@ export const getChildrenByParent = createServerFn({ method: 'GET' }).handler(
 // ── Get parents for a student ───────────────────────────────
 
 export const getStudentParents = createServerFn({ method: 'GET' })
-  .inputValidator((data: { studentProfileId: number }) => data)
+  .inputValidator(z.object({ studentProfileId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     const parents = await db
@@ -463,7 +515,7 @@ export const addParentToStudent = createServerFn({ method: 'POST' })
 // ── Remove parent from student ──────────────────────────────
 
 export const removeParentFromStudent = createServerFn({ method: 'POST' })
-  .inputValidator((data: { linkId: number }) => data)
+  .inputValidator(z.object({ linkId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     await db.delete(studentParents).where(eq(studentParents.id, data.linkId))

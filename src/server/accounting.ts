@@ -14,6 +14,11 @@ import {
   fyStartYearOf,
 } from '#/lib/financial-year'
 import { requireRole } from './auth-utils'
+import { z } from 'zod'
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
 const BOOKS_LOCKED_THROUGH_KEY = 'books_locked_through'
 
@@ -55,7 +60,7 @@ export const getAccountingSettings = createServerFn({ method: 'GET' }).handler(
 )
 
 export const setBooksLockedThrough = createServerFn({ method: 'POST' })
-  .inputValidator((data: { date: string | null }) => data)
+  .inputValidator(z.object({ date: dateString.nullable() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     if (data.date !== null && !/^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
@@ -123,7 +128,9 @@ export type YearEndSummary = {
 }
 
 export const getYearEndSummary = createServerFn({ method: 'GET' })
-  .inputValidator((data: { fyStartYear: number }) => data)
+  .inputValidator(
+    z.object({ fyStartYear: z.number().int().min(2000).max(2100) }),
+  )
   .handler(async ({ data }): Promise<YearEndSummary> => {
     await requireRole(['admin'])
     const start = fyStartDate(data.fyStartYear)

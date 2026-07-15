@@ -3,6 +3,17 @@ import { and, eq, gte, lte } from 'drizzle-orm'
 import { db } from '#/db'
 import { staffAttendance, staffProfiles, user } from '#/db/schema'
 import { requireRole } from './auth-utils'
+import { z } from 'zod'
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+const timeString = z.string().regex(/^\d{2}:\d{2}$/, 'Expected HH:mm')
+
+// Real rows contain present/absent; the schema also allows late/leave.
+const staffAttendanceStatus = z.enum(['present', 'absent', 'late', 'leave'])
+
+export type StaffAttendanceStatus = z.infer<typeof staffAttendanceStatus>
 
 export const listStaffMembers = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -17,16 +28,21 @@ export const listStaffMembers = createServerFn({ method: 'GET' }).handler(
 
 export const markStaffAttendance = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      date: string
-      records: {
-        userId: string
-        status: string
-        checkIn?: string
-        checkOut?: string
-        notes?: string
-      }[]
-    }) => data,
+    z.object({
+      date: dateString,
+      records: z
+        .array(
+          z.object({
+            userId: z.string().min(1),
+            status: staffAttendanceStatus,
+            checkIn: timeString.optional(),
+            checkOut: timeString.optional(),
+            notes: z.string().max(1000).optional(),
+          }),
+        )
+        .min(1)
+        .max(500),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
@@ -60,7 +76,11 @@ export const markStaffAttendance = createServerFn({ method: 'POST' })
   })
 
 export const getStaffAttendanceByDate = createServerFn({ method: 'GET' })
-  .inputValidator((data: { date: string }) => data)
+  .inputValidator(
+    z.object({
+      date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD'),
+    }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
 
@@ -86,7 +106,11 @@ export const getStaffAttendanceByDate = createServerFn({ method: 'GET' })
 
 export const listStaffAttendance = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { userId?: string; startDate?: string; endDate?: string }) => data,
+    z.object({
+      userId: z.string().optional(),
+      startDate: dateString.optional(),
+      endDate: dateString.optional(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])

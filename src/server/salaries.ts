@@ -1,9 +1,20 @@
 import { createServerFn } from '@tanstack/react-start'
 import { eq, desc, inArray } from 'drizzle-orm'
+import { z } from 'zod'
 import { db } from '#/db'
 import { staffSalaries, user } from '#/db/schema'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
+const monthString = z.string().regex(/^\d{4}-\d{2}$/, 'Expected YYYY-MM')
+
+// Money: must be a finite, non-negative number — not NaN/Infinity, and never
+// negative, which would silently corrupt payroll totals.
+const money = z.number().finite().nonnegative()
+const salaryStatus = z.enum(['pending', 'paid'])
 
 export const listSalaries = createServerFn({ method: 'GET' }).handler(
   async () => {
@@ -27,18 +38,18 @@ export const listStaffForSalary = createServerFn({ method: 'GET' }).handler(
 
 export const createSalary = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      userId: string
-      staffName: string
-      designation?: string
-      month: string
-      basicPay: number
-      allowances?: number
-      deductions?: number
-      netPay: number
-      paymentMethod?: string
-      notes?: string
-    }) => data,
+    z.object({
+      userId: z.string().min(1),
+      staffName: z.string().trim().min(1).max(200),
+      designation: z.string().max(200).optional(),
+      month: monthString,
+      basicPay: money,
+      allowances: money.optional(),
+      deductions: money.optional(),
+      netPay: money,
+      paymentMethod: z.string().max(50).optional(),
+      notes: z.string().max(2000).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
@@ -51,20 +62,20 @@ export const createSalary = createServerFn({ method: 'POST' })
 
 export const updateSalary = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      id: number
-      updates: {
-        basicPay?: number
-        allowances?: number
-        deductions?: number
-        netPay?: number
-        designation?: string
-        paymentMethod?: string
-        status?: string
-        paidDate?: string | null
-        notes?: string
-      }
-    }) => data,
+    z.object({
+      id: z.number().int().positive(),
+      updates: z.object({
+        basicPay: money.optional(),
+        allowances: money.optional(),
+        deductions: money.optional(),
+        netPay: money.optional(),
+        designation: z.string().max(200).optional(),
+        paymentMethod: z.string().max(50).optional(),
+        status: salaryStatus.optional(),
+        paidDate: dateString.nullish(),
+        notes: z.string().max(2000).optional(),
+      }),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -84,7 +95,7 @@ export const updateSalary = createServerFn({ method: 'POST' })
   })
 
 export const deleteSalary = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const [existing] = await db
@@ -100,7 +111,11 @@ export const deleteSalary = createServerFn({ method: 'POST' })
 
 export const markSalaryPaid = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { id: number; paymentMethod: string; paidDate: string }) => data,
+    z.object({
+      id: z.number().int().positive(),
+      paymentMethod: z.string().min(1).max(50),
+      paidDate: dateString,
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -126,8 +141,11 @@ export const markSalaryPaid = createServerFn({ method: 'POST' })
 
 export const bulkMarkSalariesPaid = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { salaryIds: number[]; paymentMethod: string; paidDate: string }) =>
-      data,
+    z.object({
+      salaryIds: z.array(z.number().int().positive()).max(1000),
+      paymentMethod: z.string().min(1).max(50),
+      paidDate: dateString,
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -151,7 +169,9 @@ export const bulkMarkSalariesPaid = createServerFn({ method: 'POST' })
   })
 
 export const bulkDeleteSalaries = createServerFn({ method: 'POST' })
-  .inputValidator((data: { salaryIds: number[] }) => data)
+  .inputValidator(
+    z.object({ salaryIds: z.array(z.number().int().positive()).max(1000) }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     if (data.salaryIds.length === 0) return { deleted: 0 }

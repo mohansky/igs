@@ -4,10 +4,31 @@ import { db } from '#/db'
 import { calendarEvents } from '#/db/schema'
 import { requireRole } from './auth-utils'
 import { getSession } from './auth'
+import { z } from 'zod'
+
+// Matches the values already in calendar_events (event/exam/holiday/meeting)
+// plus 'deadline' from the schema comment.
+export const calendarType = z.enum([
+  'event',
+  'holiday',
+  'exam',
+  'meeting',
+  'deadline',
+])
+
+export type CalendarEventType = z.infer<typeof calendarType>
+
+const dateString = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
 export const listCalendarEvents = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { startDate?: string; endDate?: string; type?: string }) => data,
+    z.object({
+      startDate: dateString.optional(),
+      endDate: dateString.optional(),
+      type: calendarType.optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await getSession()
@@ -50,14 +71,14 @@ export const listCalendarEvents = createServerFn({ method: 'GET' })
 
 export const createCalendarEvent = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      title: string
-      description?: string
-      startDate: string
-      endDate?: string
-      type: string
-      color?: string
-    }) => data,
+    z.object({
+      title: z.string().trim().min(1).max(300),
+      description: z.string().max(2000).optional(),
+      startDate: dateString,
+      endDate: dateString.optional(),
+      type: calendarType,
+      color: z.string().max(50).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin', 'staff'])
@@ -73,15 +94,15 @@ export const createCalendarEvent = createServerFn({ method: 'POST' })
 
 export const updateCalendarEvent = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      id: number
-      title?: string
-      description?: string
-      startDate?: string
-      endDate?: string | null
-      type?: string
-      color?: string | null
-    }) => data,
+    z.object({
+      id: z.number().int().positive(),
+      title: z.string().trim().min(1).max(300).optional(),
+      description: z.string().max(2000).optional(),
+      startDate: dateString.optional(),
+      endDate: dateString.nullish(),
+      type: calendarType.optional(),
+      color: z.string().max(50).nullish(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
@@ -95,7 +116,7 @@ export const updateCalendarEvent = createServerFn({ method: 'POST' })
   })
 
 export const deleteCalendarEvent = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     await db.delete(calendarEvents).where(eq(calendarEvents.id, data.id))

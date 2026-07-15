@@ -3,9 +3,10 @@ import { eq } from 'drizzle-orm'
 import { db } from '#/db'
 import { feeAttachments } from '#/db/schema'
 import { requireRole } from './auth-utils'
+import { z } from 'zod'
 
 export const listFeeAttachments = createServerFn({ method: 'GET' })
-  .inputValidator((data: { feeId: number }) => data)
+  .inputValidator(z.object({ feeId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     return db
@@ -17,14 +18,14 @@ export const listFeeAttachments = createServerFn({ method: 'GET' })
 
 export const addFeeAttachment = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      feeId: number
-      feePaymentId?: number | null
-      title: string
-      description?: string | null
-      attachmentUrl: string
-      attachmentType: string
-    }) => data,
+    z.object({
+      feeId: z.number().int().positive(),
+      feePaymentId: z.number().int().positive().nullish(),
+      title: z.string().trim().min(1).max(300),
+      description: z.string().max(2000).nullish(),
+      attachmentUrl: z.string().min(1).max(1000),
+      attachmentType: z.enum(['file', 'link']),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
@@ -33,7 +34,7 @@ export const addFeeAttachment = createServerFn({ method: 'POST' })
   })
 
 export const deleteFeeAttachment = createServerFn({ method: 'POST' })
-  .inputValidator((data: { id: number }) => data)
+  .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin', 'staff'])
     await db.delete(feeAttachments).where(eq(feeAttachments.id, data.id))

@@ -23,6 +23,9 @@ const dateString = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
+export const feeStatus = z.enum(['pending', 'partial', 'paid'])
+export type FeeStatusValue = z.infer<typeof feeStatus>
+
 // The handle drizzle hands to a `db.transaction()` callback. Money writes take
 // one of these so the ledger row and the cached `fees` row commit together.
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
@@ -180,7 +183,10 @@ export const recordPayment = createServerFn({ method: 'POST' })
 
 export const getStudentFees = createServerFn({ method: 'GET' })
   .inputValidator(
-    (data: { studentUserId?: string; studentProfileId?: number }) => data,
+    z.object({
+      studentUserId: z.string().optional(),
+      studentProfileId: z.number().int().positive().optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin', 'student'])
@@ -241,7 +247,7 @@ export const getStudentFees = createServerFn({ method: 'GET' })
   })
 
 export const deleteFeeRecord = createServerFn({ method: 'POST' })
-  .inputValidator((data: { feeId: number }) => data)
+  .inputValidator(z.object({ feeId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     await assertFeePaymentsUnlocked([data.feeId])
@@ -251,15 +257,15 @@ export const deleteFeeRecord = createServerFn({ method: 'POST' })
 
 export const updateFeeRecord = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      feeId: number
-      studentUserId?: string
-      amount?: number
-      dueDate?: string
-      description?: string
-      status?: string
-      notes?: string
-    }) => data,
+    z.object({
+      feeId: z.number().int().positive(),
+      studentUserId: z.string().optional(),
+      amount: z.number().positive().optional(),
+      dueDate: dateString.optional(),
+      description: z.string().max(500).optional(),
+      status: feeStatus.optional(),
+      notes: z.string().max(2000).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
@@ -287,7 +293,12 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
   })
 
 export const listFees = createServerFn({ method: 'GET' })
-  .inputValidator((data: { status?: string; studentUserId?: string }) => data)
+  .inputValidator(
+    z.object({
+      status: feeStatus.optional(),
+      studentUserId: z.string().optional(),
+    }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
 
@@ -339,8 +350,11 @@ export const listFees = createServerFn({ method: 'GET' })
 
 export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: { feeIds: number[]; paymentMethod: string; paidDate: string }) =>
-      data,
+    z.object({
+      feeIds: z.array(z.number().int().positive()).max(1000),
+      paymentMethod: z.string().min(1).max(50),
+      paidDate: dateString,
+    }),
   )
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
@@ -373,7 +387,9 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
   })
 
 export const bulkDeleteFees = createServerFn({ method: 'POST' })
-  .inputValidator((data: { feeIds: number[] }) => data)
+  .inputValidator(
+    z.object({ feeIds: z.array(z.number().int().positive()).max(1000) }),
+  )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     if (data.feeIds.length === 0) return { deleted: 0 }
@@ -387,12 +403,12 @@ export const bulkDeleteFees = createServerFn({ method: 'POST' })
 
 export const createBulkFees = createServerFn({ method: 'POST' })
   .inputValidator(
-    (data: {
-      classId: number
-      amount: number
-      dueDate: string
-      description?: string
-    }) => data,
+    z.object({
+      classId: z.number().int().positive(),
+      amount: z.number().positive(),
+      dueDate: dateString,
+      description: z.string().max(500).optional(),
+    }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
@@ -428,7 +444,7 @@ export const createBulkFees = createServerFn({ method: 'POST' })
   })
 
 export const listFeePayments = createServerFn({ method: 'GET' })
-  .inputValidator((data: { feeId: number }) => data)
+  .inputValidator(z.object({ feeId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     return db
@@ -453,7 +469,7 @@ export const listFeePayments = createServerFn({ method: 'GET' })
   })
 
 export const deleteFeePayment = createServerFn({ method: 'POST' })
-  .inputValidator((data: { paymentId: number }) => data)
+  .inputValidator(z.object({ paymentId: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
 
