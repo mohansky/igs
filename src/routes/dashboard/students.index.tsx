@@ -30,6 +30,7 @@ import {
   bulkSetStudentActive,
 } from '#/server/students'
 import { listClasses } from '#/server/classes'
+import { classLabel, classLabelWithYear } from '#/lib/class-label'
 import { downloadCsv } from '#/lib/csv'
 import EyeIcon from '#/components/icons/EyeIcon'
 import DownloadIcon from '#/components/icons/DownloadIcon'
@@ -75,9 +76,11 @@ interface StudentRow {
   classId: number | null
   className: string | null
   classSection: string | null
+  classAcademicYear: string | null
   currentClassId: number | null
   currentClassName: string | null
   currentClassSection: string | null
+  currentClassAcademicYear: string | null
   admissionNumber: string | null
   gender: string | null
   parentPhone: string | null
@@ -87,20 +90,40 @@ interface StudentRow {
   parents: ParentInfo[]
 }
 
-function classLabel(name: string | null, section: string | null) {
-  if (!name) return '-'
-  return section ? `${name} ${section}` : name
-}
-
-function effectiveClassLabel(row: {
+type ClassRowFields = {
   className: string | null
   classSection: string | null
+  classAcademicYear: string | null
   currentClassName: string | null
   currentClassSection: string | null
-}) {
-  const current = classLabel(row.currentClassName, row.currentClassSection)
-  if (current !== '-') return current
-  return classLabel(row.className, row.classSection)
+  currentClassAcademicYear: string | null
+}
+
+// A student's effective class is their current class, falling back to the
+// admitted class. Returns the name+section label and the academic year
+// separately so the year can render as a badge.
+function effectiveClass(row: ClassRowFields): {
+  label: string
+  year: string | null
+} {
+  if (classLabel(row.currentClassName, row.currentClassSection) !== '-') {
+    return {
+      label: classLabel(row.currentClassName, row.currentClassSection),
+      year: row.currentClassAcademicYear,
+    }
+  }
+  return {
+    label: classLabel(row.className, row.classSection),
+    year: row.classAcademicYear,
+  }
+}
+
+// Plain-text form (year folded in) for filtering, sorting and CSV export, where
+// a badge can't be rendered and the year must still disambiguate.
+function effectiveClassText(row: ClassRowFields): string {
+  const { label, year } = effectiveClass(row)
+  if (label === '-' || !year) return label
+  return `${label} · ${year}`
 }
 
 function initialsFrom(name: string) {
@@ -147,7 +170,7 @@ function StudentsListPage() {
     { label: 'Unassigned', value: '__none' },
     ...Array.from(
       new Set(
-        students.map((s) => effectiveClassLabel(s)).filter((l) => l !== '-'),
+        students.map((s) => effectiveClassText(s)).filter((l) => l !== '-'),
       ),
     )
       .sort()
@@ -245,13 +268,26 @@ function StudentsListPage() {
     {
       id: 'currentClass',
       header: 'Class',
-      accessorFn: (row) => effectiveClassLabel(row),
-      cell: ({ row }) => <span>{effectiveClassLabel(row.original)}</span>,
+      accessorFn: (row) => effectiveClassText(row),
+      cell: ({ row }) => {
+        const { label, year } = effectiveClass(row.original)
+        if (label === '-') return <span>-</span>
+        return (
+          <span className="flex items-center gap-1.5">
+            {label}
+            {year && (
+              <Badge variant="outline" className="font-mono text-[10px]">
+                {year}
+              </Badge>
+            )}
+          </span>
+        )
+      },
       filterFn: (row, _id, value) => {
         if (!value || value === 'all') return true
-        const label = effectiveClassLabel(row.original)
-        if (value === '__none') return label === '-'
-        return label === value
+        const text = effectiveClassText(row.original)
+        if (value === '__none') return text === '-'
+        return text === value
       },
     },
     {
@@ -385,10 +421,15 @@ function StudentsListPage() {
               downloadCsv(
                 students.map((s) => ({
                   ...s,
-                  class: classLabel(s.className, s.classSection),
-                  currentClass: classLabel(
+                  class: classLabelWithYear(
+                    s.className,
+                    s.classSection,
+                    s.classAcademicYear,
+                  ),
+                  currentClass: classLabelWithYear(
                     s.currentClassName,
                     s.currentClassSection,
+                    s.currentClassAcademicYear,
                   ),
                 })),
                 [
@@ -541,6 +582,11 @@ function StudentsListPage() {
                 {classesList.map((c) => (
                   <SelectItem key={c.id} value={String(c.id)}>
                     {c.section ? `${c.name} ${c.section}` : c.name}
+                    {c.academicYear ? (
+                      <span className="ml-1 font-mono text-xs text-muted-foreground">
+                        {c.academicYear}
+                      </span>
+                    ) : null}
                   </SelectItem>
                 ))}
               </SelectContent>

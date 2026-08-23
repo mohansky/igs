@@ -26,6 +26,7 @@ import {
 } from '#/server/students'
 import { getStudentFees } from '#/server/fees'
 import { listClasses } from '#/server/classes'
+import { classLabel } from '#/lib/class-label'
 import { listParentUsers } from '#/server/users'
 import { Image } from '#/components/ui/image'
 import { AttendanceHistory } from '#/components/dashboard/AttendanceHistory'
@@ -117,6 +118,12 @@ interface StudentProfile {
   medicalNotes: string | null
   allergies: string | null
   className?: string | null
+  classSection?: string | null
+  classAcademicYear?: string | null
+  currentClassId?: number | null
+  currentClassName?: string | null
+  currentClassSection?: string | null
+  currentClassAcademicYear?: string | null
   [key: string]: unknown
 }
 
@@ -182,6 +189,7 @@ function StudentDetailPage() {
           id: c.id,
           name: c.name,
           section: c.section as string | null,
+          academicYear: c.academicYear as string | null,
         })),
       ),
     enabled: editing,
@@ -385,7 +393,23 @@ function StudentDetailPage() {
               </CardHeader>
               <CardContent className="grid gap-3">
                 <InfoRow label="Name" value={profile.studentName} />
-                <InfoRow label="Admitted to" value={profile.className} />
+                <InfoRow label="Admitted to">
+                  <ClassWithYear
+                    name={profile.className}
+                    section={profile.classSection}
+                    year={profile.classAcademicYear}
+                  />
+                </InfoRow>
+                {profile.currentClassName &&
+                  profile.currentClassId !== profile.classId && (
+                    <InfoRow label="Current class">
+                      <ClassWithYear
+                        name={profile.currentClassName}
+                        section={profile.currentClassSection}
+                        year={profile.currentClassAcademicYear}
+                      />
+                    </InfoRow>
+                  )}
                 <InfoRow label="Admission #" value={profile.admissionNumber} />
                 <InfoRow
                   label="Admission Date"
@@ -690,11 +714,46 @@ function StudentDetailPage() {
   )
 }
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
+function ClassWithYear({
+  name,
+  section,
+  year,
+}: {
+  name: string | null | undefined
+  section: string | null | undefined
+  year: string | null | undefined
+}) {
+  const base = classLabel(name, section)
+  if (base === '-') return <span>-</span>
+  return (
+    <span className="flex items-center gap-1.5">
+      {base}
+      {year && (
+        <Badge variant="outline" className="font-mono text-[10px]">
+          {year}
+        </Badge>
+      )}
+    </span>
+  )
+}
+
+function InfoRow({
+  label,
+  value,
+  children,
+}: {
+  label: string
+  value?: string | null
+  children?: React.ReactNode
+}) {
   return (
     <div>
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-sm font-medium">{value ?? '-'}</p>
+      {children ? (
+        <div className="text-sm font-medium">{children}</div>
+      ) : (
+        <p className="text-sm font-medium">{value ?? '-'}</p>
+      )}
     </div>
   )
 }

@@ -81,7 +81,7 @@ function Admissions() {
           { label: '+91 80507 18044', detail: 'Mon–Fri, 9am to 1pm' },
           { label: '+91 97312 92369', detail: 'Mon–Fri, 9am to 1pm' },
           {
-            label: 'indogermanschool@gmail.com',
+            label: 'info@indogermanschool.com',
             detail: 'We reply within a day',
           },
         ]}

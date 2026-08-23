@@ -9,7 +9,7 @@ header:
   logoSrc: /public/igslogo.svg
   logoAlt: Indo-German School Logo
   phone: '+918050718044'
-  email: indogermanschool@gmail.com
+  email: info@indogermanschool.com
   nav:
     - label: Home
       to: /
@@ -37,7 +37,7 @@ footer:
     - label: Contact
       to: /contact
   contact:
-    email: indogermanschool@gmail.com
+    email: info@indogermanschool.com
     phone: '+91 805 071 8044'
     hours:
       - 'Monday - Friday: 9:00 AM - 1:00 PM'
@@ -93,7 +93,7 @@ home:
       - num: '10,000'
         suffix: ' ft²'
         label: Of campus, including a 4,000 sq. ft. outdoor play area
-      - num: '1 : 15'
+      - num: '1 : 10'
         label: Teacher-to-child ratio in our youngest rooms
       - num: '4'
         label: Programmes from playgroup through upper kindergarten and daycare
@@ -121,6 +121,45 @@ home:
     quote: >-
       We believe a child's first years deserve careful hands, unhurried days, and a thousand small moments to be themselves.
     attribution: — Our pledge to your family
+  faqs:
+    kicker: Good to know
+    title: Frequently asked questions
+    items:
+      - question: What ages and programmes do you offer?
+        answer: >-
+          We welcome children from age 2 to 6 across four stages Playgroup,
+          Nursery, Lower Kindergarten (LKG), and Upper Kindergarten (UKG). Each
+          classroom is designed for the age and stage inside it, with small
+          groups and plenty of light.
+      - question: Where are you located and what are your school timings?
+        answer: >-
+          We're in Kasturi Nagar, Bengaluru. School runs Monday to
+          Friday, 9:00 AM to 1:00 PM, and we're closed on weekends and public
+          holidays.
+      - question: How do I apply for admission?
+        answer: >-
+          Send us an enquiry through the website, or reach us by phone or
+          WhatsApp. We'll get back to you within a day to arrange a school tour
+          and walk you through the next steps.
+      - question: What is your teacher-to-child ratio?
+        answer: >-
+          We keep groups small about 1 teacher to every 10 children in our
+          youngest rooms so each child gets individual attention and support
+          at their own pace.
+      - question: How are school fees paid?
+        answer: >-
+          All fee payments are made directly via bank transfer we don't
+          collect payment details online. Parents receive fee schedules and
+          receipts from the school.
+      - question: What facilities does the campus have?
+        answer: >-
+          Our 10,000 sq. ft. campus includes a 4,000 sq. ft. outdoor play area,
+          along with dedicated spaces for art, music, dance, and storytelling all on a CCTV-monitored campus with a secure pick-up and drop-off
+          process.
+      - question: Do you offer daycare or extended hours?
+        answer: >-
+          A daycare / extended-hours option is being introduced. Please contact
+          the school for current availability and timings.
   cta:
     title: Admissions are open for 2026-27
     description: >-
@@ -339,7 +378,7 @@ contact:
       - label: 'Phone:'
         value: '+919731292369'
       - label: 'Email:'
-        value: indogermanschool@gmail.com
+        value: info@indogermanschool.com
       - label: 'WhatsApp:'
         value: '+918050718044'
   officeHours:

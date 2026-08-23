@@ -1,5 +1,5 @@
 import type * as React from 'react'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, ColumnFiltersState } from '@tanstack/react-table'
 
 export interface FilterConfig {
   column: string
@@ -28,6 +28,8 @@ type BaseProps<TData, TValue> = {
   tableTitle?: string
   pgSize?: number
   filters?: FilterConfig[]
+  /** Initial column filter values, e.g. default a Year filter to the current year. */
+  defaultFilters?: ColumnFiltersState
   filtersExtras?: React.ReactNode
   summarySlot?: React.ReactNode
   tableId?: string

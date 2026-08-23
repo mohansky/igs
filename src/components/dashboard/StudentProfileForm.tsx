@@ -70,6 +70,7 @@ interface ClassItem {
   id: number
   name: string
   section: string | null
+  academicYear: string | null
 }
 
 export function StudentProfileForm({
@@ -299,6 +300,11 @@ export function StudentProfileForm({
                       <SelectItem key={cls.id} value={String(cls.id)}>
                         {cls.name}
                         {cls.section ? ` - ${cls.section}` : ''}
+                        {cls.academicYear ? (
+                          <span className="ml-1 font-mono text-xs text-muted-foreground">
+                            {cls.academicYear}
+                          </span>
+                        ) : null}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -320,6 +326,11 @@ export function StudentProfileForm({
                       <SelectItem key={cls.id} value={String(cls.id)}>
                         {cls.name}
                         {cls.section ? ` - ${cls.section}` : ''}
+                        {cls.academicYear ? (
+                          <span className="ml-1 font-mono text-xs text-muted-foreground">
+                            {cls.academicYear}
+                          </span>
+                        ) : null}
                       </SelectItem>
                     ))}
                   </SelectContent>

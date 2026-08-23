@@ -614,11 +614,19 @@ function StudentProfileSection({
     queryKey: ['classes'],
     queryFn: () =>
       listClasses().then((c) =>
-        c.map((cls: { id: number; name: string; section: string | null }) => ({
-          id: cls.id,
-          name: cls.name,
-          section: cls.section,
-        })),
+        c.map(
+          (cls: {
+            id: number
+            name: string
+            section: string | null
+            academicYear: string | null
+          }) => ({
+            id: cls.id,
+            name: cls.name,
+            section: cls.section,
+            academicYear: cls.academicYear,
+          }),
+        ),
       ),
   })
 

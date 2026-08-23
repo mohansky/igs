@@ -32,11 +32,19 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
     queryKey: ['classes'],
     queryFn: () =>
       listClasses().then((c) =>
-        c.map((cls: { id: number; name: string; section: string | null }) => ({
-          id: cls.id,
-          name: cls.name,
-          section: cls.section,
-        })),
+        c.map(
+          (cls: {
+            id: number
+            name: string
+            section: string | null
+            academicYear: string | null
+          }) => ({
+            id: cls.id,
+            name: cls.name,
+            section: cls.section,
+            academicYear: cls.academicYear,
+          }),
+        ),
       ),
     enabled: open,
   })
@@ -108,6 +116,11 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
                   <SelectItem key={c.id} value={String(c.id)}>
                     {c.name}
                     {c.section ? ` - ${c.section}` : ''}
+                    {c.academicYear ? (
+                      <span className="ml-1 font-mono text-xs text-muted-foreground">
+                        {c.academicYear}
+                      </span>
+                    ) : null}
                   </SelectItem>
                 ))}
               </SelectContent>

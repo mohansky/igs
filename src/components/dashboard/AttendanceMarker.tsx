@@ -27,9 +27,18 @@ import {
   TableHeader,
   TableRow,
 } from '#/components/ui/table'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '#/components/ui/select'
 import { Badge } from '#/components/ui/badge'
 import { cn } from '#/lib/utils'
 import { listClasses } from '#/server/classes'
+import { classLabel } from '#/lib/class-label'
+import { currentAcademicYear } from '#/lib/financial-year'
 import { getAttendanceByDate, markAttendance } from '#/server/attendance'
 import type { AttendanceStatus } from '#/server/attendance'
 import LoadIcon from '../icons/LoadIcon'
@@ -64,14 +73,47 @@ export function AttendanceMarker() {
   const [classPickerOpen, setClassPickerOpen] = useState(false)
   const [statusPickerOpen, setStatusPickerOpen] = useState(false)
   const [studentPickerOpen, setStudentPickerOpen] = useState(false)
+  // '' until classes load; then defaults to the current academic year (or the
+  // most recent one that has classes).
+  const [selectedYear, setSelectedYear] = useState('')
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes'],
     queryFn: () =>
       listClasses().then((data) =>
-        data.map((c) => ({ id: c.id, name: c.name, section: c.section })),
+        data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          section: c.section,
+          academicYear: c.academicYear,
+        })),
       ),
   })
+
+  // Distinct academic years present on classes, most recent first.
+  const years = useMemo(
+    () =>
+      Array.from(
+        new Set(
+          classes.map((c) => c.academicYear).filter((y): y is string => !!y),
+        ),
+      ).sort((a, b) => b.localeCompare(a)),
+    [classes],
+  )
+
+  // Default the year once classes arrive: the current academic year if it has
+  // classes, otherwise the most recent year available.
+  useEffect(() => {
+    if (selectedYear || years.length === 0) return
+    const current = currentAcademicYear()
+    setSelectedYear(years.includes(current) ? current : years[0])
+  }, [years, selectedYear])
+
+  // Only classes for the selected year appear in the picker.
+  const classesForYear = useMemo(
+    () => classes.filter((c) => c.academicYear === selectedYear),
+    [classes, selectedYear],
+  )
 
   const loadAttendance = async () => {
     if (!selectedClass) return
@@ -186,82 +228,115 @@ export function AttendanceMarker() {
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <Card className="bg-transparent max-w-fit shadow-none border-0">
+      <Card className="w-full bg-transparent shadow-none border-0 sm:max-w-fit">
         <CardContent>
-          <div className="flex flex-wrap items-end gap-4">
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
             <div className="space-y-2">
-              <Label>Class</Label>
-              <Popover open={classPickerOpen} onOpenChange={setClassPickerOpen}>
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={classPickerOpen}
-                    className="min-w-48 justify-between font-normal"
-                  >
-                    {selectedClass ? selectedClass.label : 'Search class...'}
-                    <ChevronsUpDownIcon className="size-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[--radix-popover-trigger-width] p-0"
-                  align="start"
-                >
-                  <Command>
-                    <CommandInput placeholder="Search class..." />
-                    <CommandList>
-                      <CommandEmpty>No class found.</CommandEmpty>
-                      <CommandGroup>
-                        {classes.map((c) => {
-                          const label = `${c.name}${c.section ? ` - ${c.section}` : ''}`
-                          const value = String(c.id)
-                          return (
-                            <CommandItem
-                              key={c.id}
-                              value={`${label} ${value}`}
-                              onSelect={() => {
-                                setSelectedClass({ value, label })
-                                setLoaded(false)
-                                setClassPickerOpen(false)
-                              }}
-                            >
-                              <CheckIcon
-                                className={cn(
-                                  'size-4',
-                                  selectedClass?.value === value
-                                    ? 'opacity-100'
-                                    : 'opacity-0',
-                                )}
-                              />
-                              {label}
-                            </CommandItem>
-                          )
-                        })}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+              <Label>Academic year</Label>
+              <Select
+                value={selectedYear}
+                onValueChange={(year) => {
+                  setSelectedYear(year)
+                  // A class from the previous year no longer applies.
+                  setSelectedClass(null)
+                  setLoaded(false)
+                }}
+                disabled={years.length === 0}
+              >
+                <SelectTrigger className="w-full sm:w-36">
+                  <SelectValue placeholder="Year" />
+                </SelectTrigger>
+                <SelectContent>
+                  {years.map((y) => (
+                    <SelectItem key={y} value={y} className="font-mono">
+                      {y}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
-            <Button
-              onClick={loadAttendance}
-              disabled={!selectedClass || loadingStudents}
-            >
-              {loadingStudents ? (
-                <LoadIcon className="h-4 w-4 animate-spin" />
-              ) : (
-                <LoadIcon className="h-4 w-4" />
-              )}
-              {loadingStudents ? 'Loading...' : 'Load Students'}
-            </Button>
+            {/* Class + Load share a row on mobile; flow inline on desktop */}
+            <div className="flex items-end gap-2 sm:contents">
+              <div className="flex-1 space-y-2 sm:flex-none">
+                <Label>Class</Label>
+                <Popover
+                  open={classPickerOpen}
+                  onOpenChange={setClassPickerOpen}
+                >
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={classPickerOpen}
+                      className="w-full justify-between font-normal sm:w-auto sm:min-w-48"
+                    >
+                      {selectedClass ? selectedClass.label : 'Search class...'}
+                      <ChevronsUpDownIcon className="size-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command>
+                      <CommandInput placeholder="Search class..." />
+                      <CommandList>
+                        <CommandEmpty>No class found.</CommandEmpty>
+                        <CommandGroup>
+                          {classesForYear.map((c) => {
+                            // Picker is already scoped to selectedYear, so the
+                            // year isn't repeated on each class here.
+                            const base = classLabel(c.name, c.section)
+                            const value = String(c.id)
+                            return (
+                              <CommandItem
+                                key={c.id}
+                                value={`${base} ${value}`}
+                                onSelect={() => {
+                                  setSelectedClass({ value, label: base })
+                                  setLoaded(false)
+                                  setClassPickerOpen(false)
+                                }}
+                              >
+                                <CheckIcon
+                                  className={cn(
+                                    'size-4',
+                                    selectedClass?.value === value
+                                      ? 'opacity-100'
+                                      : 'opacity-0',
+                                  )}
+                                />
+                                <span>{base}</span>
+                              </CommandItem>
+                            )
+                          })}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <Button
+                onClick={loadAttendance}
+                disabled={!selectedClass || loadingStudents}
+                className="shrink-0"
+              >
+                {loadingStudents ? (
+                  <LoadIcon className="h-4 w-4 animate-spin" />
+                ) : (
+                  <LoadIcon className="h-4 w-4" />
+                )}
+                {loadingStudents ? 'Loading...' : 'Load Students'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
 
       {loaded && students.length > 0 && (
         <>
-          {/* Summary */}
-          <div className="flex flex-wrap items-center gap-3">
+          {/* Summary — two rows on mobile, single row on desktop */}
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <span className="text-sm font-medium text-muted-foreground">
               {selectedClassName
                 ? `${selectedClassName.name}${selectedClassName.section ? ` - ${selectedClassName.section}` : ''}`
@@ -269,163 +344,168 @@ export function AttendanceMarker() {
               &middot; {date}
             </span>
             <Badge variant="outline">{summary.total} students</Badge>
+            <Badge variant="outline">
+              {Math.round((summary.present / summary.total) * 100)}% attendance
+            </Badge>
+            {/* Forces present/absent/late onto a second row on mobile only */}
+            <div className="w-full sm:hidden" aria-hidden="true" />
             <Badge variant="default">{summary.present} present</Badge>
             <Badge variant="destructive">{summary.absent} absent</Badge>
             <Badge variant="warning">{summary.late} late</Badge>
-            {summary.total > 0 && (
-              <Badge variant="outline">
-                {Math.round((summary.present / summary.total) * 100)}%
-                attendance
-              </Badge>
-            )}
           </div>
 
           {/* Student filter + bulk actions */}
-          <div className="flex flex-wrap items-end gap-4">
-            <div className="space-y-2">
-              <Label>Date</Label>
-              <Input
-                type="date"
-                value={date}
-                onChange={(e) => setDate(e.target.value)}
-                className="w-40"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label>Student</Label>
-              <Popover
-                open={studentPickerOpen}
-                onOpenChange={setStudentPickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={studentPickerOpen}
-                    className={cn(
-                      'w-56 justify-between font-normal',
-                      !searchQuery && 'text-muted-foreground',
-                    )}
-                  >
-                    {searchQuery || 'All students'}
-                    <ChevronsUpDownIcon className="size-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[--radix-popover-trigger-width] p-0"
-                  align="start"
+          <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end sm:gap-4">
+            {/* Date + Student share a row on mobile; flow inline on desktop */}
+            <div className="flex items-end gap-3 sm:contents">
+              <div className="flex-1 space-y-2 sm:flex-none">
+                <Label>Date</Label>
+                <Input
+                  type="date"
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                  className="w-full sm:w-40"
+                />
+              </div>
+              <div className="flex-1 space-y-2 sm:flex-none">
+                <Label>Student</Label>
+                <Popover
+                  open={studentPickerOpen}
+                  onOpenChange={setStudentPickerOpen}
                 >
-                  <Command>
-                    <CommandInput placeholder="Search student..." />
-                    <CommandList>
-                      <CommandEmpty>No students found.</CommandEmpty>
-                      <CommandGroup>
-                        <CommandItem
-                          value="All students"
-                          onSelect={() => {
-                            setSearchQuery('')
-                            setStudentPickerOpen(false)
-                          }}
-                        >
-                          <CheckIcon
-                            className={cn(
-                              'size-4',
-                              !searchQuery ? 'opacity-100' : 'opacity-0',
-                            )}
-                          />
-                          All students
-                        </CommandItem>
-                        {students.map((s) => (
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={studentPickerOpen}
+                      className={cn(
+                        'w-full justify-between font-normal sm:w-56',
+                        !searchQuery && 'text-muted-foreground',
+                      )}
+                    >
+                      {searchQuery || 'All students'}
+                      <ChevronsUpDownIcon className="size-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command>
+                      <CommandInput placeholder="Search student..." />
+                      <CommandList>
+                        <CommandEmpty>No students found.</CommandEmpty>
+                        <CommandGroup>
                           <CommandItem
-                            key={s.studentId}
-                            value={s.name}
+                            value="All students"
                             onSelect={() => {
-                              setSearchQuery(s.name)
+                              setSearchQuery('')
                               setStudentPickerOpen(false)
                             }}
                           >
                             <CheckIcon
                               className={cn(
                                 'size-4',
-                                searchQuery === s.name
-                                  ? 'opacity-100'
-                                  : 'opacity-0',
+                                !searchQuery ? 'opacity-100' : 'opacity-0',
                               )}
                             />
-                            {s.name}
+                            All students
                           </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
+                          {students.map((s) => (
+                            <CommandItem
+                              key={s.studentId}
+                              value={s.name}
+                              onSelect={() => {
+                                setSearchQuery(s.name)
+                                setStudentPickerOpen(false)
+                              }}
+                            >
+                              <CheckIcon
+                                className={cn(
+                                  'size-4',
+                                  searchQuery === s.name
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
+                                )}
+                              />
+                              {s.name}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label>Filter by status</Label>
-              <Popover
-                open={statusPickerOpen}
-                onOpenChange={setStatusPickerOpen}
-              >
-                <PopoverTrigger asChild>
-                  <Button
-                    variant="outline"
-                    role="combobox"
-                    aria-expanded={statusPickerOpen}
-                    className="min-w-36 justify-between font-normal"
-                  >
-                    {statusFilter ? statusFilter.label : 'Select status...'}
-                    <ChevronsUpDownIcon className="size-4 opacity-50" />
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent
-                  className="w-[--radix-popover-trigger-width] p-0"
-                  align="start"
+            {/* Status filter + mark-all buttons share a row on mobile */}
+            <div className="flex items-end gap-2 sm:contents">
+              <div className="flex-1 space-y-2 sm:flex-none">
+                <Label>Filter by status</Label>
+                <Popover
+                  open={statusPickerOpen}
+                  onOpenChange={setStatusPickerOpen}
                 >
-                  <Command>
-                    <CommandList>
-                      <CommandGroup>
-                        {STATUS_OPTIONS.map((opt) => (
-                          <CommandItem
-                            key={opt.value}
-                            value={opt.label}
-                            onSelect={() => {
-                              setStatusFilter(opt)
-                              setStatusPickerOpen(false)
-                            }}
-                          >
-                            <CheckIcon
-                              className={cn(
-                                'size-4',
-                                statusFilter?.value === opt.value
-                                  ? 'opacity-100'
-                                  : 'opacity-0',
-                              )}
-                            />
-                            {opt.label}
-                          </CommandItem>
-                        ))}
-                      </CommandGroup>
-                    </CommandList>
-                  </Command>
-                </PopoverContent>
-              </Popover>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAllAs('present')}
-              >
-                Mark all present
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => markAllAs('absent')}
-              >
-                Mark all absent
-              </Button>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="outline"
+                      role="combobox"
+                      aria-expanded={statusPickerOpen}
+                      className="w-full min-w-0 justify-between font-normal sm:w-auto sm:min-w-36"
+                    >
+                      {statusFilter ? statusFilter.label : 'Select status...'}
+                      <ChevronsUpDownIcon className="size-4 opacity-50" />
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent
+                    className="w-[--radix-popover-trigger-width] p-0"
+                    align="start"
+                  >
+                    <Command>
+                      <CommandList>
+                        <CommandGroup>
+                          {STATUS_OPTIONS.map((opt) => (
+                            <CommandItem
+                              key={opt.value}
+                              value={opt.label}
+                              onSelect={() => {
+                                setStatusFilter(opt)
+                                setStatusPickerOpen(false)
+                              }}
+                            >
+                              <CheckIcon
+                                className={cn(
+                                  'size-4',
+                                  statusFilter?.value === opt.value
+                                    ? 'opacity-100'
+                                    : 'opacity-0',
+                                )}
+                              />
+                              {opt.label}
+                            </CommandItem>
+                          ))}
+                        </CommandGroup>
+                      </CommandList>
+                    </Command>
+                  </PopoverContent>
+                </Popover>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => markAllAs('present')}
+                >
+                  Mark all present
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => markAllAs('absent')}
+                >
+                  Mark all absent
+                </Button>
+              </div>
             </div>
           </div>
 

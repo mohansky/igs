@@ -12,6 +12,7 @@ import {
   type MonthlyOverviewRow,
 } from '#/server/transactions'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
+import { typeBadgeVariant } from '#/lib/calendar-event-style'
 import { format, parseISO } from 'date-fns'
 import {
   Calendar03Icon,
@@ -86,6 +87,10 @@ function DashboardOverview() {
 function AdminDashboard({ stats }: { stats: Stats }) {
   return (
     <div className="space-y-8">
+      {stats.upcomingEvents.length > 0 && (
+        <UpcomingEventsCard events={stats.upcomingEvents} />
+      )}
+
       {/* Quick links — moved to top */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <QuickLinkCard
@@ -267,7 +272,7 @@ function AdminDashboard({ stats }: { stats: Stats }) {
         )}
       </section>
 
-      {/* ── Activity / Alerts / Events ── */}
+      {/* ── Activity / Alerts ── */}
       <section className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           {stats.activityFeed.length > 0 && (
@@ -275,9 +280,6 @@ function AdminDashboard({ stats }: { stats: Stats }) {
           )}
           <AlertsCard alerts={stats.alerts} />
         </div>
-        {stats.upcomingEvents.length > 0 && (
-          <UpcomingEventsCard events={stats.upcomingEvents} />
-        )}
       </section>
     </div>
   )
@@ -288,6 +290,10 @@ function AdminDashboard({ stats }: { stats: Stats }) {
 function StaffDashboard({ stats }: { stats: Stats }) {
   return (
     <div className="space-y-8">
+      {stats.upcomingEvents.length > 0 && (
+        <UpcomingEventsCard events={stats.upcomingEvents} />
+      )}
+
       {/* Quick links — moved to top */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <QuickLinkCard
@@ -372,7 +378,7 @@ function StaffDashboard({ stats }: { stats: Stats }) {
         )}
       </section>
 
-      {/* ── Activity / Alerts / Events ── */}
+      {/* ── Activity / Alerts ── */}
       <section className="space-y-4">
         <div className="grid gap-4 sm:grid-cols-2">
           {stats.activityFeed.length > 0 && (
@@ -380,9 +386,6 @@ function StaffDashboard({ stats }: { stats: Stats }) {
           )}
           <AlertsCard alerts={stats.alerts} />
         </div>
-        {stats.upcomingEvents.length > 0 && (
-          <UpcomingEventsCard events={stats.upcomingEvents} />
-        )}
       </section>
     </div>
   )
@@ -1135,7 +1138,10 @@ function UpcomingEventsCard({ events }: { events: Stats['upcomingEvents'] }) {
               </div>
               <div>
                 <p className="text-sm font-medium">{ev.title}</p>
-                <Badge variant="outline" className="text-[10px] capitalize">
+                <Badge
+                  variant={typeBadgeVariant(ev.type)}
+                  className="text-[10px] capitalize"
+                >
                   {ev.type}
                 </Badge>
               </div>

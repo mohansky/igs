@@ -65,3 +65,4 @@ Add `{ to: '/dashboard/students', label: 'Students', roles: ['admin', 'staff'] }
 
 - Fetch by profile ID instead of userId
 - Display all new fields (photo, previous school, transport, nationality, etc.)
+

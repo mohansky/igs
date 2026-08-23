@@ -1,1 +1,16 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg width="100%" height="100%" viewBox="0 0 308 308" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;"><path d="M304,79l0,150c0,41.394 -33.606,75 -75,75l-150,0c-41.394,0 -75,-33.606 -75,-75l0,-150c0,-41.394 33.606,-75 75,-75l150,-0c41.394,0 75,33.606 75,75Z"/><g transform="matrix(1.300535,0,0,1.300535,-32.667704,-47.461187)"><text x="29px" y="195px" style="font-family:'OpenSans-ExtraBold', 'Open Sans', sans-serif;font-weight:800;font-size:113.08px;fill:#fff;">IGS</text><g transform="matrix(113.079755,0,0,113.079755,254.427583,195)"></g><text x="217.337px" y="195px" style="font-family:'Fraunces-Black', 'Fraunces';font-weight:900;font-size:113.08px;fill:#fa2900;">.</text></g></svg>
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 512 512" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;stroke-linejoin:round;stroke-miterlimit:2;">
+    <g id="_512" serif:id="512" transform="matrix(1.625397,0,0,1.695364,-577.015873,-10.172185)">
+        <rect x="355" y="6" width="315" height="302" style="fill:none;"/>
+        <g transform="matrix(0.742676,0,0,0.797469,390.701172,35.78475)">
+            <path d="M304,89.5L304,214.5C304,248.995 272.634,277 234,277L94,277C55.366,277 24,248.995 24,214.5L24,89.5C24,55.005 55.366,27 94,27L234,27C272.634,27 304,55.005 304,89.5Z"/>
+        </g>
+        <g transform="matrix(0.901484,0,0,0.86428,383.108656,23.117499)">
+            <text x="29px" y="195px" style="font-family:'OpenSans-ExtraBold', 'Open Sans', sans-serif;font-weight:800;font-size:113.08px;fill:white;">IGS</text>
+            <g transform="matrix(113.079755,0,0,113.079755,254.427583,195)">
+            </g>
+            <text x="217.337px" y="195px" style="font-family:'Fraunces-Black', 'Fraunces';font-weight:900;font-size:113.08px;fill:rgb(250,41,0);">.</text>
+        </g>
+    </g>
+</svg>

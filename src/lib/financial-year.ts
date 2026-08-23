@@ -29,6 +29,16 @@ export function fyLabel(startYear: number): string {
   return `FY ${startYear}–${String(startYear + 1).slice(2)}`
 }
 
+// The academic year shares the FY boundary (starts in May), and is stored on
+// classes as e.g. "2025-26".
+export function academicYearLabel(startYear: number): string {
+  return `${startYear}-${String(startYear + 1).slice(2)}`
+}
+
+export function currentAcademicYear(): string {
+  return academicYearLabel(currentFyStartYear())
+}
+
 export function fyRangeLabel(startYear: number): string {
   return `May ${startYear} – Apr ${startYear + 1}`
 }

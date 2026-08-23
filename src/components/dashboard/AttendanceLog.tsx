@@ -7,6 +7,7 @@ import { downloadCsv } from '#/lib/csv'
 import { formatDate } from '#/lib/utils'
 import { listAttendance } from '#/server/attendance'
 import { listClasses } from '#/server/classes'
+import { currentAcademicYear } from '#/lib/financial-year'
 import { CustomDataTable } from './CustomDataTable'
 
 interface AttendanceRecord {
@@ -23,7 +24,7 @@ interface AttendanceRecord {
 const statusBadgeVariant = (status: string) => {
   switch (status) {
     case 'present':
-      return 'default' as const
+      return 'success' as const
     case 'absent':
       return 'destructive' as const
     case 'late':
@@ -36,15 +37,20 @@ const statusBadgeVariant = (status: string) => {
 export function AttendanceLog() {
   const [filteredRows, setFilteredRows] = useState<AttendanceRecord[]>([])
 
-  const { data: classes = [] } = useQuery({
+  const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
     queryFn: () =>
       listClasses().then((data) =>
-        data.map((c) => ({ id: c.id, name: c.name, section: c.section })),
+        data.map((c) => ({
+          id: c.id,
+          name: c.name,
+          section: c.section,
+          academicYear: c.academicYear,
+        })),
       ),
   })
 
-  const { data: records = [], isLoading } = useQuery({
+  const { data: records = [], isLoading: recordsLoading } = useQuery({
     queryKey: ['attendance', 'all'],
     queryFn: () => listAttendance({ data: {} }) as Promise<AttendanceRecord[]>,
   })
@@ -54,6 +60,13 @@ export function AttendanceLog() {
     for (const c of classes) {
       map.set(c.id, c.section ? `${c.name} - ${c.section}` : c.name)
     }
+    return map
+  }, [classes])
+
+  // classId → academic year, for the Year column and filter.
+  const classYearById = useMemo(() => {
+    const map = new Map<number, string>()
+    for (const c of classes) if (c.academicYear) map.set(c.id, c.academicYear)
     return map
   }, [classes])
 
@@ -99,6 +112,26 @@ export function AttendanceLog() {
         },
       },
       {
+        id: 'academicYear',
+        header: 'Year',
+        accessorFn: (row) =>
+          row.classId != null ? (classYearById.get(row.classId) ?? '') : '',
+        cell: ({ row }) => {
+          const year = row.getValue('academicYear') as string
+          return year ? (
+            <Badge variant="outline" className="font-mono text-[10px]">
+              {year}
+            </Badge>
+          ) : (
+            '-'
+          )
+        },
+        filterFn: (row, _id, value) => {
+          if (!value || value === 'all') return true
+          return (row.getValue('academicYear') as string) === value
+        },
+      },
+      {
         accessorKey: 'status',
         header: 'Status',
         cell: ({ row }) => {
@@ -124,7 +157,7 @@ export function AttendanceLog() {
         ),
       },
     ],
-    [classLabelById],
+    [classLabelById, classYearById],
   )
 
   const studentOptions = useMemo(() => {
@@ -141,20 +174,42 @@ export function AttendanceLog() {
   const classOptions = useMemo(() => {
     const ids = new Set<number>()
     for (const r of records) if (r.classId != null) ids.add(r.classId)
+    const labelFor = (id: number) => {
+      const base = classLabelById.get(id) ?? `Class #${id}`
+      const year = classYearById.get(id)
+      return year ? `${base} · ${year}` : base
+    }
     return [
       { label: 'All classes', value: 'all' },
       ...Array.from(ids)
-        .sort((a, b) =>
-          (classLabelById.get(a) ?? '').localeCompare(
-            classLabelById.get(b) ?? '',
-          ),
-        )
-        .map((id) => ({
-          label: classLabelById.get(id) ?? `Class #${id}`,
-          value: String(id),
-        })),
+        .sort((a, b) => labelFor(a).localeCompare(labelFor(b)))
+        .map((id) => ({ label: labelFor(id), value: String(id) })),
     ]
-  }, [records, classLabelById])
+  }, [records, classLabelById, classYearById])
+
+  // Distinct academic years present in the records, most recent first.
+  const yearOptions = useMemo(() => {
+    const years = new Set<string>()
+    for (const r of records) {
+      const y = r.classId != null ? classYearById.get(r.classId) : null
+      if (y) years.add(y)
+    }
+    return [
+      { label: 'All years', value: 'all' },
+      ...Array.from(years)
+        .sort((a, b) => b.localeCompare(a))
+        .map((y) => ({ label: y, value: y })),
+    ]
+  }, [records, classYearById])
+
+  // Default the Year filter to the current academic year if it has records,
+  // otherwise the most recent year present (or no filter if none).
+  const defaultYear = useMemo(() => {
+    const present = yearOptions.filter((o) => o.value !== 'all')
+    if (present.length === 0) return null
+    const current = currentAcademicYear()
+    return present.some((o) => o.value === current) ? current : present[0].value
+  }, [yearOptions])
 
   const summary = useMemo(() => {
     const source = filteredRows
@@ -166,7 +221,7 @@ export function AttendanceLog() {
     }
   }, [filteredRows])
 
-  if (isLoading) {
+  if (recordsLoading || classesLoading) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
   }
 
@@ -197,7 +252,7 @@ export function AttendanceLog() {
   const summaryBar = (
     <div className="mb-2 flex flex-wrap items-center gap-2">
       <Badge variant="outline">Total: {summary.total}</Badge>
-      <Badge variant="default">Present: {summary.present}</Badge>
+      <Badge variant="success">Present: {summary.present}</Badge>
       <Badge variant="destructive">Absent: {summary.absent}</Badge>
       <Badge variant="warning">Late: {summary.late}</Badge>
       {summary.total > 0 && (
@@ -218,7 +273,17 @@ export function AttendanceLog() {
         onFilteredRowsChange={setFilteredRows}
         filtersExtras={exportButton}
         summarySlot={summaryBar}
+        defaultFilters={
+          defaultYear ? [{ id: 'academicYear', value: defaultYear }] : undefined
+        }
         filters={[
+          {
+            column: 'academicYear',
+            placeholder: 'Filter by year',
+            label: 'Year',
+            type: 'select',
+            options: yearOptions,
+          },
           {
             column: 'studentName',
             placeholder: 'Select student...',

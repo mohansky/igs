@@ -78,7 +78,16 @@ export default function Footer() {
         </div>
 
         <div className="flex flex-col gap-2 sm:flex-row sm:justify-between sm:items-center text-[12px] tracking-[0.05em] font-mono text-(--ink-soft)">
-          <span>© {year} INDO-GERMAN SCHOOL</span>
+          <span className="flex items-center gap-3">
+            © {year} INDO-GERMAN SCHOOL
+            <Link
+              to="/privacy"
+              className="hover:text-(--accent)"
+              title="Privacy Policy"
+            >
+              Privacy Policy
+            </Link>
+          </span>
           <span>
             Designed and developed by{' '}
             <a

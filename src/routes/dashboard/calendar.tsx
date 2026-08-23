@@ -58,40 +58,15 @@ import NextIcon from '#/components/icons/NextIcon'
 import PrevIcon from '#/components/icons/PrevIcon'
 import AddIcon from '#/components/icons/AddIcon'
 import type { CalendarEventType } from '#/server/calendar'
+import {
+  EVENT_TYPES,
+  typeColor,
+  typeBadgeVariant,
+} from '#/lib/calendar-event-style'
 
 export const Route = createFileRoute('/dashboard/calendar')({
   component: CalendarPage,
 })
-
-const EVENT_TYPES: {
-  value: CalendarEventType
-  label: string
-  color: string
-}[] = [
-  { value: 'event', label: 'Event', color: 'bg-blue-500' },
-  { value: 'holiday', label: 'Holiday', color: 'bg-green-500' },
-  { value: 'exam', label: 'Exam', color: 'bg-orange-500' },
-  { value: 'meeting', label: 'Meeting', color: 'bg-purple-500' },
-  { value: 'deadline', label: 'Deadline', color: 'bg-red-500' },
-] as const
-
-const typeColor = (type: string) =>
-  EVENT_TYPES.find((t) => t.value === type)?.color ?? 'bg-muted-foreground'
-
-const typeBadgeVariant = (type: string) => {
-  switch (type) {
-    case 'holiday':
-      return 'success' as const
-    case 'exam':
-      return 'warning' as const
-    case 'deadline':
-      return 'destructive' as const
-    case 'meeting':
-      return 'outline' as const
-    default:
-      return 'default' as const
-  }
-}
 
 interface CalendarEvent {
   id: number

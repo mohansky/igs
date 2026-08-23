@@ -73,6 +73,7 @@ export function CustomDataTable<TData, TValue>(
     tableTitle,
     pgSize,
     filters = [],
+    defaultFilters,
     filtersExtras,
     summarySlot,
     showDatePicker,
@@ -86,7 +87,7 @@ export function CustomDataTable<TData, TValue>(
 
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    [],
+    defaultFilters ?? [],
   )
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})

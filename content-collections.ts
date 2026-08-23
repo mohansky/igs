@@ -110,6 +110,16 @@ const site = defineCollection({
         quote: z.string(),
         attribution: z.string(),
       }),
+      faqs: z.object({
+        kicker: z.string(),
+        title: z.string(),
+        items: z.array(
+          z.object({
+            question: z.string(),
+            answer: z.string(),
+          }),
+        ),
+      }),
       cta: z.object({
         title: z.string(),
         description: z.string(),

@@ -34,9 +34,11 @@ export const listStudents = createServerFn({ method: 'GET' }).handler(
         classId: studentProfiles.classId,
         className: admittedClass.name,
         classSection: admittedClass.section,
+        classAcademicYear: admittedClass.academicYear,
         currentClassId: studentProfiles.currentClassId,
         currentClassName: currentClass.name,
         currentClassSection: currentClass.section,
+        currentClassAcademicYear: currentClass.academicYear,
         admissionNumber: studentProfiles.admissionNumber,
         gender: studentProfiles.gender,
         parentPhone: studentProfiles.parentPhone,
@@ -222,7 +224,11 @@ export const getStudentProfile = createServerFn({ method: 'GET' })
         .select({
           profile: studentProfiles,
           className: admittedClass.name,
+          classSection: admittedClass.section,
+          classAcademicYear: admittedClass.academicYear,
           currentClassName: currentClass.name,
+          currentClassSection: currentClass.section,
+          currentClassAcademicYear: currentClass.academicYear,
         })
         .from(studentProfiles)
         .leftJoin(admittedClass, eq(studentProfiles.classId, admittedClass.id))
@@ -234,14 +240,22 @@ export const getStudentProfile = createServerFn({ method: 'GET' })
     const parseProfile = (row: {
       profile: typeof studentProfiles.$inferSelect
       className: string | null
+      classSection: string | null
+      classAcademicYear: string | null
       currentClassName: string | null
+      currentClassSection: string | null
+      currentClassAcademicYear: string | null
     }) => ({
       ...row.profile,
       languagesSpoken: row.profile.languagesSpoken
         ? (JSON.parse(row.profile.languagesSpoken) as string[])
         : null,
       className: row.className,
+      classSection: row.classSection,
+      classAcademicYear: row.classAcademicYear,
       currentClassName: row.currentClassName,
+      currentClassSection: row.currentClassSection,
+      currentClassAcademicYear: row.currentClassAcademicYear,
     })
 
     if (data.studentId) {
