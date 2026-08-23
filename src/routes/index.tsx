@@ -1,10 +1,11 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { site, SITE_TITLE } from '#/lib/site'
+import { site, SITE_TITLE, SITE_URL } from '#/lib/site'
 import { CTASection } from '#/components/sections/CTA'
 import { Hero } from '#/components/sections/Hero'
 import { Programmes } from '#/components/sections/Programmes'
 import { Stats } from '#/components/sections/Stats'
 import { Values } from '#/components/sections/Values'
+import { FAQ } from '#/components/sections/FAQ'
 import {
   SketchStar,
   SketchUnderline,
@@ -16,11 +17,12 @@ import {
 export const Route = createFileRoute('/')({
   head: () => ({
     meta: [{ title: `Home | ${SITE_TITLE}` }],
+    links: [{ rel: 'canonical', href: SITE_URL }],
   }),
   component: Home,
 })
 
-const { hero, programmes, stats, whyUs, pledge, cta } = site.home
+const { hero, programmes, stats, whyUs, pledge, faqs, cta } = site.home
 
 const valueIcons = [SketchHand, SketchBook, SketchTree, SketchStar]
 
@@ -156,6 +158,9 @@ function Home() {
         }}
       />
 
+      {/* FAQs */}
+      <FAQ kicker={faqs.kicker} title={faqs.title} items={faqs.items} />
+
       {/* CTA band */}
       <CTASection
         eyebrow="Admissions 2026–27"
@@ -188,7 +193,7 @@ function Home() {
           { label: '+91 80507 18044', detail: 'Mon–Fri, 9am to 1pm' },
           { label: '+91 97312 92369', detail: 'Mon–Fri, 9am to 1pm' },
           {
-            label: 'indogermanschool@gmail.com',
+            label: 'info@indogermanschool.com',
             detail: 'We reply within a day',
           },
           { label: 'Kasturi Nagar, Bengaluru', detail: 'Drop in for a tour' },

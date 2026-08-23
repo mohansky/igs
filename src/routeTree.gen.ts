@@ -11,6 +11,8 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as PlaygroupRouteImport } from './routes/playgroup'
 import { Route as GalleryRouteImport } from './routes/gallery'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
@@ -51,6 +53,16 @@ const SignInRoute = SignInRouteImport.update({
 const RssDotxmlRoute = RssDotxmlRouteImport.update({
   id: '/rss.xml',
   path: '/rss.xml',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const PlaygroupRoute = PlaygroupRouteImport.update({
+  id: '/playgroup',
+  path: '/playgroup',
   getParentRoute: () => rootRouteImport,
 } as any)
 const GalleryRoute = GalleryRouteImport.update({
@@ -219,6 +231,8 @@ export interface FileRoutesByFullPath {
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/playgroup': typeof PlaygroupRoute
+  '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -253,6 +267,8 @@ export interface FileRoutesByTo {
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
   '/gallery': typeof GalleryRoute
+  '/playgroup': typeof PlaygroupRoute
+  '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -289,6 +305,8 @@ export interface FileRoutesById {
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
   '/gallery': typeof GalleryRoute
+  '/playgroup': typeof PlaygroupRoute
+  '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/blog/$slug': typeof BlogSlugRoute
@@ -326,6 +344,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dashboard'
     | '/gallery'
+    | '/playgroup'
+    | '/privacy'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -360,6 +380,8 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/contact'
     | '/gallery'
+    | '/playgroup'
+    | '/privacy'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -395,6 +417,8 @@ export interface FileRouteTypes {
     | '/contact'
     | '/dashboard'
     | '/gallery'
+    | '/playgroup'
+    | '/privacy'
     | '/rss.xml'
     | '/sign-in'
     | '/blog/$slug'
@@ -431,6 +455,8 @@ export interface RootRouteChildren {
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRouteWithChildren
   GalleryRoute: typeof GalleryRoute
+  PlaygroupRoute: typeof PlaygroupRoute
+  PrivacyRoute: typeof PrivacyRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SignInRoute: typeof SignInRoute
   BlogSlugRoute: typeof BlogSlugRoute
@@ -452,6 +478,20 @@ declare module '@tanstack/react-router' {
       path: '/rss.xml'
       fullPath: '/rss.xml'
       preLoaderRoute: typeof RssDotxmlRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/playgroup': {
+      id: '/playgroup'
+      path: '/playgroup'
+      fullPath: '/playgroup'
+      preLoaderRoute: typeof PlaygroupRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/gallery': {
@@ -736,6 +776,8 @@ const rootRouteChildren: RootRouteChildren = {
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRouteWithChildren,
   GalleryRoute: GalleryRoute,
+  PlaygroupRoute: PlaygroupRoute,
+  PrivacyRoute: PrivacyRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SignInRoute: SignInRoute,
   BlogSlugRoute: BlogSlugRoute,

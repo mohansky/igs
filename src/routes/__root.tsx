@@ -173,10 +173,6 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
         rel: 'stylesheet',
         href: appCss,
       },
-      {
-        rel: 'canonical',
-        href: SITE_URL,
-      },
     ],
   }),
   shellComponent: RootDocument,
