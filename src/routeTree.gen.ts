@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
 import { Route as PrivacyRouteImport } from './routes/privacy'
@@ -45,6 +46,11 @@ import { Route as DashboardStaffStaffIdRouteImport } from './routes/dashboard/st
 import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
 import { Route as DashboardStaffStaffIdSlipSalaryIdRouteImport } from './routes/dashboard/staff_.$staffId.slip.$salaryId'
 
+const ThankYouRoute = ThankYouRouteImport.update({
+  id: '/thank-you',
+  path: '/thank-you',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SignInRoute = SignInRouteImport.update({
   id: '/sign-in',
   path: '/sign-in',
@@ -235,6 +241,7 @@ export interface FileRoutesByFullPath {
   '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
+  '/thank-you': typeof ThankYouRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/attendance': typeof DashboardAttendanceRoute
   '/dashboard/calendar': typeof DashboardCalendarRoute
@@ -271,6 +278,7 @@ export interface FileRoutesByTo {
   '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
+  '/thank-you': typeof ThankYouRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/attendance': typeof DashboardAttendanceRoute
   '/dashboard/calendar': typeof DashboardCalendarRoute
@@ -309,6 +317,7 @@ export interface FileRoutesById {
   '/privacy': typeof PrivacyRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
+  '/thank-you': typeof ThankYouRoute
   '/blog/$slug': typeof BlogSlugRoute
   '/dashboard/attendance': typeof DashboardAttendanceRoute
   '/dashboard/calendar': typeof DashboardCalendarRoute
@@ -348,6 +357,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rss.xml'
     | '/sign-in'
+    | '/thank-you'
     | '/blog/$slug'
     | '/dashboard/attendance'
     | '/dashboard/calendar'
@@ -384,6 +394,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rss.xml'
     | '/sign-in'
+    | '/thank-you'
     | '/blog/$slug'
     | '/dashboard/attendance'
     | '/dashboard/calendar'
@@ -421,6 +432,7 @@ export interface FileRouteTypes {
     | '/privacy'
     | '/rss.xml'
     | '/sign-in'
+    | '/thank-you'
     | '/blog/$slug'
     | '/dashboard/attendance'
     | '/dashboard/calendar'
@@ -459,6 +471,7 @@ export interface RootRouteChildren {
   PrivacyRoute: typeof PrivacyRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SignInRoute: typeof SignInRoute
+  ThankYouRoute: typeof ThankYouRoute
   BlogSlugRoute: typeof BlogSlugRoute
   BlogIndexRoute: typeof BlogIndexRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -466,6 +479,13 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/thank-you': {
+      id: '/thank-you'
+      path: '/thank-you'
+      fullPath: '/thank-you'
+      preLoaderRoute: typeof ThankYouRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/sign-in': {
       id: '/sign-in'
       path: '/sign-in'
@@ -780,6 +800,7 @@ const rootRouteChildren: RootRouteChildren = {
   PrivacyRoute: PrivacyRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SignInRoute: SignInRoute,
+  ThankYouRoute: ThankYouRoute,
   BlogSlugRoute: BlogSlugRoute,
   BlogIndexRoute: BlogIndexRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

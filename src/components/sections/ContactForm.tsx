@@ -1,4 +1,5 @@
 import { useRef, useState } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import { site } from '#/lib/site'
 import { submitContactForm } from '#/server/contact'
 
@@ -13,7 +14,7 @@ const fieldStyle: React.CSSProperties = {
 }
 
 export function ContactForm() {
-  const [submitted, setSubmitted] = useState(false)
+  const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const formStartedAt = useRef(Date.now())
@@ -39,24 +40,12 @@ export function ContactForm() {
       ;(window as Window & { dataLayer?: object[] }).dataLayer?.push({
         event: 'contact_form_submit',
       })
-      setSubmitted(true)
+      navigate({ to: '/thank-you' })
     } catch (err) {
       console.error(err)
       setError('Something went wrong. Please try again.')
-    } finally {
       setLoading(false)
     }
-  }
-
-  if (submitted) {
-    return (
-      <div className="py-12 text-center">
-        <p className="font-serif text-2xl mb-2">{form.successTitle}</p>
-        <p className="m-0 text-(--ink-soft) text-[15px]">
-          {form.successMessage}
-        </p>
-      </div>
-    )
   }
 
   return (
