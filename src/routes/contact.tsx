@@ -132,6 +132,16 @@ function Contact() {
                 Fill in the form and we'll get back to you within 1–2 working
                 days.
               </p>
+              <p className="text-(--ink-soft) text-[13px] mt-2">
+                Looking for a teaching job? Email{' '}
+                <a
+                  href="mailto:careers@indogermanschool.com"
+                  className="text-(--accent) hover:underline"
+                >
+                  careers@indogermanschool.com
+                </a>
+                .
+              </p>
             </div>
             <ContactForm />
           </div>

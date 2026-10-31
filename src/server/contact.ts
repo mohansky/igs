@@ -12,6 +12,7 @@ const contactFormSchema = z.object({
   name: z.string().trim().min(1).max(200),
   phone: z.string().trim().min(1).max(30),
   email: z.email().max(320),
+  childAgeOrClass: z.string().trim().min(1).max(100),
   message: z.string().trim().min(1).max(5000),
   /** Honeypot — should always be empty; bots fill every field */
   website: z.string().optional(),
@@ -81,6 +82,7 @@ export const submitContactForm = createServerFn({ method: 'POST' })
         email: data.email,
         subject: 'General Enquiry',
         message: data.message,
+        childAgeOrClass: data.childAgeOrClass,
       })
       .returning()
 
@@ -102,6 +104,7 @@ export const submitContactForm = createServerFn({ method: 'POST' })
             email: data.email,
             phone: data.phone,
             subject: 'General Enquiry',
+            childAgeOrClass: data.childAgeOrClass,
             message: data.message,
             submittedAt: new Date().toLocaleString('en-IN', {
               timeZone: 'Asia/Kolkata',

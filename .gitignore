@@ -30,6 +30,7 @@ todos.json
 # Logs
 LOCALNOTES.md
 FONTS.md
+igs-google-ads-action-plan.md
 
 # One-off DB scripts (seeders, fixers, resets) — local only, not deployed
 scripts/

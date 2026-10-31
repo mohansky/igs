@@ -83,6 +83,9 @@ export const contactSubmissions = sqliteTable('contact_submissions', {
   email: text().notNull(),
   subject: text().notNull(),
   message: text().notNull(),
+  // Required on the form going forward (filters out job seekers who don't
+  // have an answer); nullable here so old submissions aren't backfilled.
+  childAgeOrClass: text('child_age_or_class'),
   status: text().notNull().default('new'), // new | read | replied | archived
   notes: text(), // internal staff notes
   repliedByUserId: text('replied_by_user_id'),

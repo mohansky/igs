@@ -65,6 +65,16 @@ function Admissions() {
               <p className="text-(--ink-soft) text-[15px] mt-2">
                 We'll write back within a working day to set up a visit.
               </p>
+              <p className="text-(--ink-soft) text-[13px] mt-2">
+                Looking for a teaching job? Email{' '}
+                <a
+                  href="mailto:careers@indogermanschool.com"
+                  className="text-(--accent) hover:underline"
+                >
+                  careers@indogermanschool.com
+                </a>
+                .
+              </p>
             </div>
             <ContactForm />
           </div>

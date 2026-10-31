@@ -17,6 +17,7 @@ interface ContactNotificationProps {
   email: string
   phone: string
   subject: string
+  childAgeOrClass: string
   message: string
   submittedAt: string
 }
@@ -26,6 +27,7 @@ export function ContactNotification({
   email = 'parent@example.com',
   phone = '+91 9876 5432 10',
   subject = 'Admission Enquiry',
+  childAgeOrClass = '3 years / LKG',
   message = 'I would like to know more about the admission process.',
   submittedAt = new Date().toLocaleString('en-IN', {
     timeZone: 'Asia/Kolkata',
@@ -58,6 +60,10 @@ export function ContactNotification({
             <Row style={detailRow}>
               <Column style={labelCol}>Phone</Column>
               <Column style={valueCol}>{phone}</Column>
+            </Row>
+            <Row style={detailRow}>
+              <Column style={labelCol}>Child's Age / Class</Column>
+              <Column style={valueCol}>{childAgeOrClass}</Column>
             </Row>
             <Row style={detailRow}>
               <Column style={labelCol}>Subject</Column>

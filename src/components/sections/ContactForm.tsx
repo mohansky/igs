@@ -1,9 +1,6 @@
 import { useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { site } from '#/lib/site'
 import { submitContactForm } from '#/server/contact'
-
-const { form } = site.contact
 
 const inputClass =
   'w-full rounded-[10px] px-4 py-3 text-[15px] text-(--ink) bg-(--bg) outline-none transition focus:border-(--accent)'
@@ -29,6 +26,7 @@ export function ContactForm() {
       name: formData.get('name') as string,
       phone: formData.get('phone') as string,
       email: formData.get('email') as string,
+      childAgeOrClass: formData.get('childAgeOrClass') as string,
       message: formData.get('message') as string,
       website: (formData.get('website') as string) ?? '',
       formStartedAt: formStartedAt.current,
@@ -113,6 +111,21 @@ export function ContactForm() {
           className={inputClass}
           style={fieldStyle}
           placeholder="your@email.com"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="childAgeOrClass" className={labelClass}>
+          Child's Age / Class Applying For
+        </label>
+        <input
+          id="childAgeOrClass"
+          name="childAgeOrClass"
+          type="text"
+          required
+          className={inputClass}
+          style={fieldStyle}
+          placeholder="e.g. 3 years / LKG"
         />
       </div>
 

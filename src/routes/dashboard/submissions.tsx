@@ -165,7 +165,7 @@ function SubmissionsPage() {
                       className="mt-4 space-y-4 border-t pt-4"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <div className="grid gap-3 text-sm sm:grid-cols-3">
+                      <div className="grid gap-3 text-sm sm:grid-cols-4">
                         <div>
                           <span className="font-medium text-muted-foreground">
                             Email
@@ -190,6 +190,14 @@ function SubmissionsPage() {
                             >
                               {submission.phone}
                             </a>
+                          </p>
+                        </div>
+                        <div>
+                          <span className="font-medium text-muted-foreground">
+                            Child's Age / Class
+                          </span>
+                          <p className="mt-0.5">
+                            {submission.childAgeOrClass ?? '—'}
                           </p>
                         </div>
                         <div>
