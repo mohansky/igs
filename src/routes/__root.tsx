@@ -38,9 +38,14 @@ const GTM_HEAD_SCRIPT = `(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.star
 const GADS_ID = 'AW-18155861608'
 const GADS_SCRIPT = `window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','${GADS_ID}');`
 
+// Pages whose URL carries a secret (the emailed one-time reset token in
+// ?token=). GTM/Ads page views report the full URL to Google, so no tags here.
+const NO_TRACKING_PATHS = ['/reset-password']
+
 function GoogleAdsTag() {
   const pathname = useRouterState({ select: (s) => s.location.pathname })
-  if (pathname.startsWith('/dashboard')) return null
+  if (pathname.startsWith('/dashboard') || NO_TRACKING_PATHS.includes(pathname))
+    return null
   return (
     <>
       <script
@@ -240,6 +245,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   // Header/Footer would sit above the fixed sidebar and hide its top items.
   const pathname = useRouterState({ select: (s) => s.location.pathname })
   const isDashboard = pathname.startsWith('/dashboard')
+  const tracking = !NO_TRACKING_PATHS.includes(pathname)
 
   // Register the PWA service worker (production only — a SW in dev caches
   // aggressively and fights HMR).
@@ -251,21 +257,25 @@ function RootDocument({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: GTM_HEAD_SCRIPT }} />
+        {tracking && (
+          <script dangerouslySetInnerHTML={{ __html: GTM_HEAD_SCRIPT }} />
+        )}
         <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
         <GoogleAdsTag />
         <HeadContent />
         <SchemaOrg />
       </head>
       <body className="font-sans antialiased wrap:anywhere selection:bg-[rgba(79,184,178,0.24)]">
-        <noscript>
-          <iframe
-            src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
+        {tracking && (
+          <noscript>
+            <iframe
+              src={`https://www.googletagmanager.com/ns.html?id=${GTM_ID}`}
+              height="0"
+              width="0"
+              style={{ display: 'none', visibility: 'hidden' }}
+            />
+          </noscript>
+        )}
         <TanStackQueryProvider>
           <PreferencesProvider>
             {!isDashboard && <Header />}

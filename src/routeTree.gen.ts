@@ -12,9 +12,11 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as ThankYouRouteImport } from './routes/thank-you'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as RssDotxmlRouteImport } from './routes/rss[.]xml'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as PrivacyRouteImport } from './routes/privacy'
 import { Route as PlaygroupRouteImport } from './routes/playgroup'
 import { Route as GalleryRouteImport } from './routes/gallery'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as DashboardRouteImport } from './routes/dashboard'
 import { Route as ContactRouteImport } from './routes/contact'
 import { Route as AdmissionsRouteImport } from './routes/admissions'
@@ -29,6 +31,7 @@ import { Route as DashboardSalariesRouteImport } from './routes/dashboard/salari
 import { Route as DashboardProfileRouteImport } from './routes/dashboard/profile'
 import { Route as DashboardMySalariesRouteImport } from './routes/dashboard/my-salaries'
 import { Route as DashboardMyAttendanceRouteImport } from './routes/dashboard/my-attendance'
+import { Route as DashboardGalleryRouteImport } from './routes/dashboard/gallery'
 import { Route as DashboardFeesRouteImport } from './routes/dashboard/fees'
 import { Route as DashboardExpensesRouteImport } from './routes/dashboard/expenses'
 import { Route as DashboardEnquiriesRouteImport } from './routes/dashboard/enquiries'
@@ -61,6 +64,11 @@ const RssDotxmlRoute = RssDotxmlRouteImport.update({
   path: '/rss.xml',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PrivacyRoute = PrivacyRouteImport.update({
   id: '/privacy',
   path: '/privacy',
@@ -74,6 +82,11 @@ const PlaygroupRoute = PlaygroupRouteImport.update({
 const GalleryRoute = GalleryRouteImport.update({
   id: '/gallery',
   path: '/gallery',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DashboardRoute = DashboardRouteImport.update({
@@ -145,6 +158,11 @@ const DashboardMySalariesRoute = DashboardMySalariesRouteImport.update({
 const DashboardMyAttendanceRoute = DashboardMyAttendanceRouteImport.update({
   id: '/my-attendance',
   path: '/my-attendance',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardGalleryRoute = DashboardGalleryRouteImport.update({
+  id: '/gallery',
+  path: '/gallery',
   getParentRoute: () => DashboardRoute,
 } as any)
 const DashboardFeesRoute = DashboardFeesRouteImport.update({
@@ -236,9 +254,11 @@ export interface FileRoutesByFullPath {
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
   '/playgroup': typeof PlaygroupRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/thank-you': typeof ThankYouRoute
@@ -250,6 +270,7 @@ export interface FileRoutesByFullPath {
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
   '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
   '/dashboard/my-salaries': typeof DashboardMySalariesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -273,9 +294,11 @@ export interface FileRoutesByTo {
   '/about': typeof AboutRoute
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
   '/playgroup': typeof PlaygroupRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/thank-you': typeof ThankYouRoute
@@ -287,6 +310,7 @@ export interface FileRoutesByTo {
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
   '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
   '/dashboard/my-salaries': typeof DashboardMySalariesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -312,9 +336,11 @@ export interface FileRoutesById {
   '/admissions': typeof AdmissionsRoute
   '/contact': typeof ContactRoute
   '/dashboard': typeof DashboardRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/gallery': typeof GalleryRoute
   '/playgroup': typeof PlaygroupRoute
   '/privacy': typeof PrivacyRoute
+  '/reset-password': typeof ResetPasswordRoute
   '/rss.xml': typeof RssDotxmlRoute
   '/sign-in': typeof SignInRoute
   '/thank-you': typeof ThankYouRoute
@@ -326,6 +352,7 @@ export interface FileRoutesById {
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
   '/dashboard/fees': typeof DashboardFeesRoute
+  '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
   '/dashboard/my-salaries': typeof DashboardMySalariesRoute
   '/dashboard/profile': typeof DashboardProfileRoute
@@ -352,9 +379,11 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/contact'
     | '/dashboard'
+    | '/forgot-password'
     | '/gallery'
     | '/playgroup'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/sign-in'
     | '/thank-you'
@@ -366,6 +395,7 @@ export interface FileRouteTypes {
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
     | '/dashboard/fees'
+    | '/dashboard/gallery'
     | '/dashboard/my-attendance'
     | '/dashboard/my-salaries'
     | '/dashboard/profile'
@@ -389,9 +419,11 @@ export interface FileRouteTypes {
     | '/about'
     | '/admissions'
     | '/contact'
+    | '/forgot-password'
     | '/gallery'
     | '/playgroup'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/sign-in'
     | '/thank-you'
@@ -403,6 +435,7 @@ export interface FileRouteTypes {
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
     | '/dashboard/fees'
+    | '/dashboard/gallery'
     | '/dashboard/my-attendance'
     | '/dashboard/my-salaries'
     | '/dashboard/profile'
@@ -427,9 +460,11 @@ export interface FileRouteTypes {
     | '/admissions'
     | '/contact'
     | '/dashboard'
+    | '/forgot-password'
     | '/gallery'
     | '/playgroup'
     | '/privacy'
+    | '/reset-password'
     | '/rss.xml'
     | '/sign-in'
     | '/thank-you'
@@ -441,6 +476,7 @@ export interface FileRouteTypes {
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
     | '/dashboard/fees'
+    | '/dashboard/gallery'
     | '/dashboard/my-attendance'
     | '/dashboard/my-salaries'
     | '/dashboard/profile'
@@ -466,9 +502,11 @@ export interface RootRouteChildren {
   AdmissionsRoute: typeof AdmissionsRoute
   ContactRoute: typeof ContactRoute
   DashboardRoute: typeof DashboardRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   GalleryRoute: typeof GalleryRoute
   PlaygroupRoute: typeof PlaygroupRoute
   PrivacyRoute: typeof PrivacyRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
   RssDotxmlRoute: typeof RssDotxmlRoute
   SignInRoute: typeof SignInRoute
   ThankYouRoute: typeof ThankYouRoute
@@ -500,6 +538,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof RssDotxmlRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/privacy': {
       id: '/privacy'
       path: '/privacy'
@@ -519,6 +564,13 @@ declare module '@tanstack/react-router' {
       path: '/gallery'
       fullPath: '/gallery'
       preLoaderRoute: typeof GalleryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/dashboard': {
@@ -617,6 +669,13 @@ declare module '@tanstack/react-router' {
       path: '/my-attendance'
       fullPath: '/dashboard/my-attendance'
       preLoaderRoute: typeof DashboardMyAttendanceRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/gallery': {
+      id: '/dashboard/gallery'
+      path: '/gallery'
+      fullPath: '/dashboard/gallery'
+      preLoaderRoute: typeof DashboardGalleryRouteImport
       parentRoute: typeof DashboardRoute
     }
     '/dashboard/fees': {
@@ -742,6 +801,7 @@ interface DashboardRouteChildren {
   DashboardEnquiriesRoute: typeof DashboardEnquiriesRoute
   DashboardExpensesRoute: typeof DashboardExpensesRoute
   DashboardFeesRoute: typeof DashboardFeesRoute
+  DashboardGalleryRoute: typeof DashboardGalleryRoute
   DashboardMyAttendanceRoute: typeof DashboardMyAttendanceRoute
   DashboardMySalariesRoute: typeof DashboardMySalariesRoute
   DashboardProfileRoute: typeof DashboardProfileRoute
@@ -767,6 +827,7 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardEnquiriesRoute: DashboardEnquiriesRoute,
   DashboardExpensesRoute: DashboardExpensesRoute,
   DashboardFeesRoute: DashboardFeesRoute,
+  DashboardGalleryRoute: DashboardGalleryRoute,
   DashboardMyAttendanceRoute: DashboardMyAttendanceRoute,
   DashboardMySalariesRoute: DashboardMySalariesRoute,
   DashboardProfileRoute: DashboardProfileRoute,
@@ -795,9 +856,11 @@ const rootRouteChildren: RootRouteChildren = {
   AdmissionsRoute: AdmissionsRoute,
   ContactRoute: ContactRoute,
   DashboardRoute: DashboardRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   GalleryRoute: GalleryRoute,
   PlaygroupRoute: PlaygroupRoute,
   PrivacyRoute: PrivacyRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
   RssDotxmlRoute: RssDotxmlRoute,
   SignInRoute: SignInRoute,
   ThankYouRoute: ThankYouRoute,

@@ -5,6 +5,7 @@ import { createAccessControl } from 'better-auth/plugins/access'
 import { drizzleAdapter } from 'better-auth/adapters/drizzle'
 import { db } from '#/db'
 import * as schema from '#/db/schema'
+import { isPlaceholderEmail } from '#/lib/email'
 
 const statements = {
   dashboard: ['access'],
@@ -40,6 +41,32 @@ export const auth = betterAuth({
     // off would expose a live public /api/auth/sign-up/email endpoint.
     disableSignUp: true,
     minPasswordLength: 10,
+    resetPasswordTokenExpiresIn: 60 * 60, // 1 hour — the email says so
+    // A reset should lock out whoever had the old password, not just change it.
+    revokeSessionsOnPasswordReset: true,
+    async sendResetPassword({ user, url }) {
+      // Staff created without an email get a placeholder address — no inbox.
+      if (isPlaceholderEmail(user.email)) return
+      const apiKey = process.env.RESEND_API_KEY
+      if (!apiKey) {
+        console.error('RESEND_API_KEY is not set; password reset email not sent.')
+        return
+      }
+      // Loaded on demand: auth runs on every request, and Resend + react-email
+      // would otherwise add ~490 kB to the main server bundle.
+      const [{ Resend }, { ResetPasswordEmail }] = await Promise.all([
+        import('resend'),
+        import('#/emails/reset-password'),
+      ])
+      const { error } = await new Resend(apiKey).emails.send({
+        from:
+          process.env.RESEND_FROM_EMAIL ?? 'IGS <noreply@indo-german.school>',
+        to: user.email,
+        subject: 'Reset your Indo-German School password',
+        react: ResetPasswordEmail({ name: user.name, url }),
+      })
+      if (error) console.error('Failed to send password reset email:', error)
+    },
   },
   // Throttle sign-in attempts. Without this, /sign-in/email is an unthrottled
   // oracle for credential stuffing / brute force.
@@ -52,7 +79,8 @@ export const auth = betterAuth({
     max: 30,
     customRules: {
       '/sign-in/email': { window: 60, max: 5 },
-      '/forget-password': { window: 60, max: 3 },
+      // The real endpoint name in better-auth 1.5 (was /forget-password).
+      '/request-password-reset': { window: 60, max: 3 },
       '/reset-password': { window: 60, max: 5 },
     },
   },
