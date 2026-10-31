@@ -18,6 +18,7 @@ import {
   MoneyReceiveSquareIcon,
   TimeScheduleIcon,
   MoneySendSquareIcon,
+  Image01Icon,
 } from 'hugeicons-react'
 import { cn } from '#/lib/utils'
 
@@ -129,6 +130,13 @@ const NAV_LINKS: NavLink[] = [
     to: '/dashboard/expenses',
     roles: ['admin'],
     icon: MoneyReceiveSquareIcon,
+  },
+  {
+    kind: 'nav',
+    label: 'Gallery Order',
+    to: '/dashboard/gallery',
+    roles: ['admin'],
+    icon: Image01Icon,
   },
 ]
 

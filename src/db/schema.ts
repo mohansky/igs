@@ -549,3 +549,16 @@ export const appSettings = sqliteTable('app_settings', {
     sql`(unixepoch())`,
   ),
 })
+
+// Manual gallery ordering. The gallery itself is read live from R2; this only
+// stores positions. key is an R2 photo key or a folder prefix
+// ("gallery/Founders-Day-26/"). Positions only compare among siblings (the
+// top level, or the photos in one folder); anything without a row falls back
+// to date order.
+export const galleryOrder = sqliteTable('gallery_order', {
+  key: text().primaryKey(),
+  position: integer().notNull(),
+  updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})

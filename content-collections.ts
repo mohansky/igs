@@ -238,7 +238,6 @@ const site = defineCollection({
         title: z.string(),
         description: z.string().optional(),
       }),
-      images: z.array(z.string()),
     }),
     contact: z.object({
       header: z.object({

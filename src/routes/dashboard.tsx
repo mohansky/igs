@@ -61,6 +61,7 @@ import {
   Logout03Icon,
   UnfoldMoreIcon,
   UserSearch01Icon,
+  Image01Icon,
 } from 'hugeicons-react'
 import {
   Avatar,
@@ -189,6 +190,13 @@ const navItems: NavItem[] = [
     roles: ['admin'],
     group: 'admin',
     icon: Book02Icon,
+  },
+  {
+    to: '/dashboard/gallery',
+    label: 'Gallery',
+    roles: ['admin'],
+    group: 'admin',
+    icon: Image01Icon,
   },
 ]
 
