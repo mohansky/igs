@@ -12,11 +12,13 @@ pnpm lint         # ESLint check
 pnpm format       # Prettier check
 pnpm check        # Auto-fix format + lint
 
-# Database (Drizzle ORM + SQLite)
-pnpm db:generate  # Generate migrations from schema
-pnpm db:migrate   # Run migrations
-pnpm db:push      # Push schema to DB
-pnpm db:studio    # Open Drizzle Studio
+# Database (Drizzle ORM + SQLite) — see "Database workflow" below before
+# touching schema.ts. In practice only db:push / db:push:prod are used.
+pnpm db:generate  # Generate migrations from schema — do not run, see note below
+pnpm db:migrate   # Run migrations — do not run, see note below
+pnpm db:push      # Push schema to the STAGING DB (.env.local)
+pnpm db:push:prod # Push schema to the PRODUCTION DB (.env.prod.local)
+pnpm db:studio    # Open Drizzle Studio (staging)
 
 # Shadcn UI
 pnpm dlx shadcn@latest add <component>
@@ -62,6 +64,21 @@ Blog posts are markdown/MDX files in `content/blog/`. Managed by **Content Colle
 - **Better Auth** for authentication (`src/lib/auth.ts` server, `src/lib/auth-client.ts` client)
 - **Drizzle ORM** with SQLite (`src/db/schema.ts` for schema, `drizzle.config.ts` for config)
 - Server functions via `createServerFn` from `@tanstack/react-start`
+
+### Database workflow (read before editing schema.ts)
+
+There are two Turso databases, and each has its own env file:
+
+- **`.env.local` → staging** (the `igs-staging` branch, a snapshot copy of production). Used by `pnpm dev`, `pnpm db:push`, `pnpm db:studio`, and by `scripts/*` by default. Never edit it to point at production.
+- **`.env.prod.local` → production.** Read only by `pnpm db:push:prod` (`drizzle.prod.config.ts`) and by scripts run with `--prod` (e.g. `pnpm tsx scripts/reset-staff-passwords.ts --prod …`). Each of these prints which database host it's about to use.
+- The deployed Worker gets production DB credentials from Cloudflare secrets (`wrangler secret`), not from any file. `wrangler.jsonc` `vars` holds only non-secret values.
+
+Schema changes go through `db:push`, which diffs `schema.ts` against the target DB and applies the difference directly. There are no versioned migrations and no journal.
+
+- **Do not run `pnpm db:generate` or `pnpm db:migrate`.** With no existing journal, `db:generate` produces a bogus "initial" migration that recreates every table from scratch instead of diffing — this happened once (2026-09-29) and was caught before running. If migrations are ever adopted, the current live schema needs a deliberate one-time baseline first.
+- Flow for a schema change: edit `schema.ts` → user runs `pnpm db:push` (staging) and checks it → user runs `pnpm db:push:prod` → then deploy. Code that reads a new table or column must not be deployed before the production push, or those pages break. Never run either push unprompted, same as `pnpm deploy`.
+- A purely additive change (new table, new nullable column) is safe; column/type changes or renames can make `db:push` ask for a destructive confirmation, so read what it's asking before answering yes.
+- The staging branch doesn't sync with production; recreate it (`turso db destroy igs-staging`, then `turso db create igs-staging --from-db <prod>`) when fresher data is needed.
 
 ### Key Conventions
 
