@@ -8,6 +8,7 @@ import {
   session,
   staffProfiles,
   staffSalaries,
+  staffSalaryHikes,
   staffAttendance,
 } from '#/db/schema'
 import { requireRole } from './auth-utils'
@@ -475,6 +476,58 @@ export const getStaffSalaryHistory = createServerFn({ method: 'GET' })
       .from(staffSalaries)
       .where(eq(staffSalaries.userId, data.userId))
       .orderBy(desc(staffSalaries.month))
+  })
+
+// ── Salary hike history for one staff ───────────────────────
+// A record-keeping log (old salary + the date range it applied for), kept
+// separate from the payroll ledger above and from staffProfiles' live
+// salary fields, which get overwritten in place with no history on a hike.
+
+export const listSalaryHikes = createServerFn({ method: 'GET' })
+  .inputValidator(z.object({ userId: z.string().min(1) }))
+  .handler(async ({ data }) => {
+    const session = await requireRole(['admin', 'staff'])
+    const role = (session.user as { role?: string }).role ?? 'staff'
+    if (
+      role !== 'admin' &&
+      role !== 'auditor' &&
+      data.userId !== session.user.id
+    ) {
+      throw new Error('Forbidden')
+    }
+    return db
+      .select()
+      .from(staffSalaryHikes)
+      .where(eq(staffSalaryHikes.userId, data.userId))
+      .orderBy(desc(staffSalaryHikes.effectiveFrom))
+  })
+
+export const createSalaryHike = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      userId: z.string().min(1),
+      oldSalary: money,
+      newSalary: money.nullish(),
+      effectiveFrom: dateString,
+      effectiveTo: dateString,
+      notes: text(1000),
+    }),
+  )
+  .handler(async ({ data }) => {
+    const adminSession = await requireRole(['admin'])
+    const [row] = await db
+      .insert(staffSalaryHikes)
+      .values({ ...data, createdByUserId: adminSession.user.id })
+      .returning()
+    return row
+  })
+
+export const deleteSalaryHike = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ id: z.number().int().positive() }))
+  .handler(async ({ data }) => {
+    await requireRole(['admin'])
+    await db.delete(staffSalaryHikes).where(eq(staffSalaryHikes.id, data.id))
+    return { success: true }
   })
 
 // ── Attendance history for one staff ────────────────────────

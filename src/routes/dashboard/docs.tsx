@@ -445,8 +445,9 @@ function DocsPage() {
               </li>
               <li>
                 For each staff member, choose <Strong>P</Strong> (Present),{' '}
-                <Strong>A</Strong> (Absent), <Strong>L</Strong> (Late), or{' '}
-                <Strong>Lv</Strong> (Leave).
+                <Strong>A</Strong> (Absent), <Strong>L</Strong> (Late),{' '}
+                <Strong>CL</Strong> (Casual leave), or <Strong>SL</Strong>{' '}
+                (Sick leave).
               </li>
               <li>
                 Optionally set <Strong>Check In</Strong> /{' '}
@@ -470,6 +471,31 @@ function DocsPage() {
                 Summary badges show Present, Absent, Late, and Leave totals.
               </li>
             </ol>
+
+            <h3 className="mb-2 mt-4 text-sm font-semibold">Leave Balances</h3>
+            <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+              <li>
+                Each school year (May to April) staff get{' '}
+                <Strong>12 casual</Strong> and <Strong>6 sick</Strong> leave.
+                For 2026-27 the allowance started on 1 October 2026:{' '}
+                <Strong>8 casual</Strong> and <Strong>6 sick</Strong>.
+              </li>
+              <li>
+                Days marked <Strong>CL</Strong> or <Strong>SL</Strong> count
+                against the balance. <Strong>A</Strong> (Absent) never does.
+              </li>
+              <li>
+                Balances show in the <Strong>Leave used</Strong> column while
+                marking, and on each staff member&apos;s profile under{' '}
+                <Strong>Attendance</Strong>. Staff see their own on{' '}
+                <NavLink>My Attendance</NavLink>.
+              </li>
+              <li>
+                Leave days saved before casual/sick existed show as{' '}
+                <Strong>leave (no type)</Strong> and aren&apos;t counted. Open
+                that date, click CL or SL, and save to classify them.
+              </li>
+            </ul>
           </Section>
 
           <Separator />

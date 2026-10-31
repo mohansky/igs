@@ -9,6 +9,25 @@ import { Badge } from '#/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Image } from '#/components/ui/image'
+import { Input } from '#/components/ui/input'
+import { Label } from '#/components/ui/label'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '#/components/ui/dialog'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '#/components/ui/alert-dialog'
+import { IconButton } from '#/components/dashboard/IconButton'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { formatCurrency, formatDate } from '#/lib/utils'
 import { StaffForm, type StaffFormData } from '#/components/dashboard/StaffForm'
@@ -18,11 +37,20 @@ import {
   updateStaffLoginEmail,
   getStaffSalaryHistory,
   getStaffAttendanceHistory,
+  listSalaryHikes,
+  createSalaryHike,
+  deleteSalaryHike,
 } from '#/server/staff'
 import { displayEmail, isPlaceholderEmail } from '#/lib/email'
 import { AttachmentsSection } from '#/components/dashboard/AttachmentsSection'
 import EditIcon from '#/components/icons/EditIcon'
 import SaveIcon from '#/components/icons/SaveIcon'
+import AddIcon from '#/components/icons/AddIcon'
+import TrashIcon from '#/components/icons/TrashIcon'
+import { getLeaveBalances } from '#/server/staff-attendance'
+import { LeaveBalance } from '#/components/dashboard/LeaveBalance'
+import { attendanceStatusLabel } from '#/lib/leave-policy'
+import type { LeaveBalances } from '#/server/staff-attendance'
 
 export const Route = createFileRoute('/dashboard/staff/$staffId')({
   beforeLoad: ({ context }) => {
@@ -59,8 +87,19 @@ interface AttendanceRow {
   id: number
   date: string
   status: string
+  leaveType: string | null
   checkIn: string | null
   checkOut: string | null
+  notes: string | null
+}
+
+interface SalaryHikeRow {
+  id: number
+  userId: string
+  oldSalary: number
+  newSalary: number | null
+  effectiveFrom: string
+  effectiveTo: string
   notes: string | null
 }
 
@@ -91,6 +130,56 @@ function StaffDetailPage() {
       getStaffAttendanceHistory({ data: { userId: staffId } }) as Promise<
         AttendanceRow[]
       >,
+  })
+
+  const { data: leave } = useQuery({
+    queryKey: ['leave-balances', 'staff', staffId],
+    queryFn: () => getLeaveBalances({ data: { userId: staffId } }),
+  })
+
+  const { data: salaryHikes = [] } = useQuery({
+    queryKey: ['staff', staffId, 'salaryHikes'],
+    queryFn: () =>
+      listSalaryHikes({ data: { userId: staffId } }) as Promise<
+        SalaryHikeRow[]
+      >,
+  })
+
+  const [hikeDialogOpen, setHikeDialogOpen] = useState(false)
+  const [deleteHikeTarget, setDeleteHikeTarget] =
+    useState<SalaryHikeRow | null>(null)
+
+  const invalidateHikes = () =>
+    queryClient.invalidateQueries({
+      queryKey: ['staff', staffId, 'salaryHikes'],
+    })
+
+  const createHikeMutation = useMutation({
+    mutationFn: (data: {
+      oldSalary: number
+      newSalary?: number
+      effectiveFrom: string
+      effectiveTo: string
+      notes?: string
+    }) => createSalaryHike({ data: { userId: staffId, ...data } }),
+    onSuccess: () => {
+      invalidateHikes()
+      setHikeDialogOpen(false)
+      toast.success('Salary hike recorded')
+    },
+    onError: (err: Error) =>
+      toast.error(err.message || 'Failed to record salary hike'),
+  })
+
+  const deleteHikeMutation = useMutation({
+    mutationFn: (id: number) => deleteSalaryHike({ data: { id } }),
+    onSuccess: () => {
+      invalidateHikes()
+      setDeleteHikeTarget(null)
+      toast.success('Salary hike record deleted')
+    },
+    onError: (err: Error) =>
+      toast.error(err.message || 'Failed to delete record'),
   })
 
   const updateMutation = useMutation({
@@ -459,10 +548,17 @@ function StaffDetailPage() {
         </TabsContent>
 
         <TabsContent value="salary" className="space-y-4">
+          <SalaryHikesCard
+            hikes={salaryHikes}
+            currentSalary={p.basicPay ?? undefined}
+            onAdd={() => setHikeDialogOpen(true)}
+            onDelete={(hike) => setDeleteHikeTarget(hike)}
+          />
           <SalaryHistoryTable rows={salaryHistory} staffId={staffId} />
         </TabsContent>
 
         <TabsContent value="attendance" className="space-y-4">
+          <LeaveBalanceCard leave={leave} />
           <AttendanceHistoryTable rows={attendanceHistory} />
         </TabsContent>
 
@@ -474,6 +570,45 @@ function StaffDetailPage() {
           )}
         </TabsContent>
       </Tabs>
+
+      {/* Record salary hike */}
+      <HikeFormDialog
+        open={hikeDialogOpen}
+        onOpenChange={setHikeDialogOpen}
+        defaultOldSalary={p.basicPay ?? undefined}
+        onSubmit={(hikeData) => createHikeMutation.mutate(hikeData)}
+        loading={createHikeMutation.isPending}
+      />
+
+      {/* Delete hike confirmation */}
+      <AlertDialog
+        open={!!deleteHikeTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteHikeTarget(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Salary Hike Record</AlertDialogTitle>
+            <AlertDialogDescription>
+              This removes the record only — it does not change the
+              staff&apos;s current salary or any generated payroll. This
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              onClick={() =>
+                deleteHikeTarget && deleteHikeMutation.mutate(deleteHikeTarget.id)
+              }
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
@@ -492,6 +627,195 @@ function InfoRow({
         {value != null && value !== '' ? value : '-'}
       </p>
     </div>
+  )
+}
+
+function SalaryHikesCard({
+  hikes,
+  currentSalary,
+  onAdd,
+  onDelete,
+}: {
+  hikes: SalaryHikeRow[]
+  currentSalary?: number
+  onAdd: () => void
+  onDelete: (hike: SalaryHikeRow) => void
+}) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">Salary Hikes</CardTitle>
+        <Button size="sm" onClick={onAdd}>
+          <AddIcon className="h-3 w-3" />
+          <span>Record Hike</span>
+        </Button>
+      </CardHeader>
+      <CardContent>
+        {hikes.length === 0 ? (
+          <p className="text-sm text-muted-foreground">
+            No salary hikes recorded yet.
+          </p>
+        ) : (
+          <div className="space-y-2">
+            {hikes.map((h) => (
+              <div
+                key={h.id}
+                className="flex items-center justify-between gap-3 rounded-md border p-3"
+              >
+                <div>
+                  <p className="text-sm font-medium">
+                    {formatCurrency(h.oldSalary)}
+                    {h.newSalary != null && (
+                      <>
+                        {' '}
+                        <span className="text-muted-foreground">→</span>{' '}
+                        {formatCurrency(h.newSalary)}
+                      </>
+                    )}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Old salary applied {formatDate(h.effectiveFrom)} –{' '}
+                    {formatDate(h.effectiveTo)}
+                  </p>
+                  {h.notes && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      {h.notes}
+                    </p>
+                  )}
+                </div>
+                <IconButton
+                  tooltip="Delete"
+                  icon={TrashIcon}
+                  className="text-destructive"
+                  size="xs"
+                  onClick={() => onDelete(h)}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+        {currentSalary != null && (
+          <p className="mt-3 text-xs text-muted-foreground">
+            Current basic pay: {formatCurrency(currentSalary)} — a
+            record-keeping log only; it does not affect generated payroll.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  )
+}
+
+function HikeFormDialog({
+  open,
+  onOpenChange,
+  defaultOldSalary,
+  onSubmit,
+  loading,
+}: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  defaultOldSalary?: number
+  onSubmit: (data: {
+    oldSalary: number
+    newSalary?: number
+    effectiveFrom: string
+    effectiveTo: string
+    notes?: string
+  }) => void
+  loading: boolean
+}) {
+  const [oldSalary, setOldSalary] = useState('')
+  const [newSalary, setNewSalary] = useState('')
+  const [effectiveFrom, setEffectiveFrom] = useState('')
+  const [effectiveTo, setEffectiveTo] = useState('')
+  const [notes, setNotes] = useState('')
+
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      setOldSalary(defaultOldSalary != null ? String(defaultOldSalary) : '')
+      setNewSalary('')
+      setEffectiveFrom('')
+      setEffectiveTo('')
+      setNotes('')
+    }
+    onOpenChange(nextOpen)
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault()
+    onSubmit({
+      oldSalary: Number(oldSalary),
+      newSalary: newSalary ? Number(newSalary) : undefined,
+      effectiveFrom,
+      effectiveTo,
+      notes: notes || undefined,
+    })
+  }
+
+  return (
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Record Salary Hike</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Old Salary</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                required
+                value={oldSalary}
+                onChange={(e) => setOldSalary(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>New Salary (optional)</Label>
+              <Input
+                type="number"
+                min="0"
+                step="0.01"
+                value={newSalary}
+                onChange={(e) => setNewSalary(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <Label>Old Salary Effective From</Label>
+              <Input
+                type="date"
+                required
+                value={effectiveFrom}
+                onChange={(e) => setEffectiveFrom(e.target.value)}
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Old Salary Effective Until</Label>
+              <Input
+                type="date"
+                required
+                value={effectiveTo}
+                onChange={(e) => setEffectiveTo(e.target.value)}
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Notes (optional)</Label>
+            <Input
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="e.g. Annual increment"
+            />
+          </div>
+          <Button type="submit" className="w-full" disabled={loading}>
+            {loading ? 'Saving...' : 'Record Hike'}
+          </Button>
+        </form>
+      </DialogContent>
+    </Dialog>
   )
 }
 
@@ -584,6 +908,20 @@ function SalaryHistoryTable({
   return <CustomDataTable columns={columns} data={rows} />
 }
 
+function LeaveBalanceCard({ leave }: { leave?: LeaveBalances }) {
+  if (!leave?.policy) return null
+  return (
+    <Card className="max-w-xl">
+      <CardHeader>
+        <CardTitle className="text-base">Leave this school year</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <LeaveBalance policy={leave.policy} used={leave.used[0]} />
+      </CardContent>
+    </Card>
+  )
+}
+
 function AttendanceHistoryTable({ rows }: { rows: AttendanceRow[] }) {
   const statusVariant = (s: string) => {
     switch (s) {
@@ -613,7 +951,7 @@ function AttendanceHistoryTable({ rows }: { rows: AttendanceRow[] }) {
         const s = row.getValue('status') as string
         return (
           <Badge className="capitalize" variant={statusVariant(s)}>
-            {s}
+            {attendanceStatusLabel(s, row.original.leaveType)}
           </Badge>
         )
       },

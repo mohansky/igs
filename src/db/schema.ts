@@ -369,6 +369,9 @@ export const staffAttendance = sqliteTable(
       .references(() => user.id),
     date: text().notNull(),
     status: text().notNull(), // present | absent | late | leave
+    // casual | sick — only set when status is leave. Counts against the
+    // yearly allowance (see #/lib/leave-policy). Absent never does.
+    leaveType: text('leave_type'),
     checkIn: text('check_in'),
     checkOut: text('check_out'),
     notes: text(),
@@ -456,6 +459,26 @@ export const staffSalaries = sqliteTable(
     uniqueIndex('staff_salaries_user_month_idx').on(table.userId, table.month),
   ],
 )
+
+// A record-keeping log of pay changes — separate from staffSalaries (the
+// generated monthly payroll ledger) and from staffProfiles' live salary
+// fields (which get overwritten in place on a hike, with no history kept).
+// effectiveFrom/effectiveTo describe the period the OLD salary applied for.
+export const staffSalaryHikes = sqliteTable('staff_salary_hikes', {
+  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+  userId: text('user_id')
+    .notNull()
+    .references(() => user.id, { onDelete: 'cascade' }),
+  oldSalary: real('old_salary').notNull(),
+  newSalary: real('new_salary'),
+  effectiveFrom: text('effective_from').notNull(), // YYYY-MM-DD
+  effectiveTo: text('effective_to').notNull(), // YYYY-MM-DD
+  notes: text(),
+  createdByUserId: text('created_by_user_id').references(() => user.id),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
 
 export const fees = sqliteTable('fees', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),

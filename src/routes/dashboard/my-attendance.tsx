@@ -6,6 +6,9 @@ import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Skeleton } from '#/components/ui/skeleton'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { getStaffAttendanceHistory } from '#/server/staff'
+import { getLeaveBalances } from '#/server/staff-attendance'
+import { LeaveBalance } from '#/components/dashboard/LeaveBalance'
+import { attendanceStatusLabel } from '#/lib/leave-policy'
 import { formatDate } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/my-attendance')({
@@ -24,6 +27,7 @@ interface AttendanceRow {
   userId: string
   date: string
   status: string
+  leaveType: string | null
   checkIn: string | null
   checkOut: string | null
   notes: string | null
@@ -56,6 +60,13 @@ function MyAttendancePage() {
       >,
   })
 
+  // userId passed explicitly: an admin opening this page would otherwise get
+  // everyone's balances back.
+  const { data: leave } = useQuery({
+    queryKey: ['leave-balances', 'me', userId],
+    queryFn: () => getLeaveBalances({ data: { userId } }),
+  })
+
   const summary = {
     total: rows.length,
     present: rows.filter((r) => r.status === 'present').length,
@@ -79,7 +90,7 @@ function MyAttendancePage() {
         const status = row.getValue('status') as string
         return (
           <Badge className="capitalize" variant={statusVariant(status)}>
-            {status}
+            {attendanceStatusLabel(status, row.original.leaveType)}
           </Badge>
         )
       },
@@ -179,6 +190,17 @@ function MyAttendancePage() {
           </CardContent>
         </Card>
       </div>
+
+      {leave?.policy && (
+        <Card className="max-w-xl">
+          <CardHeader>
+            <CardTitle className="text-base">My leave this school year</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <LeaveBalance policy={leave.policy} used={leave.used[0]} />
+          </CardContent>
+        </Card>
+      )}
 
       {rows.length === 0 ? (
         <p className="text-sm text-muted-foreground">

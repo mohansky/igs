@@ -1,6 +1,6 @@
 import { createFileRoute, redirect } from '@tanstack/react-router'
 import { useState, useMemo } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '#/components/ui/button'
@@ -24,9 +24,14 @@ import {
   getStaffAttendanceByDate,
   markStaffAttendance,
   listStaffAttendance,
+  getLeaveBalances,
 } from '#/server/staff-attendance'
 import LoadIcon from '#/components/icons/LoadIcon'
 import type { StaffAttendanceStatus } from '#/server/staff-attendance'
+import { LeaveBalanceCompact } from '#/components/dashboard/LeaveBalance'
+import { fyStartYearOf } from '#/lib/financial-year'
+import { attendanceStatusLabel } from '#/lib/leave-policy'
+import type { LeaveType } from '#/lib/leave-policy'
 
 export const Route = createFileRoute('/dashboard/staff-attendance')({
   beforeLoad: ({ context }) => {
@@ -45,12 +50,14 @@ interface StaffRecord {
   userId: string
   name: string
   status: StaffAttendanceStatus
+  leaveType: LeaveType | null
   checkIn: string
   checkOut: string
   notes: string
 }
 
 function StaffAttendanceMarker() {
+  const queryClient = useQueryClient()
   const [date, setDate] = useState(new Date().toISOString().split('T')[0])
   const [staff, setStaff] = useState<StaffRecord[]>([])
   const [loaded, setLoaded] = useState(false)
@@ -71,14 +78,16 @@ function StaffAttendanceMarker() {
         records: {
           userId: string
           status: string
+          leaveType: string | null
           checkIn: string | null
           checkOut: string | null
           notes: string | null
         }[]
       }
 
-      const records = result.staff.map((s) => {
+      const records = result.staff.map((s): StaffRecord => {
         const existing = result.records.find((r) => r.userId === s.id)
+        const savedType = existing?.leaveType
         return {
           userId: s.id,
           name: s.name,
@@ -86,6 +95,8 @@ function StaffAttendanceMarker() {
           status:
             (existing?.status as StaffAttendanceStatus | undefined) ??
             'present',
+          leaveType:
+            savedType === 'casual' || savedType === 'sick' ? savedType : null,
           checkIn: existing?.checkIn ?? s.defaultCheckIn ?? '',
           checkOut: existing?.checkOut ?? s.defaultCheckOut ?? '',
           notes: existing?.notes ?? '',
@@ -112,11 +123,25 @@ function StaffAttendanceMarker() {
     [staff],
   )
 
-  const setStatus = (userId: string, status: StaffAttendanceStatus) => {
+  const setStatus = (
+    userId: string,
+    status: StaffAttendanceStatus,
+    leaveType: LeaveType | null = null,
+  ) => {
     setStaff((prev) =>
-      prev.map((s) => (s.userId === userId ? { ...s, status } : s)),
+      prev.map((s) => (s.userId === userId ? { ...s, status, leaveType } : s)),
     )
   }
+
+  // Balances for the school year of the date being marked. Counts saved
+  // records only, so it updates after Save.
+  const leaveYear = fyStartYearOf(date)
+  const { data: leave } = useQuery({
+    queryKey: ['leave-balances', leaveYear],
+    queryFn: () => getLeaveBalances({ data: { year: leaveYear } }),
+    enabled: loaded,
+  })
+  const usedByUser = new Map((leave?.used ?? []).map((u) => [u.userId, u]))
 
   const setField = (
     userId: string,
@@ -136,13 +161,17 @@ function StaffAttendanceMarker() {
           records: staff.map((s) => ({
             userId: s.userId,
             status: s.status,
+            leaveType: s.leaveType ?? undefined,
             checkIn: s.checkIn || undefined,
             checkOut: s.checkOut || undefined,
             notes: s.notes || undefined,
           })),
         },
       }),
-    onSuccess: () => toast.success('Staff attendance saved'),
+    onSuccess: () => {
+      toast.success('Staff attendance saved')
+      queryClient.invalidateQueries({ queryKey: ['leave-balances'] })
+    },
     onError: () => toast.error('Failed to save staff attendance'),
   })
 
@@ -209,7 +238,8 @@ function StaffAttendanceMarker() {
                 <TableHead className="w-12">#</TableHead>
                 <TableHead>Name</TableHead>
                 <TableHead>Status</TableHead>
-                <TableHead className="w-52">Actions</TableHead>
+                <TableHead className="w-60">Actions</TableHead>
+                {leave?.policy && <TableHead>Leave used</TableHead>}
                 <TableHead className="w-28">Check In</TableHead>
                 <TableHead className="w-28">Check Out</TableHead>
                 <TableHead>Notes</TableHead>
@@ -223,7 +253,9 @@ function StaffAttendanceMarker() {
                   </TableCell>
                   <TableCell className="font-medium">{s.name}</TableCell>
                   <TableCell>
-                    <Badge variant={statusVariant(s.status)}>{s.status}</Badge>
+                    <Badge variant={statusVariant(s.status)}>
+                      {attendanceStatusLabel(s.status, s.leaveType)}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-1">
@@ -251,14 +283,39 @@ function StaffAttendanceMarker() {
                         L
                       </Button>
                       <Button
-                        variant={s.status === 'leave' ? 'success' : 'ghost'}
+                        variant={
+                          s.status === 'leave' && s.leaveType === 'casual'
+                            ? 'success'
+                            : 'ghost'
+                        }
                         size="sm"
-                        onClick={() => setStatus(s.userId, 'leave')}
+                        title="Casual leave"
+                        onClick={() => setStatus(s.userId, 'leave', 'casual')}
                       >
-                        Lv
+                        CL
+                      </Button>
+                      <Button
+                        variant={
+                          s.status === 'leave' && s.leaveType === 'sick'
+                            ? 'success'
+                            : 'ghost'
+                        }
+                        size="sm"
+                        title="Sick leave"
+                        onClick={() => setStatus(s.userId, 'leave', 'sick')}
+                      >
+                        SL
                       </Button>
                     </div>
                   </TableCell>
+                  {leave?.policy && (
+                    <TableCell>
+                      <LeaveBalanceCompact
+                        policy={leave.policy}
+                        used={usedByUser.get(s.userId)}
+                      />
+                    </TableCell>
+                  )}
                   <TableCell>
                     <Input
                       type="time"
@@ -294,7 +351,7 @@ function StaffAttendanceMarker() {
               {staff.length === 0 && (
                 <TableRow>
                   <TableCell
-                    colSpan={7}
+                    colSpan={leave?.policy ? 8 : 7}
                     className="text-center text-muted-foreground"
                   >
                     No staff members found
@@ -334,6 +391,7 @@ interface StaffAttendanceRecord {
   id: number
   date: string
   status: string
+  leaveType: string | null
   checkIn: string | null
   checkOut: string | null
   notes: string | null
@@ -383,7 +441,7 @@ const historyColumns: ColumnDef<StaffAttendanceRecord>[] = [
       const status = row.getValue('status') as string
       return (
         <Badge className="capitalize" variant={logStatusVariant(status)}>
-          {status}
+          {attendanceStatusLabel(status, row.original.leaveType)}
         </Badge>
       )
     },
