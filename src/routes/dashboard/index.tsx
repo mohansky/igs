@@ -7,12 +7,16 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { getChildrenByParent } from '#/server/students'
 import { getDashboardStats } from '#/server/analytics'
+import { listBirthdays, type Birthday } from '#/server/birthdays'
 import {
   getMonthlyOverview,
   type MonthlyOverviewRow,
 } from '#/server/transactions'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
-import { typeBadgeVariant } from '#/lib/calendar-event-style'
+import {
+  typeBadgeVariant,
+  BIRTHDAY_BADGE_VARIANT,
+} from '#/lib/calendar-event-style'
 import { format, parseISO } from 'date-fns'
 import {
   Calendar03Icon,
@@ -51,6 +55,22 @@ function DashboardOverview() {
     enabled: isStaffOrAdmin,
   })
 
+  const { data: birthdays = [] } = useQuery({
+    queryKey: ['birthdays'],
+    queryFn: () => listBirthdays(),
+    enabled: isStaffOrAdmin,
+    staleTime: 1000 * 60 * 60,
+  })
+
+  const currentMonthBirthdays = useMemo(() => {
+    const month = format(new Date(), 'MM')
+    return birthdays
+      .filter((b) => b.dateOfBirth.slice(5, 7) === month)
+      .sort((a, b) =>
+        a.dateOfBirth.slice(8, 10).localeCompare(b.dateOfBirth.slice(8, 10)),
+      )
+  }, [birthdays])
+
   return (
     <div className="space-y-6">
       <div>
@@ -69,9 +89,13 @@ function DashboardOverview() {
 
       {isStaffOrAdmin && statsLoading && <DashboardSkeleton />}
 
-      {userRole === 'admin' && stats && <AdminDashboard stats={stats} />}
+      {userRole === 'admin' && stats && (
+        <AdminDashboard stats={stats} birthdays={currentMonthBirthdays} />
+      )}
 
-      {userRole === 'staff' && stats && <StaffDashboard stats={stats} />}
+      {userRole === 'staff' && stats && (
+        <StaffDashboard stats={stats} birthdays={currentMonthBirthdays} />
+      )}
 
       {isStudent && childrenLoading && <StudentDashboardSkeleton />}
 
@@ -84,11 +108,21 @@ function DashboardOverview() {
 
 // ── Admin Dashboard ──────────────────────────────────────────
 
-function AdminDashboard({ stats }: { stats: Stats }) {
+function AdminDashboard({
+  stats,
+  birthdays,
+}: {
+  stats: Stats
+  birthdays: Birthday[]
+}) {
   return (
     <div className="space-y-8">
       {stats.upcomingEvents.length > 0 && (
         <UpcomingEventsCard events={stats.upcomingEvents} />
+      )}
+
+      {birthdays.length > 0 && (
+        <UpcomingBirthdaysCard birthdays={birthdays} />
       )}
 
       {/* Quick links — moved to top */}
@@ -287,11 +321,21 @@ function AdminDashboard({ stats }: { stats: Stats }) {
 
 // ── Staff Dashboard ──────────────────────────────────────────
 
-function StaffDashboard({ stats }: { stats: Stats }) {
+function StaffDashboard({
+  stats,
+  birthdays,
+}: {
+  stats: Stats
+  birthdays: Birthday[]
+}) {
   return (
     <div className="space-y-8">
       {stats.upcomingEvents.length > 0 && (
         <UpcomingEventsCard events={stats.upcomingEvents} />
+      )}
+
+      {birthdays.length > 0 && (
+        <UpcomingBirthdaysCard birthdays={birthdays} />
       )}
 
       {/* Quick links — moved to top */}
@@ -1143,6 +1187,53 @@ function UpcomingEventsCard({ events }: { events: Stats['upcomingEvents'] }) {
                   className="text-[10px] capitalize"
                 >
                   {ev.type}
+                </Badge>
+              </div>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+// ── Upcoming Birthdays ───────────────────────────────────────
+// Admin/staff only (see UpcomingEventsCard's queryFn gating above) —
+// derived from student/staff dateOfBirth, not stored calendar_events.
+
+function UpcomingBirthdaysCard({ birthdays }: { birthdays: Birthday[] }) {
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base">Upcoming Birthdays</CardTitle>
+        <Link to="/dashboard/calendar">
+          <span className="text-sm text-primary hover:underline">
+            View calendar
+          </span>
+        </Link>
+      </CardHeader>
+      <CardContent>
+        <div className="flex flex-wrap gap-3">
+          {birthdays.map((b) => (
+            <div
+              key={b.id}
+              className="flex items-center gap-2 rounded-md border px-3 py-2"
+            >
+              <div className="text-center">
+                <p className="text-xs text-muted-foreground">
+                  {format(parseISO(b.dateOfBirth), 'MMM')}
+                </p>
+                <p className="text-lg font-bold leading-none">
+                  {format(parseISO(b.dateOfBirth), 'd')}
+                </p>
+              </div>
+              <div>
+                <p className="text-sm font-medium">🎂 {b.name}</p>
+                <Badge
+                  variant={BIRTHDAY_BADGE_VARIANT}
+                  className="text-[10px] capitalize"
+                >
+                  {b.role}
                 </Badge>
               </div>
             </div>

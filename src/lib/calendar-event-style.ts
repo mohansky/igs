@@ -15,6 +15,12 @@ export const EVENT_TYPES: {
   { value: 'deadline', label: 'Deadline', color: 'bg-red-500' },
 ] as const
 
+// Birthdays are derived from student/staff profiles, not stored
+// calendar_events rows, so they get their own (non-editable) styling
+// rather than a slot in EVENT_TYPES/calendarType.
+export const BIRTHDAY_COLOR = 'bg-pink-500'
+export const BIRTHDAY_BADGE_VARIANT = 'birthday' as const
+
 // Solid dot / chip colour (mini-calendar, legends).
 export const typeColor = (type: string) =>
   EVENT_TYPES.find((t) => t.value === type)?.color ?? 'bg-muted-foreground'

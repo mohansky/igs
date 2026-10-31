@@ -54,14 +54,18 @@ import {
   updateCalendarEvent,
   deleteCalendarEvent,
 } from '#/server/calendar'
+import { listBirthdays } from '#/server/birthdays'
 import NextIcon from '#/components/icons/NextIcon'
 import PrevIcon from '#/components/icons/PrevIcon'
 import AddIcon from '#/components/icons/AddIcon'
 import type { CalendarEventType } from '#/server/calendar'
+import type { Birthday } from '#/server/birthdays'
 import {
   EVENT_TYPES,
   typeColor,
   typeBadgeVariant,
+  BIRTHDAY_COLOR,
+  BIRTHDAY_BADGE_VARIANT,
 } from '#/lib/calendar-event-style'
 
 export const Route = createFileRoute('/dashboard/calendar')({
@@ -77,6 +81,13 @@ interface CalendarEvent {
   type: CalendarEventType
   color: string | null
 }
+
+// A day cell can show real calendar_events rows and/or birthdays derived
+// live from student/staff profiles — birthdays aren't stored events, so
+// they're merged in for display only (no edit/delete).
+type DayItem =
+  | { kind: 'event'; event: CalendarEvent }
+  | { kind: 'birthday'; birthday: Birthday }
 
 function CalendarPage() {
   const { session } = Route.useRouteContext()
@@ -101,6 +112,15 @@ function CalendarPage() {
       listCalendarEvents({
         data: { startDate: rangeStart, endDate: rangeEnd },
       }) as Promise<CalendarEvent[]>,
+  })
+
+  // Admin/staff only — student/staff birthdays are deliberately kept off
+  // the parent/student-facing calendar (children's personal data).
+  const { data: birthdays = [] } = useQuery({
+    queryKey: ['birthdays'],
+    queryFn: () => listBirthdays(),
+    enabled: canEdit,
+    staleTime: 1000 * 60 * 60,
   })
 
   const invalidate = () =>
@@ -155,26 +175,56 @@ function CalendarPage() {
   const calendarEnd = endOfWeek(monthEnd)
   const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
-  const eventsForDay = useMemo(() => {
-    const map = new Map<string, CalendarEvent[]>()
-    for (const day of days) {
-      const dayStr = format(day, 'yyyy-MM-dd')
-      const dayEvents = events.filter((ev) => {
-        const start = parseISO(ev.startDate)
-        const end = ev.endDate ? parseISO(ev.endDate) : start
-        return isWithinInterval(day, { start, end }) || isSameDay(day, start)
-      })
-      if (dayEvents.length > 0) map.set(dayStr, dayEvents)
+  // Keyed by 'MM-dd' (year-agnostic) so a birthday matches every year.
+  const birthdaysByMonthDay = useMemo(() => {
+    const map = new Map<string, Birthday[]>()
+    for (const b of birthdays) {
+      const key = b.dateOfBirth.slice(5)
+      const list = map.get(key)
+      if (list) list.push(b)
+      else map.set(key, [b])
     }
     return map
-  }, [days, events])
+  }, [birthdays])
+
+  const itemsForDay = useMemo(() => {
+    const map = new Map<string, DayItem[]>()
+    for (const day of days) {
+      const dayStr = format(day, 'yyyy-MM-dd')
+      const items: DayItem[] = []
+      for (const event of events) {
+        const start = parseISO(event.startDate)
+        const end = event.endDate ? parseISO(event.endDate) : start
+        if (isWithinInterval(day, { start, end }) || isSameDay(day, start)) {
+          items.push({ kind: 'event', event })
+        }
+      }
+      for (const birthday of birthdaysByMonthDay.get(format(day, 'MM-dd')) ??
+        []) {
+        items.push({ kind: 'birthday', birthday })
+      }
+      if (items.length > 0) map.set(dayStr, items)
+    }
+    return map
+  }, [days, events, birthdaysByMonthDay])
 
   const selectedDateStr = selectedDate
     ? format(selectedDate, 'yyyy-MM-dd')
     : null
-  const selectedDayEvents = selectedDateStr
-    ? (eventsForDay.get(selectedDateStr) ?? [])
+  const selectedDayItems = selectedDateStr
+    ? (itemsForDay.get(selectedDateStr) ?? [])
     : []
+
+  // Birthdays falling in the displayed month, day-ordered — independent of
+  // which specific day (if any) is selected.
+  const currentMonthBirthdays = useMemo(() => {
+    const month = format(currentMonth, 'MM')
+    return birthdays
+      .filter((b) => b.dateOfBirth.slice(5, 7) === month)
+      .sort((a, b) =>
+        a.dateOfBirth.slice(8, 10).localeCompare(b.dateOfBirth.slice(8, 10)),
+      )
+  }, [birthdays, currentMonth])
 
   const handleDayClick = (day: Date) => {
     setSelectedDate(day)
@@ -296,7 +346,7 @@ function CalendarPage() {
               ))}
               {days.map((day) => {
                 const dayStr = format(day, 'yyyy-MM-dd')
-                const dayEvents = eventsForDay.get(dayStr)
+                const dayItems = itemsForDay.get(dayStr)
                 const isToday = isSameDay(day, new Date())
                 const isSelected = selectedDate && isSameDay(day, selectedDate)
                 const inMonth = isSameMonth(day, currentMonth)
@@ -318,19 +368,28 @@ function CalendarPage() {
                     >
                       {format(day, 'd')}
                     </span>
-                    {dayEvents && (
+                    {dayItems && (
                       <div className="mt-0.5 flex flex-col gap-0.5">
-                        {dayEvents.slice(0, 2).map((ev) => (
-                          <div
-                            key={ev.id}
-                            className={`truncate rounded px-1 text-[10px] leading-tight text-white ${typeColor(ev.type)}`}
-                          >
-                            {ev.title}
-                          </div>
-                        ))}
-                        {dayEvents.length > 2 && (
+                        {dayItems.slice(0, 2).map((item) =>
+                          item.kind === 'event' ? (
+                            <div
+                              key={`event-${item.event.id}`}
+                              className={`truncate rounded px-1 text-[10px] leading-tight text-white ${typeColor(item.event.type)}`}
+                            >
+                              {item.event.title}
+                            </div>
+                          ) : (
+                            <div
+                              key={`birthday-${item.birthday.id}`}
+                              className={`truncate rounded px-1 text-[10px] leading-tight text-white ${BIRTHDAY_COLOR}`}
+                            >
+                              🎂 {item.birthday.name}
+                            </div>
+                          ),
+                        )}
+                        {dayItems.length > 2 && (
                           <span className="text-[10px] text-muted-foreground">
-                            +{dayEvents.length - 2} more
+                            +{dayItems.length - 2} more
                           </span>
                         )}
                       </div>
@@ -358,58 +417,84 @@ function CalendarPage() {
                 )}
               </CardHeader>
               <CardContent>
-                {selectedDayEvents.length === 0 ? (
+                {selectedDayItems.length === 0 ? (
                   <p className="text-sm text-muted-foreground">
                     No events on this day
                   </p>
                 ) : (
                   <div className="space-y-3">
-                    {selectedDayEvents.map((ev) => (
-                      <div
-                        key={ev.id}
-                        className="space-y-1 rounded-md border p-2"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <p className="text-sm font-medium">{ev.title}</p>
-                            <Badge
-                              variant={typeBadgeVariant(ev.type)}
-                              className="mt-0.5 text-[10px]"
-                            >
-                              {ev.type}
-                            </Badge>
-                          </div>
-                          {canEdit && (
-                            <div className="flex gap-1">
-                              <IconButton
-                                tooltip="Edit"
-                                icon={EditIcon}
-                                className="text-primary"
-                                size="xs"
-                                onClick={() => handleEditEvent(ev)}
-                              />
-                              <IconButton
-                                tooltip="Delete"
-                                icon={TrashIcon}
-                                className="text-destructive"
-                                size="xs"
-                                onClick={() => setDeleteTarget(ev)}
-                              />
+                    {selectedDayItems.map((item) =>
+                      item.kind === 'event' ? (
+                        <div
+                          key={`event-${item.event.id}`}
+                          className="space-y-1 rounded-md border p-2"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className="text-sm font-medium">
+                                {item.event.title}
+                              </p>
+                              <Badge
+                                variant={typeBadgeVariant(item.event.type)}
+                                className="mt-0.5 text-[10px]"
+                              >
+                                {item.event.type}
+                              </Badge>
                             </div>
+                            {canEdit && (
+                              <div className="flex gap-1">
+                                <IconButton
+                                  tooltip="Edit"
+                                  icon={EditIcon}
+                                  className="text-primary"
+                                  size="xs"
+                                  onClick={() => handleEditEvent(item.event)}
+                                />
+                                <IconButton
+                                  tooltip="Delete"
+                                  icon={TrashIcon}
+                                  className="text-destructive"
+                                  size="xs"
+                                  onClick={() => setDeleteTarget(item.event)}
+                                />
+                              </div>
+                            )}
+                          </div>
+                          {item.event.description && (
+                            <p className="text-xs text-muted-foreground">
+                              {item.event.description}
+                            </p>
                           )}
+                          {item.event.endDate &&
+                            item.event.endDate !== item.event.startDate && (
+                              <p className="text-xs text-muted-foreground">
+                                Until{' '}
+                                {format(
+                                  parseISO(item.event.endDate),
+                                  'MMM d',
+                                )}
+                              </p>
+                            )}
                         </div>
-                        {ev.description && (
-                          <p className="text-xs text-muted-foreground">
-                            {ev.description}
+                      ) : (
+                        <div
+                          key={`birthday-${item.birthday.id}`}
+                          className="space-y-1 rounded-md border p-2"
+                        >
+                          <p className="text-sm font-medium">
+                            🎂 {item.birthday.name}
                           </p>
-                        )}
-                        {ev.endDate && ev.endDate !== ev.startDate && (
-                          <p className="text-xs text-muted-foreground">
-                            Until {format(parseISO(ev.endDate), 'MMM d')}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                          <Badge
+                            variant={BIRTHDAY_BADGE_VARIANT}
+                            className="mt-0.5 text-[10px]"
+                          >
+                            {item.birthday.role === 'staff'
+                              ? 'Staff birthday'
+                              : 'Student birthday'}
+                          </Badge>
+                        </div>
+                      ),
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -451,6 +536,41 @@ function CalendarPage() {
             </Card>
           )}
 
+          {/* Upcoming birthdays — admin/staff only, current month only */}
+          {canEdit && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">
+                  Upcoming Birthdays
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {currentMonthBirthdays.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">
+                    No birthdays this month
+                  </p>
+                ) : (
+                  <div className="space-y-3">
+                    {currentMonthBirthdays.map((b) => (
+                      <div key={b.id} className="flex items-start gap-2">
+                        <div
+                          className={`mt-1 size-2 shrink-0 rounded-full ${BIRTHDAY_COLOR}`}
+                        />
+                        <div>
+                          <p className="text-sm font-medium">🎂 {b.name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {format(parseISO(b.dateOfBirth), 'MMM d')} ·{' '}
+                            {b.role === 'staff' ? 'Staff' : 'Student'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Legend */}
           <Card>
             <CardContent className="pt-4">
@@ -463,6 +583,14 @@ function CalendarPage() {
                     </span>
                   </div>
                 ))}
+                {canEdit && (
+                  <div className="flex items-center gap-1.5">
+                    <div className={`size-2.5 rounded-full ${BIRTHDAY_COLOR}`} />
+                    <span className="text-xs text-muted-foreground">
+                      Birthday
+                    </span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
