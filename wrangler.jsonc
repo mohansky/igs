@@ -10,23 +10,23 @@
   "upload_source_maps": true,
   "placement": { "mode": "smart" },
   "observability": {
-    "enabled": true,
+    "enabled": true
   },
   "routes": [
     {
       "pattern": "indogermanschool.com/*",
-      "zone_name": "indogermanschool.com",
+      "zone_name": "indogermanschool.com"
     },
     {
       "pattern": "www.indogermanschool.com/*",
-      "zone_name": "indogermanschool.com",
-    },
+      "zone_name": "indogermanschool.com"
+    }
   ],
   "vars": {
     "BETTER_AUTH_URL": "https://indogermanschool.com",
     "R2_ACCOUNT_ID": "83d4d6746ea272718c8c962ecf89a8cb",
     "R2_BUCKET_NAME": "igs",
     "RESEND_FROM_EMAIL": "IGS <mail@mohankumar.dev>",
-    "CONTACT_NOTIFICATION_EMAIL": "mail@mohankumar.dev",
-  },
+    "CONTACT_NOTIFICATION_EMAIL": "mail@mohankumar.dev"
+  }
 }

@@ -119,7 +119,7 @@ export default function Header() {
                   className="md:hidden"
                   aria-label="Open menu"
                 >
-                  <MenuIcon size={36} />
+                  <MenuIcon size={36} /> 
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-72 bg-(--paper)">
