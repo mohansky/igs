@@ -214,9 +214,12 @@ about:
           - name: Sibija Vivek
             role: Nursery Teacher
             img: teachers/shibija.jpg
-          - name: Pavana
+          - name: Pavana TV
             role: Nursery Teacher
             img: teachers/pavana.jpg
+          - name: Gayathri J
+            role: Nursery Teacher
+            img: teachers/gayathri.jpg  
       - title: Meet our Support Staff
         columns: '2'
         members:
