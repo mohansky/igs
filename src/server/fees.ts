@@ -6,6 +6,7 @@ import {
   effectiveClassId,
   feePayments,
   fees,
+  studentFeePlans,
   studentParents,
   studentProfiles,
   user,
@@ -14,7 +15,9 @@ import { z } from 'zod'
 import {
   AMOUNT_EPSILON,
   deriveFeeStatus,
+  schoolToday,
   validatePayment,
+  validatePaymentDate,
 } from '#/lib/fee-math'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
@@ -25,12 +28,12 @@ const dateString = z
 
 export const feeStatus = z.enum(['pending', 'partial', 'paid'])
 export type FeeStatusValue = z.infer<typeof feeStatus>
+// Filtering may also ask for concession fees; setting a status may not.
+const feeFilterStatus = z.enum(['pending', 'partial', 'paid', 'open'])
 
 // The handle drizzle hands to a `db.transaction()` callback. Money writes take
 // one of these so the ledger row and the cached `fees` row commit together.
 type Tx = Parameters<Parameters<typeof db.transaction>[0]>[0]
-
-const todayDateString = () => new Date().toISOString().slice(0, 10)
 
 // Student profile ids (as strings, matching fees.studentUserId) that this
 // user may act on: their own profile plus children linked via student_parents.
@@ -61,9 +64,10 @@ async function assertFeePaymentsUnlocked(feeIds: Array<number>) {
 
 // Recompute the fees-row cache from the payment ledger: paidAmount, status,
 // and "latest payment" metadata are all derived from fee_payments rows.
-async function syncFeeFromPayments(feeId: number, tx: Tx) {
+// Open (concession) fees always keep status 'open'.
+export async function syncFeeFromPayments(feeId: number, tx: Tx) {
   const [existing] = await tx
-    .select({ amount: fees.amount })
+    .select({ amount: fees.amount, isOpen: fees.isOpen })
     .from(fees)
     .where(eq(fees.id, feeId))
     .limit(1)
@@ -82,7 +86,9 @@ async function syncFeeFromPayments(feeId: number, tx: Tx) {
     .limit(1)
 
   const paidAmount = Number(total) || 0
-  const status = deriveFeeStatus(paidAmount, existing.amount)
+  const status = existing.isOpen
+    ? 'open'
+    : deriveFeeStatus(paidAmount, existing.amount)
 
   const [updated] = await tx
     .update(fees)
@@ -102,14 +108,17 @@ async function syncFeeFromPayments(feeId: number, tx: Tx) {
   return updated
 }
 
-const todayIso = () => new Date().toISOString().slice(0, 10)
+const todayIso = () => schoolToday()
 
-const withIsOverdue = <T extends { status: string; dueDate: string }>(
+// Open (concession) fees have no amount due, so they are never overdue.
+const withIsOverdue = <
+  T extends { status: string; dueDate: string; isOpen: boolean },
+>(
   row: T,
   today: string,
 ): T & { isOverdue: boolean } => ({
   ...row,
-  isOverdue: row.status !== 'paid' && row.dueDate < today,
+  isOverdue: !row.isOpen && row.status !== 'paid' && row.dueDate < today,
 })
 
 export const createFeeRecord = createServerFn({ method: 'POST' })
@@ -142,25 +151,35 @@ export const recordPayment = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
 
-    const paidDate = data.paidDate || todayDateString()
+    const paidDate = data.paidDate || schoolToday()
+    const badDate = validatePaymentDate(paidDate, schoolToday())
+    if (badDate) throw new Error(badDate)
     await assertDatesUnlocked(paidDate)
 
     // Ledger insert + cached-row sync must commit together, or `fees` drifts
     // from `fee_payments`.
     return db.transaction(async (tx) => {
       const [fee] = await tx
-        .select({ amount: fees.amount, paidAmount: fees.paidAmount })
+        .select({
+          amount: fees.amount,
+          paidAmount: fees.paidAmount,
+          isOpen: fees.isOpen,
+        })
         .from(fees)
         .where(eq(fees.id, data.feeId))
         .limit(1)
       if (!fee) throw new Error('Fee record not found')
 
-      const invalid = validatePayment(
-        data.paidAmount,
-        fee.amount,
-        fee.paidAmount,
-      )
-      if (invalid) throw new Error(invalid)
+      // An open (concession) fee has no balance to exceed: any positive
+      // amount is accepted.
+      if (!fee.isOpen) {
+        const invalid = validatePayment(
+          data.paidAmount,
+          fee.amount,
+          fee.paidAmount,
+        )
+        if (invalid) throw new Error(invalid)
+      }
 
       const [payment] = await tx
         .insert(feePayments)
@@ -224,6 +243,7 @@ export const getStudentFees = createServerFn({ method: 'GET' })
           razorpayPaymentId: fees.razorpayPaymentId,
           description: fees.description,
           notes: fees.notes,
+          isOpen: fees.isOpen,
           receivedByUserId: fees.receivedByUserId,
           receivedByName: user.name,
         })
@@ -271,17 +291,25 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
     const session = await requireRole(['admin'])
     const { feeId, ...updates } = data
 
+    const [existing] = await db
+      .select({ status: fees.status, isOpen: fees.isOpen })
+      .from(fees)
+      .where(eq(fees.id, feeId))
+      .limit(1)
+    // A concession fee's amount and status come from the student's fee plan.
+    if (
+      existing?.isOpen &&
+      (updates.amount !== undefined || updates.status !== undefined)
+    ) {
+      throw new Error(
+        "This is a concession fee. Change the student's fee plan instead.",
+      )
+    }
+
     // If status is being changed, record who did it
     let statusChangerPatch: { receivedByUserId?: string } = {}
-    if (updates.status) {
-      const [existing] = await db
-        .select({ status: fees.status })
-        .from(fees)
-        .where(eq(fees.id, feeId))
-        .limit(1)
-      if (existing && existing.status !== updates.status) {
-        statusChangerPatch = { receivedByUserId: session.user.id }
-      }
+    if (updates.status && existing && existing.status !== updates.status) {
+      statusChangerPatch = { receivedByUserId: session.user.id }
     }
 
     const result = await db
@@ -295,7 +323,7 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
 export const listFees = createServerFn({ method: 'GET' })
   .inputValidator(
     z.object({
-      status: feeStatus.optional(),
+      status: feeFilterStatus.optional(),
       studentUserId: z.string().optional(),
     }),
   )
@@ -326,6 +354,7 @@ export const listFees = createServerFn({ method: 'GET' })
         razorpayPaymentId: fees.razorpayPaymentId,
         description: fees.description,
         notes: fees.notes,
+        isOpen: fees.isOpen,
         studentName: studentProfiles.studentName,
         admissionNumber: studentProfiles.admissionNumber,
         classId: classes.id,
@@ -359,6 +388,8 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
     if (data.feeIds.length === 0) return { updated: 0 }
+    const badDate = validatePaymentDate(data.paidDate, schoolToday())
+    if (badDate) throw new Error(badDate)
     await assertDatesUnlocked(data.paidDate)
 
     const rows = await db
@@ -369,6 +400,8 @@ export const bulkMarkFeesPaid = createServerFn({ method: 'POST' })
     return db.transaction(async (tx) => {
       let updated = 0
       for (const row of rows) {
+        // "Mark paid" means paying off the balance; a concession fee has none.
+        if (row.isOpen) continue
         const remaining = row.amount - (row.paidAmount ?? 0)
         if (remaining > AMOUNT_EPSILON) {
           await tx.insert(feePayments).values({
@@ -431,16 +464,50 @@ export const createBulkFees = createServerFn({ method: 'POST' })
       throw new Error('No active students found in this class')
     }
 
-    const records = students.map((s) => ({
-      studentUserId: String(s.id),
-      amount: data.amount,
-      dueDate: data.dueDate,
-      description: data.description,
-    }))
+    // Concession students for the class's academic year pay what they can
+    // into their open fee instead of getting the standard fee.
+    const [cls] = await db
+      .select({ academicYear: classes.academicYear })
+      .from(classes)
+      .where(eq(classes.id, data.classId))
+      .limit(1)
+    const concessionIds = new Set(
+      cls
+        ? (
+            await db
+              .select({ id: studentFeePlans.studentProfileId })
+              .from(studentFeePlans)
+              .where(
+                and(
+                  eq(studentFeePlans.academicYear, cls.academicYear),
+                  eq(studentFeePlans.planType, 'concession'),
+                  inArray(
+                    studentFeePlans.studentProfileId,
+                    students.map((s) => s.id),
+                  ),
+                ),
+              )
+          ).map((r) => r.id)
+        : [],
+    )
+    const skipped = students.filter((s) => concessionIds.has(s.id))
+    const billed = students.filter((s) => !concessionIds.has(s.id))
 
-    await db.insert(fees).values(records)
+    if (billed.length > 0) {
+      await db.insert(fees).values(
+        billed.map((s) => ({
+          studentUserId: String(s.id),
+          amount: data.amount,
+          dueDate: data.dueDate,
+          description: data.description,
+        })),
+      )
+    }
 
-    return { created: students.length }
+    return {
+      created: billed.length,
+      skipped: skipped.map((s) => s.studentName),
+    }
   })
 
 export const listFeePayments = createServerFn({ method: 'GET' })
@@ -491,4 +558,65 @@ export const deleteFeePayment = createServerFn({ method: 'POST' })
     })
 
     return { success: true }
+  })
+
+// Correct an existing payment's amount and/or the date the money was received.
+// created_at is left alone — it records when the entry was made.
+export const updateFeePayment = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      paymentId: z.number().int().positive(),
+      amount: z.number().positive().optional(),
+      paidDate: dateString.optional(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireRole(['admin'])
+
+    const [existing] = await db
+      .select({
+        feeId: feePayments.feeId,
+        amount: feePayments.amount,
+        paidDate: feePayments.paidDate,
+      })
+      .from(feePayments)
+      .where(eq(feePayments.id, data.paymentId))
+      .limit(1)
+    if (!existing) throw new Error('Payment not found')
+
+    const newDate = data.paidDate ?? existing.paidDate
+    const newAmount = data.amount ?? existing.amount
+    const badDate = validatePaymentDate(newDate, schoolToday())
+    if (badDate) throw new Error(badDate)
+    // Neither moving a payment out of, nor into, a closed year is allowed.
+    await assertDatesUnlocked(existing.paidDate, newDate)
+
+    return db.transaction(async (tx) => {
+      const [fee] = await tx
+        .select({
+          amount: fees.amount,
+          paidAmount: fees.paidAmount,
+          isOpen: fees.isOpen,
+        })
+        .from(fees)
+        .where(eq(fees.id, existing.feeId))
+        .limit(1)
+      if (!fee) throw new Error('Fee record not found')
+
+      if (!fee.isOpen) {
+        // Check against what's owed with this payment taken out.
+        const invalid = validatePayment(
+          newAmount,
+          fee.amount,
+          (fee.paidAmount ?? 0) - existing.amount,
+        )
+        if (invalid) throw new Error(invalid)
+      }
+
+      await tx
+        .update(feePayments)
+        .set({ amount: newAmount, paidDate: newDate })
+        .where(eq(feePayments.id, data.paymentId))
+      return syncFeeFromPayments(existing.feeId, tx)
+    })
   })

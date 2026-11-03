@@ -78,6 +78,10 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
             partialOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
           })
           .from(fees)
+          // Due vs collected compares standard fees only. Concession (open)
+          // fees have nothing due; their receipts show in the finance
+          // overview and the concession report.
+          .where(eq(fees.isOpen, false))
       : [
           {
             totalDue: 0,

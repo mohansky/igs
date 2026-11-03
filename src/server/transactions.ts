@@ -12,7 +12,7 @@ import {
 } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '#/db'
-import { transactions, fees, staffSalaries, user } from '#/db/schema'
+import { transactions, feePayments, staffSalaries, user } from '#/db/schema'
 import { fyEndDate, fyStartDate } from '#/lib/financial-year'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
@@ -160,14 +160,16 @@ export const getMonthlyOverview = createServerFn({ method: 'GET' }).handler(
       .from(transactions)
       .groupBy(sql`substr(${transactions.date}, 1, 7)`)
 
+    // Each payment counts in the month it was received. (Previously this used
+    // the fee's cached latest-payment date, which put a fee's whole paid
+    // total into the month of its last instalment.)
     const feeRows = await db
       .select({
-        month: sql<string>`substr(${fees.paidDate}, 1, 7)`,
-        collected: sql<number>`COALESCE(SUM(${fees.paidAmount}), 0)`,
+        month: sql<string>`substr(${feePayments.paidDate}, 1, 7)`,
+        collected: sql<number>`COALESCE(SUM(${feePayments.amount}), 0)`,
       })
-      .from(fees)
-      .where(isNotNull(fees.paidDate))
-      .groupBy(sql`substr(${fees.paidDate}, 1, 7)`)
+      .from(feePayments)
+      .groupBy(sql`substr(${feePayments.paidDate}, 1, 7)`)
 
     const salaryRows = await db
       .select({

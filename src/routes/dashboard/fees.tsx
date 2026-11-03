@@ -56,6 +56,7 @@ export interface FeeRecord {
   className: string | null
   classSection: string | null
   isOverdue: boolean
+  isOpen: boolean
   receivedByUserId: string | null
   receivedByName: string | null
 }

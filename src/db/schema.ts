@@ -498,6 +498,9 @@ export const fees = sqliteTable('fees', {
   description: text(),
   notes: text(),
   receivedByUserId: text('received_by_user_id'),
+  // Concession ("pay what you can") fee: no fixed amount due. amount stays 0,
+  // status is 'open', and it never counts as outstanding or overdue.
+  isOpen: integer('is_open', { mode: 'boolean' }).notNull().default(false),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),
@@ -505,6 +508,41 @@ export const fees = sqliteTable('fees', {
     sql`(unixepoch())`,
   ),
 })
+
+// A student's fee plan for one academic year ("2026-27", matching
+// classes.academicYear). No row means the standard plan. A concession plan
+// points at that year's open fee, and keeps the standard annual fee at the
+// time as reference_fee, to report how much support was given.
+export const studentFeePlans = sqliteTable(
+  'student_fee_plans',
+  {
+    id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+    studentProfileId: integer('student_profile_id')
+      .notNull()
+      .references(() => studentProfiles.id, { onDelete: 'cascade' }),
+    academicYear: text('academic_year').notNull(),
+    planType: text('plan_type').notNull().default('standard'), // standard | concession
+    referenceFee: real('reference_fee'),
+    openFeeId: integer('open_fee_id').references(() => fees.id, {
+      onDelete: 'set null',
+    }),
+    approvedByUserId: text('approved_by_user_id').references(() => user.id),
+    approvedOn: text('approved_on'), // YYYY-MM-DD
+    notes: text(), // admin-only
+    createdAt: integer('created_at', { mode: 'timestamp' }).default(
+      sql`(unixepoch())`,
+    ),
+    updatedAt: integer('updated_at', { mode: 'timestamp' }).default(
+      sql`(unixepoch())`,
+    ),
+  },
+  (table) => [
+    uniqueIndex('student_fee_plans_student_year_idx').on(
+      table.studentProfileId,
+      table.academicYear,
+    ),
+  ],
+)
 
 export const feePayments = sqliteTable('fee_payments', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),

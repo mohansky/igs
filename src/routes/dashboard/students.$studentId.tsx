@@ -25,6 +25,9 @@ import {
   removeParentFromStudent,
 } from '#/server/students'
 import { getStudentFees } from '#/server/fees'
+import { listStudentFeePlans } from '#/server/fee-plans'
+import { FeePlanCard } from '#/components/dashboard/FeePlanCard'
+import { academicYearLabel, currentFyStartYear } from '#/lib/financial-year'
 import { listClasses } from '#/server/classes'
 import { classLabel } from '#/lib/class-label'
 import { listParentUsers } from '#/server/users'
@@ -60,6 +63,7 @@ interface FeeRecordRaw {
   description: string | null
   notes: string | null
   isOverdue: boolean
+  isOpen: boolean
   receivedByUserId: string | null
   receivedByName: string | null
 }
@@ -180,6 +184,19 @@ function StudentDetailPage() {
     },
     enabled: !!profile && isAdmin,
   })
+
+  // Admin-only, like fees: concession status never shows to staff.
+  const { data: feePlans = [] } = useQuery({
+    queryKey: ['fee-plans', Number(studentId)],
+    queryFn: () =>
+      listStudentFeePlans({ data: { studentProfileId: Number(studentId) } }),
+    enabled: isAdmin,
+  })
+  const onConcession = feePlans.some(
+    (p) =>
+      p.academicYear === academicYearLabel(currentFyStartYear()) &&
+      p.planType === 'concession',
+  )
 
   const { data: classes = [], isLoading: classesLoading } = useQuery({
     queryKey: ['classes'],
@@ -359,6 +376,9 @@ function StudentDetailPage() {
             <h1 className="text-2xl font-bold">{profile.studentName}</h1>
             {profile.admissionNumber && (
               <Badge variant="outline">#{profile.admissionNumber}</Badge>
+            )}
+            {isAdmin && onConcession && (
+              <Badge variant="warning">Concession</Badge>
             )}
           </div>
           {profile.gender && (
@@ -671,7 +691,11 @@ function StudentDetailPage() {
         </TabsContent>
 
         {isAdmin && (
-          <TabsContent value="fees">
+          <TabsContent value="fees" className="space-y-4">
+            <FeePlanCard
+              studentProfileId={Number(studentId)}
+              plans={feePlans}
+            />
             <FeeTable
               fees={fees}
               onRecordPayment={(fee) => {

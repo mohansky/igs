@@ -62,6 +62,8 @@ export const createRazorpayOrderForFee = createServerFn({ method: 'POST' })
     if (!fee) throw new Error('Fee record not found')
     await assertCanPayFee(session, fee.studentUserId)
     if (fee.status === 'paid') throw new Error('Fee is already paid')
+    // Concession payments are recorded by the office, not paid online.
+    if (fee.isOpen) throw new Error('Online payment is not available for this fee')
 
     const remaining = fee.amount - (fee.paidAmount ?? 0)
     if (remaining <= 0) throw new Error('Nothing to pay on this fee')

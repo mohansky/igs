@@ -229,7 +229,9 @@ function DocsPage() {
                 Find the fee in the table and click <Strong>Pay</Strong>.
               </li>
               <li>
-                Enter the <Strong>amount paid</Strong>,{' '}
+                Enter the <Strong>amount paid</Strong>, the{' '}
+                <Strong>payment date</Strong> (defaults to today; can be
+                backdated, not future-dated), the{' '}
                 <Strong>payment method</Strong>, and optionally a{' '}
                 <Strong>receipt number</Strong>.
               </li>
@@ -237,7 +239,48 @@ function DocsPage() {
                 Click <Strong>Record Payment</Strong>. The status updates to
                 &quot;paid&quot;.
               </li>
+              <li>
+                To correct a payment&apos;s amount or date, open the
+                fee&apos;s payment history (eye icon) and click{' '}
+                <Strong>Edit</Strong>. Payments in a closed financial year
+                can&apos;t be changed.
+              </li>
             </ol>
+
+            {(userRole === 'admin' || userRole === 'auditor') && (
+              <>
+                <h3 className="mb-2 mt-4 text-sm font-semibold">
+                  Concession (pay what you can)
+                </h3>
+                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    On a student&apos;s <Strong>Fees</Strong> tab, use{' '}
+                    <Strong>Change plan</Strong> to put them on the concession
+                    plan for an academic year. Pick their existing tuition fee
+                    to convert (its payments are kept), or create a new open
+                    fee.
+                  </li>
+                  <li>
+                    An open fee has no amount due: it&apos;s never outstanding
+                    or overdue, and accepts any payment amount. Parents see
+                    what they&apos;ve paid, without the word
+                    &quot;concession&quot;.
+                  </li>
+                  <li>
+                    <Strong>Bulk Fee</Strong> skips concession students for
+                    the class&apos;s academic year and lists who was skipped.
+                  </li>
+                  <li>
+                    Switching back to <Strong>Standard</Strong> turns the open
+                    fee into a normal fee for the reference amount.
+                  </li>
+                  <li>
+                    <NavLink>Concessions</NavLink> reports the reference fee,
+                    amount received and support given per student, per year.
+                  </li>
+                </ul>
+              </>
+            )}
 
             <h3 className="mb-2 mt-4 text-sm font-semibold">
               Editing &amp; Deleting Fees

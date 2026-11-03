@@ -3,6 +3,7 @@ import { useMutation } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { FileAttachmentIcon } from 'hugeicons-react'
 import { cn, formatCurrency } from '#/lib/utils'
+import { schoolToday } from '#/lib/fee-math'
 import {
   Dialog,
   DialogContent,
@@ -22,6 +23,8 @@ interface FeeRecord {
   amount: number
   paidAmount: number | null
   description: string | null
+  // Concession fee: no balance, any amount accepted.
+  isOpen?: boolean
 }
 
 export function RecordPaymentDialog({
@@ -36,6 +39,8 @@ export function RecordPaymentDialog({
   onPaid: () => void
 }) {
   const [paidAmount, setPaidAmount] = useState('')
+  // When the money was actually received; can be backdated, not future-dated.
+  const [paidDate, setPaidDate] = useState(schoolToday())
   const [paymentMethod, setPaymentMethod] = useState('cash')
   const [receiptNumber, setReceiptNumber] = useState('')
 
@@ -64,6 +69,7 @@ export function RecordPaymentDialog({
         data: {
           feeId: fee!.id,
           paidAmount: Number(paidAmount),
+          paidDate,
           paymentMethod,
           receiptNumber: receiptNumber || undefined,
         },
@@ -114,6 +120,7 @@ export function RecordPaymentDialog({
     onSuccess: () => {
       onOpenChange(false)
       setPaidAmount('')
+      setPaidDate(schoolToday())
       setReceiptNumber('')
       resetReceipt()
       onPaid()
@@ -136,20 +143,36 @@ export function RecordPaymentDialog({
         {fee && (
           <form onSubmit={handleSubmit} className="space-y-4">
             <p className="text-sm text-muted-foreground">
-              {fee.description ?? 'Fee'} — Remaining:{' '}
-              {formatCurrency(remaining)}
+              {fee.description ?? 'Fee'} —{' '}
+              {fee.isOpen
+                ? `Received so far: ${formatCurrency(fee.paidAmount ?? 0)}`
+                : `Remaining: ${formatCurrency(remaining)}`}
             </p>
-            <div className="space-y-2">
-              <Label htmlFor="paid-amount">Amount</Label>
-              <Input
-                id="paid-amount"
-                type="number"
-                step="0.01"
-                max={remaining}
-                value={paidAmount}
-                onChange={(e) => setPaidAmount(e.target.value)}
-                required
-              />
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="paid-amount">Amount</Label>
+                <Input
+                  id="paid-amount"
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  max={fee.isOpen ? undefined : remaining}
+                  value={paidAmount}
+                  onChange={(e) => setPaidAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="paid-date">Payment date</Label>
+                <Input
+                  id="paid-date"
+                  type="date"
+                  max={schoolToday()}
+                  value={paidDate}
+                  onChange={(e) => setPaidDate(e.target.value)}
+                  required
+                />
+              </div>
             </div>
             <div className="space-y-2">
               <Label htmlFor="payment-method">Payment Method</Label>

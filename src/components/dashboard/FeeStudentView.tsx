@@ -27,6 +27,7 @@ interface FeeRecord {
   status: string
   description: string | null
   isOverdue: boolean
+  isOpen: boolean
 }
 
 const statusBadgeVariant = (status: string) => {
@@ -136,15 +137,21 @@ export function FeeStudentView({
         </span>
       ),
     },
+    // Open fees (pay what you can) have no amount or due date. No
+    // "concession" wording here: parents just see what they've paid.
     {
       accessorKey: 'amount',
       header: 'Amount',
-      cell: ({ row }) => formatCurrency(row.getValue('amount') as number),
+      cell: ({ row }) =>
+        row.original.isOpen
+          ? '—'
+          : formatCurrency(row.getValue('amount') as number),
     },
     {
       accessorKey: 'dueDate',
       header: 'Due Date',
-      cell: ({ row }) => formatDate(row.getValue('dueDate')),
+      cell: ({ row }) =>
+        row.original.isOpen ? '—' : formatDate(row.getValue('dueDate')),
     },
     {
       accessorKey: 'paidAmount',
@@ -157,6 +164,13 @@ export function FeeStudentView({
       header: 'Status',
       cell: ({ row }) => {
         const fee = row.original
+        if (fee.isOpen) {
+          return (
+            <Badge variant="outline">
+              {formatCurrency(fee.paidAmount ?? 0)} received
+            </Badge>
+          )
+        }
         return (
           <div className="flex flex-wrap items-center gap-1">
             <Badge
@@ -192,6 +206,10 @@ export function FeeStudentView({
 
   const totalDue = fees.reduce((sum, f) => sum + f.amount, 0)
   const totalPaid = fees.reduce((sum, f) => sum + (f.paidAmount ?? 0), 0)
+  // Payments into an open fee pay off nothing that was due.
+  const balance = fees
+    .filter((f) => !f.isOpen)
+    .reduce((sum, f) => sum + (f.amount - (f.paidAmount ?? 0)), 0)
 
   if (isLoading) {
     return <p className="text-sm text-muted-foreground">Loading...</p>
@@ -202,8 +220,8 @@ export function FeeStudentView({
       <div className="flex flex-wrap gap-3">
         <Badge variant="outline">Total Due: {formatCurrency(totalDue)}</Badge>
         <Badge variant="default">Total Paid: {formatCurrency(totalPaid)}</Badge>
-        <Badge variant={totalDue - totalPaid > 0 ? 'destructive' : 'default'}>
-          Balance: {formatCurrency(totalDue - totalPaid)}
+        <Badge variant={balance > 0 ? 'destructive' : 'default'}>
+          Balance: {formatCurrency(balance)}
         </Badge>
       </div>
 

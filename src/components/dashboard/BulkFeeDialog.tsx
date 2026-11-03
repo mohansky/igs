@@ -27,6 +27,11 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
+  // Shown after a run: concession students are skipped, by name.
+  const [result, setResult] = useState<{
+    created: number
+    skipped: string[]
+  } | null>(null)
 
   const { data: classes = [] } = useQuery({
     queryKey: ['classes'],
@@ -59,11 +64,10 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
           description: description || undefined,
         },
       }),
-    onSuccess: (result) => {
-      setOpen(false)
+    onSuccess: (res) => {
       resetForm()
       onCreated()
-      toast.success(`Created ${result.created} fee records`)
+      setResult(res)
     },
     onError: (err) =>
       toast.error(err instanceof Error ? err.message : 'Failed to create fees'),
@@ -90,7 +94,10 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
       open={open}
       onOpenChange={(v) => {
         setOpen(v)
-        if (!v) resetForm()
+        if (!v) {
+          resetForm()
+          setResult(null)
+        }
       }}
     >
       <DialogTrigger asChild>
@@ -100,67 +107,104 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
         <DialogHeader>
           <DialogTitle>Create Fees for Entire Class</DialogTitle>
         </DialogHeader>
-        <p className="text-sm text-muted-foreground">
-          This will create a fee record for every active student in the selected
-          class.
-        </p>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label>Class</Label>
-            <Select value={classId} onValueChange={setClassId}>
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select class" />
-              </SelectTrigger>
-              <SelectContent>
-                {classes.map((c) => (
-                  <SelectItem key={c.id} value={String(c.id)}>
-                    {c.name}
-                    {c.section ? ` - ${c.section}` : ''}
-                    {c.academicYear ? (
-                      <span className="ml-1 font-mono text-xs text-muted-foreground">
-                        {c.academicYear}
-                      </span>
-                    ) : null}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        {result ? (
+          <div className="space-y-4">
+            <p className="text-sm font-medium">
+              Created {result.created} fee{result.created === 1 ? '' : 's'}
+              {' · '}Skipped {result.skipped.length} concession student
+              {result.skipped.length === 1 ? '' : 's'}
+            </p>
+            {result.skipped.length > 0 && (
+              <div className="rounded-md border bg-muted/30 p-3">
+                <p className="mb-1 text-xs text-muted-foreground">
+                  On the concession plan for this year — record their payments
+                  against their open fee instead:
+                </p>
+                <ul className="list-inside list-disc text-sm">
+                  {result.skipped.map((name) => (
+                    <li key={name}>{name}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            <Button
+              className="w-full"
+              onClick={() => {
+                setOpen(false)
+                setResult(null)
+              }}
+            >
+              Done
+            </Button>
           </div>
-          <div className="space-y-2">
-            <Label>Amount per student</Label>
-            <Input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Due Date</Label>
-            <Input
-              type="date"
-              value={dueDate}
-              onChange={(e) => setDueDate(e.target.value)}
-              required
-            />
-          </div>
-          <div className="space-y-2">
-            <Label>Description</Label>
-            <Input
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="e.g. Tuition Fee - April 2026"
-            />
-          </div>
-          <Button
-            type="submit"
-            className="w-full"
-            disabled={createMutation.isPending || !classId}
-          >
-            {createMutation.isPending ? 'Creating...' : 'Create Fees for Class'}
-          </Button>
-        </form>
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">
+              This will create a fee record for every active student in the
+              selected class, except students on the concession plan for that
+              class&apos;s academic year.
+            </p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Class</Label>
+                <Select value={classId} onValueChange={setClassId}>
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Select class" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {classes.map((c) => (
+                      <SelectItem key={c.id} value={String(c.id)}>
+                        {c.name}
+                        {c.section ? ` - ${c.section}` : ''}
+                        {c.academicYear ? (
+                          <span className="ml-1 font-mono text-xs text-muted-foreground">
+                            {c.academicYear}
+                          </span>
+                        ) : null}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Amount per student</Label>
+                <Input
+                  type="number"
+                  step="0.01"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Due Date</Label>
+                <Input
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Description</Label>
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="e.g. Tuition Fee - April 2026"
+                />
+              </div>
+              <Button
+                type="submit"
+                className="w-full"
+                disabled={createMutation.isPending || !classId}
+              >
+                {createMutation.isPending
+                  ? 'Creating...'
+                  : 'Create Fees for Class'}
+              </Button>
+            </form>
+          </>
+        )}
       </DialogContent>
     </Dialog>
   )

@@ -2,8 +2,32 @@ import { describe, expect, it } from 'vitest'
 import {
   deriveFeeStatus,
   outstandingBalance,
+  schoolToday,
   validatePayment,
+  validatePaymentDate,
 } from './fee-math'
+
+describe('schoolToday', () => {
+  it('uses India time: 00:30 IST is still the previous day in UTC', () => {
+    // 2026-11-03T19:00Z = 4 Nov 2026, 00:30 IST
+    expect(schoolToday(new Date('2026-11-03T19:00:00Z'))).toBe('2026-11-04')
+  })
+
+  it('matches UTC in the afternoon', () => {
+    expect(schoolToday(new Date('2026-11-04T09:00:00Z'))).toBe('2026-11-04')
+  })
+})
+
+describe('validatePaymentDate', () => {
+  it('allows today and past dates', () => {
+    expect(validatePaymentDate('2026-11-04', '2026-11-04')).toBeNull()
+    expect(validatePaymentDate('2026-06-15', '2026-11-04')).toBeNull()
+  })
+
+  it('blocks future dates', () => {
+    expect(validatePaymentDate('2026-11-05', '2026-11-04')).toMatch(/future/)
+  })
+})
 
 describe('deriveFeeStatus', () => {
   it('is pending when nothing is paid', () => {

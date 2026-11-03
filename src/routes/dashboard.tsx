@@ -62,6 +62,7 @@ import {
   UnfoldMoreIcon,
   UserSearch01Icon,
   Image01Icon,
+  Discount01Icon,
 } from 'hugeicons-react'
 import {
   Avatar,
@@ -113,6 +114,14 @@ const navItems: NavItem[] = [
     roles: ['admin'],
     group: 'admin',
     icon: MoneyReceiveSquareIcon,
+  },
+  {
+    // Auditors (trustees) see it too: they see every admin route.
+    to: '/dashboard/concessions',
+    label: 'Concessions',
+    roles: ['admin'],
+    group: 'admin',
+    icon: Discount01Icon,
   },
   {
     to: '/dashboard/calendar',

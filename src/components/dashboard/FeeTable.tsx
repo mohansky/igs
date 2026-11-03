@@ -61,6 +61,8 @@ interface FeeRecord {
   className: string | null
   classSection: string | null
   isOverdue: boolean
+  // Concession fee: no amount due, never outstanding or overdue.
+  isOpen: boolean
   receivedByUserId: string | null
   receivedByName: string | null
 }
@@ -132,7 +134,10 @@ export function FeeTable({
   const [payDate, setPayDate] = useState(new Date().toISOString().slice(0, 10))
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
-  const unpaidSelected = selected.filter((f) => f.status !== 'paid')
+  // "Mark paid" settles a balance; concession fees have none.
+  const unpaidSelected = selected.filter(
+    (f) => f.status !== 'paid' && !f.isOpen,
+  )
 
   const dueMonthOptions = useMemo(() => {
     const keys = new Set<string>()
@@ -217,7 +222,11 @@ export function FeeTable({
       (s, f) => s + (f.paidAmount ?? 0),
       0,
     )
-    const outstanding = totalDue - totalCollected
+    // Concession receipts are collected money but pay off nothing that was
+    // due, so outstanding only looks at standard fees.
+    const outstanding = filteredRows
+      .filter((f) => !f.isOpen)
+      .reduce((s, f) => s + (f.amount - (f.paidAmount ?? 0)), 0)
     const overdueCount = filteredRows.filter(
       (f) => f.isOverdue && f.status !== 'paid',
     ).length
@@ -328,7 +337,12 @@ export function FeeTable({
     {
       accessorKey: 'amount',
       header: 'Amount due',
-      cell: ({ row }) => formatCurrency(row.getValue('amount') as number),
+      cell: ({ row }) =>
+        row.original.isOpen ? (
+          <span className="text-muted-foreground">No fixed amount</span>
+        ) : (
+          formatCurrency(row.getValue('amount') as number)
+        ),
     },
     {
       accessorKey: 'paidAmount',
@@ -370,7 +384,7 @@ export function FeeTable({
         const fee = row.original
         return (
           <div>
-            {fee.status !== 'paid' && (
+            {(fee.isOpen || fee.status !== 'paid') && (
               <Button size="xs" onClick={() => onRecordPayment(fee)}>
                 Pay
               </Button>
@@ -395,13 +409,16 @@ export function FeeTable({
                 onClick={() => setPaymentsTarget(fee)}
               />
             )}
-            <IconButton
-              tooltip="Edit"
-              icon={EditIcon}
-              className="text-primary"
-              size="xs"
-              onClick={() => onEditFee(fee)}
-            />
+            {/* A concession fee's amount comes from the student's fee plan. */}
+            {!fee.isOpen && (
+              <IconButton
+                tooltip="Edit"
+                icon={EditIcon}
+                className="text-primary"
+                size="xs"
+                onClick={() => onEditFee(fee)}
+              />
+            )}
             <IconButton
               tooltip="Delete"
               icon={TrashIcon}
@@ -595,6 +612,7 @@ export function FeeTable({
               { label: 'Paid', value: 'paid' },
               { label: 'Pending', value: 'pending' },
               { label: 'Partial', value: 'partial' },
+              { label: 'Open (concession)', value: 'open' },
               { label: 'Overdue', value: 'overdue' },
             ],
             label: 'Status',

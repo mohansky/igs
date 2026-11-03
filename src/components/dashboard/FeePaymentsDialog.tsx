@@ -11,9 +11,15 @@ import {
   DialogTitle,
 } from '#/components/ui/dialog'
 import { Button } from '#/components/ui/button'
+import { Input } from '#/components/ui/input'
 import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import { formatCurrency, formatDate } from '#/lib/utils'
-import { deleteFeePayment, listFeePayments } from '#/server/fees'
+import { schoolToday } from '#/lib/fee-math'
+import {
+  deleteFeePayment,
+  listFeePayments,
+  updateFeePayment,
+} from '#/server/fees'
 import {
   deleteFeeAttachment,
   listFeeAttachments,
@@ -60,6 +66,7 @@ interface FeeSummary {
   paidAmount: number | null
   description: string | null
   studentName: string | null
+  isOpen?: boolean
 }
 
 export function FeePaymentsDialog({
@@ -91,6 +98,12 @@ export function FeePaymentsDialog({
   })
 
   const [paymentToDelete, setPaymentToDelete] = useState<number | null>(null)
+  // Inline edit of one payment's amount / date received.
+  const [editing, setEditing] = useState<{
+    id: number
+    amount: string
+    paidDate: string
+  } | null>(null)
   const [attachmentToDelete, setAttachmentToDelete] = useState<number | null>(
     null,
   )
@@ -110,6 +123,23 @@ export function FeePaymentsDialog({
       refresh()
     },
     onError: () => toast.error('Failed to remove payment'),
+  })
+
+  const updatePaymentMutation = useMutation({
+    mutationFn: (e: { id: number; amount: string; paidDate: string }) =>
+      updateFeePayment({
+        data: {
+          paymentId: e.id,
+          amount: Number(e.amount),
+          paidDate: e.paidDate,
+        },
+      }),
+    onSuccess: () => {
+      toast.success('Payment updated')
+      setEditing(null)
+      refresh()
+    },
+    onError: (e: Error) => toast.error(e.message || 'Failed to update payment'),
   })
 
   const deleteAttachmentMutation = useMutation({
@@ -136,22 +166,40 @@ export function FeePaymentsDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="grid grid-cols-3 gap-2 text-sm">
-          <div className="rounded-md border bg-muted/30 p-2">
-            <p className="text-xs text-muted-foreground">Total</p>
-            <p className="font-medium">{formatCurrency(total)}</p>
+        {fee?.isOpen ? (
+          // Concession: no amount due, so no total/remaining.
+          <div className="grid grid-cols-2 gap-2 text-sm">
+            <div className="rounded-md border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">Total received</p>
+              <p className="font-medium text-green-600">
+                {formatCurrency(paid)}
+              </p>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">Payments</p>
+              <p className="font-medium">{payments.length}</p>
+            </div>
           </div>
-          <div className="rounded-md border bg-muted/30 p-2">
-            <p className="text-xs text-muted-foreground">Paid</p>
-            <p className="font-medium text-green-600">{formatCurrency(paid)}</p>
+        ) : (
+          <div className="grid grid-cols-3 gap-2 text-sm">
+            <div className="rounded-md border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">Total</p>
+              <p className="font-medium">{formatCurrency(total)}</p>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">Paid</p>
+              <p className="font-medium text-green-600">
+                {formatCurrency(paid)}
+              </p>
+            </div>
+            <div className="rounded-md border bg-muted/30 p-2">
+              <p className="text-xs text-muted-foreground">Remaining</p>
+              <p className="font-medium text-amber-600">
+                {formatCurrency(remaining)}
+              </p>
+            </div>
           </div>
-          <div className="rounded-md border bg-muted/30 p-2">
-            <p className="text-xs text-muted-foreground">Remaining</p>
-            <p className="font-medium text-amber-600">
-              {formatCurrency(remaining)}
-            </p>
-          </div>
-        </div>
+        )}
 
         <div className="max-h-[55vh] space-y-3 overflow-y-auto pr-1">
           {payments.length === 0 ? (
@@ -195,16 +243,95 @@ export function FeePaymentsDialog({
                           {p.notes}
                         </p>
                       )}
+                      {/* When the entry was made, if not the day it was paid */}
+                      {p.createdAt &&
+                        schoolToday(new Date(p.createdAt)) !== p.paidDate && (
+                          <p className="text-xs text-muted-foreground">
+                            Entered{' '}
+                            {formatDate(schoolToday(new Date(p.createdAt)))}
+                          </p>
+                        )}
                     </div>
-                    <button
-                      type="button"
-                      className="text-xs text-muted-foreground hover:text-destructive"
-                      onClick={() => setPaymentToDelete(p.id)}
-                      disabled={deletePaymentMutation.isPending}
-                    >
-                      Delete
-                    </button>
+                    <div className="flex gap-3">
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-primary"
+                        onClick={() =>
+                          setEditing({
+                            id: p.id,
+                            amount: String(p.amount),
+                            paidDate: p.paidDate,
+                          })
+                        }
+                      >
+                        Edit
+                      </button>
+                      <button
+                        type="button"
+                        className="text-xs text-muted-foreground hover:text-destructive"
+                        onClick={() => setPaymentToDelete(p.id)}
+                        disabled={deletePaymentMutation.isPending}
+                      >
+                        Delete
+                      </button>
+                    </div>
                   </div>
+                  {editing?.id === p.id && (
+                    <form
+                      className="flex flex-wrap items-end gap-2 border-t pt-2"
+                      onSubmit={(e) => {
+                        e.preventDefault()
+                        updatePaymentMutation.mutate(editing)
+                      }}
+                    >
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">
+                          Amount
+                        </label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0.01"
+                          value={editing.amount}
+                          onChange={(e) =>
+                            setEditing({ ...editing, amount: e.target.value })
+                          }
+                          className="h-8 w-32"
+                          required
+                        />
+                      </div>
+                      <div className="space-y-1">
+                        <label className="text-xs text-muted-foreground">
+                          Date received
+                        </label>
+                        <Input
+                          type="date"
+                          max={schoolToday()}
+                          value={editing.paidDate}
+                          onChange={(e) =>
+                            setEditing({ ...editing, paidDate: e.target.value })
+                          }
+                          className="h-8 w-40"
+                          required
+                        />
+                      </div>
+                      <Button
+                        type="submit"
+                        size="sm"
+                        disabled={updatePaymentMutation.isPending}
+                      >
+                        Save
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => setEditing(null)}
+                      >
+                        Cancel
+                      </Button>
+                    </form>
+                  )}
                   {paymentReceipts.length > 0 && (
                     <div className="space-y-1 border-t pt-2">
                       {paymentReceipts.map((att) => {
