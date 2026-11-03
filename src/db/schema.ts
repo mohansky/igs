@@ -500,7 +500,12 @@ export const fees = sqliteTable('fees', {
   receivedByUserId: text('received_by_user_id'),
   // Concession ("pay what you can") fee: no fixed amount due. amount stays 0,
   // status is 'open', and it never counts as outstanding or overdue.
-  isOpen: integer('is_open', { mode: 'boolean' }).notNull().default(false),
+  // Default written as sql`0` (= false), not `false`: drizzle-kit 0.31's
+  // libsql push treats a `false` default as missing and offers to TRUNCATE
+  // the table instead of adding the column.
+  isOpen: integer('is_open', { mode: 'boolean' })
+    .notNull()
+    .default(sql`0`),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),

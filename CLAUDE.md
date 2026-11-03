@@ -78,6 +78,8 @@ Schema changes go through `db:push`, which diffs `schema.ts` against the target 
 - **Do not run `pnpm db:generate` or `pnpm db:migrate`.** With no existing journal, `db:generate` produces a bogus "initial" migration that recreates every table from scratch instead of diffing — this happened once (2026-09-29) and was caught before running. If migrations are ever adopted, the current live schema needs a deliberate one-time baseline first.
 - Flow for a schema change: edit `schema.ts` → user runs `pnpm db:push` (staging) and checks it → user runs `pnpm db:push:prod` → then deploy. Code that reads a new table or column must not be deployed before the production push, or those pages break. Never run either push unprompted, same as `pnpm deploy`.
 - A purely additive change (new table, new nullable column) is safe; column/type changes or renames can make `db:push` ask for a destructive confirmation, so read what it's asking before answering yes.
+- **Never answer yes to a "truncate" prompt** — it deletes every row in that table. If one appears for an additive change, abort and fix the schema.
+- **Boolean defaults on NOT NULL columns: write `.default(sql\`0\`)` / `sql\`1\``, not `.default(false)` / `true`.** drizzle-kit 0.31's libsql push checks `!column.default`, so a `false` default reads as "no default" and it offers to truncate the table (this happened with `fees.is_open`, 2026-11). To preview what a push will run without touching a database, diff two schemas offline with `generateSQLiteDrizzleJson` / `generateSQLiteMigration` from `drizzle-kit/api`.
 - The staging branch doesn't sync with production; recreate it (`turso db destroy igs-staging`, then `turso db create igs-staging --from-db <prod>`) when fresher data is needed.
 
 ### Key Conventions
