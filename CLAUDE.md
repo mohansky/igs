@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev          # Dev server on port 3000
 pnpm build        # Production build (Cloudflare Workers)
 pnpm test         # Run tests (Vitest)
-pnpm lint         # ESLint check — currently fails: `eslint` itself isn't a devDependency
+pnpm lint         # ESLint check — currently fails: `eslint` isn't a direct devDependency, so it has no bin shim
 pnpm format       # Prettier check
 pnpm check        # Auto-fix format + lint (the eslint half fails, as above)
 pnpm exec tsc --noEmit  # Type check (no script for it)
@@ -27,7 +27,8 @@ pnpm db:studio    # Open Drizzle Studio (staging)
 pnpm dlx shadcn@latest add <component>
 
 # Deploy
-pnpm deploy       # Build + deploy to Cloudflare
+pnpm run deploy   # Build + deploy to Cloudflare. Not `pnpm deploy`: that's pnpm's
+                  # built-in workspace command and fails with ERR_PNPM_CANNOT_DEPLOY
 ```
 
 ## Architecture
@@ -96,7 +97,7 @@ There are two Turso databases, and each has its own env file:
 Schema changes go through `db:push`, which diffs `schema.ts` against the target DB and applies the difference directly. There are no versioned migrations and no journal.
 
 - **Do not run `pnpm db:generate` or `pnpm db:migrate`.** With no existing journal, `db:generate` produces a bogus "initial" migration that recreates every table from scratch instead of diffing — this happened once (2026-09-29) and was caught before running. If migrations are ever adopted, the current live schema needs a deliberate one-time baseline first.
-- Flow for a schema change: edit `schema.ts` → user runs `pnpm db:push` (staging) and checks it → user runs `pnpm db:push:prod` → then deploy. Any database also needs `pnpm db:seed:categories` (or `:prod`) once, after the push that created `fee_categories`; bulk fees and concessions look up the Tuition category by `key`. Code that reads a new table or column must not be deployed before the production push, or those pages break. Never run either push unprompted, same as `pnpm deploy`.
+- Flow for a schema change: edit `schema.ts` → user runs `pnpm db:push` (staging) and checks it → user runs `pnpm db:push:prod` → then deploy. Any database also needs `pnpm db:seed:categories` (or `:prod`) once, after the push that created `fee_categories`; bulk fees and concessions look up the Tuition category by `key`. Code that reads a new table or column must not be deployed before the production push, or those pages break. Never run either push unprompted, same as `pnpm run deploy`.
 - A purely additive change (new table, new nullable column) is safe; column/type changes or renames can make `db:push` ask for a destructive confirmation, so read what it's asking before answering yes.
 - **Never answer yes to a "truncate" prompt** — it deletes every row in that table. If one appears for an additive change, abort and fix the schema.
 - **Boolean defaults on NOT NULL columns: write `.default(sql\`0\`)`/`sql\`1\``, not `.default(false)`/`true`.** drizzle-kit 0.31's libsql push checks `!column.default`, so a `false` default reads as "no default" and it offers to truncate the table (this happened with `fees.is_open`, 2026-11). To preview what a push will run without touching a database, diff two schemas offline with `generateSQLiteDrizzleJson` / `generateSQLiteMigration` from `drizzle-kit/api`.
