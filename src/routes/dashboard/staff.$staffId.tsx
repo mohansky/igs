@@ -101,6 +101,7 @@ interface SalaryHikeRow {
   effectiveFrom: string
   effectiveTo: string
   notes: string | null
+  createdByName: string | null
 }
 
 function StaffDetailPage() {
@@ -680,6 +681,11 @@ function SalaryHikesCard({
                   {h.notes && (
                     <p className="mt-1 text-xs text-muted-foreground">
                       {h.notes}
+                    </p>
+                  )}
+                  {h.createdByName && (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Recorded by {h.createdByName}
                     </p>
                   )}
                 </div>

@@ -3,8 +3,8 @@ import { getRequest } from '@tanstack/react-start/server'
 import { Resend } from 'resend'
 import { z } from 'zod'
 import { db } from '#/db'
-import { contactSubmissions } from '#/db/schema'
-import { desc, eq } from 'drizzle-orm'
+import { contactSubmissions, user } from '#/db/schema'
+import { desc, eq, getTableColumns } from 'drizzle-orm'
 import { ContactNotification } from '#/emails/contact-notification'
 import { requireRole } from './auth-utils'
 
@@ -126,8 +126,12 @@ export const getContactSubmissions = createServerFn({ method: 'GET' }).handler(
   async () => {
     await requireRole(['admin', 'staff'])
     const submissions = await db
-      .select()
+      .select({
+        ...getTableColumns(contactSubmissions),
+        repliedByName: user.name,
+      })
       .from(contactSubmissions)
+      .leftJoin(user, eq(user.id, contactSubmissions.repliedByUserId))
       .orderBy(desc(contactSubmissions.createdAt))
 
     return submissions
@@ -142,10 +146,18 @@ export const updateSubmissionStatus = createServerFn({ method: 'POST' })
     }),
   )
   .handler(async ({ data }) => {
-    await requireRole(['admin', 'staff'])
+    const session = await requireRole(['admin', 'staff'])
     await db
       .update(contactSubmissions)
-      .set({ status: data.status })
+      .set({
+        status: data.status,
+        updatedAt: new Date(),
+        // Who replied. Only set on "replied"; moving the status on later
+        // (e.g. to archived) keeps the record of who replied.
+        ...(data.status === 'replied'
+          ? { repliedByUserId: session.user.id }
+          : {}),
+      })
       .where(eq(contactSubmissions.id, data.id))
 
     return { success: true }

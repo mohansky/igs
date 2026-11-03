@@ -42,6 +42,7 @@ import {
 } from '#/components/ui/select'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
+import { MarkedBy } from '#/components/dashboard/MarkedBy'
 import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import { Skeleton } from '#/components/ui/skeleton'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
@@ -88,6 +89,8 @@ interface SalaryRecord {
   paymentMethod: string | null
   status: string
   notes: string | null
+  createdByName: string | null
+  createdAt: Date | string | null
 }
 
 interface StaffMember {
@@ -408,6 +411,16 @@ function SalariesPage() {
         if (!value || value === 'all') return true
         return row.getValue('status') === value
       },
+    },
+    {
+      accessorKey: 'createdByName',
+      header: 'Created by',
+      cell: ({ row }) => (
+        <MarkedBy
+          name={row.original.createdByName}
+          at={row.original.createdAt}
+        />
+      ),
     },
     {
       id: 'pay',

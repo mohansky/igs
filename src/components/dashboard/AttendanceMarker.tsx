@@ -42,6 +42,7 @@ import { currentAcademicYear } from '#/lib/financial-year'
 import { getAttendanceByDate, markAttendance } from '#/server/attendance'
 import type { AttendanceStatus } from '#/server/attendance'
 import LoadIcon from '../icons/LoadIcon'
+import { LastSavedBy } from './MarkedBy'
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'all', label: 'All' },
@@ -54,6 +55,13 @@ interface StudentRecord {
   studentId: string
   name: string
   status: AttendanceStatus
+}
+
+interface SavedRecord {
+  studentUserId: string
+  status: string
+  markedByName: string | null
+  updatedAt: Date | string | null
 }
 
 export function AttendanceMarker() {
@@ -115,16 +123,23 @@ export function AttendanceMarker() {
     [classes, selectedYear],
   )
 
+  // Saved rows for the loaded class + date, kept for the "Last saved by" line.
+  const [savedRecords, setSavedRecords] = useState<SavedRecord[]>([])
+
+  const fetchDay = async () =>
+    (await getAttendanceByDate({
+      data: { date, classId: Number(selectedClass!.value) },
+    })) as {
+      students: { id: number; studentName: string }[]
+      records: SavedRecord[]
+    }
+
   const loadAttendance = async () => {
     if (!selectedClass) return
     setLoadingStudents(true)
     try {
-      const result = (await getAttendanceByDate({
-        data: { date, classId: Number(selectedClass.value) },
-      })) as {
-        students: { id: number; studentName: string }[]
-        records: { studentUserId: string; status: string }[]
-      }
+      const result = await fetchDay()
+      setSavedRecords(result.records)
 
       const studentRecords = result.students.map((sp) => {
         const profileId = String(sp.id)
@@ -143,6 +158,7 @@ export function AttendanceMarker() {
       setStatusFilter({ value: 'all', label: 'All' })
     } catch {
       setStudents([])
+      setSavedRecords([])
       setLoaded(false)
     } finally {
       setLoadingStudents(false)
@@ -204,7 +220,10 @@ export function AttendanceMarker() {
           })),
         },
       }),
-    onSuccess: () => toast.success('Attendance saved'),
+    onSuccess: async () => {
+      toast.success('Attendance saved')
+      setSavedRecords((await fetchDay()).records)
+    },
     onError: () => toast.error('Failed to save attendance'),
   })
 
@@ -352,6 +371,7 @@ export function AttendanceMarker() {
             <Badge variant="default">{summary.present} present</Badge>
             <Badge variant="destructive">{summary.absent} absent</Badge>
             <Badge variant="warning">{summary.late} late</Badge>
+            <LastSavedBy records={savedRecords} />
           </div>
 
           {/* Student filter + bulk actions */}

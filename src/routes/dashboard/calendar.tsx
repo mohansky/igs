@@ -80,6 +80,7 @@ interface CalendarEvent {
   endDate: string | null
   type: CalendarEventType
   color: string | null
+  createdByName: string | null
 }
 
 // A day cell can show real calendar_events rows and/or birthdays derived
@@ -475,6 +476,11 @@ function CalendarPage() {
                                 )}
                               </p>
                             )}
+                          {item.event.createdByName && (
+                            <p className="text-xs text-muted-foreground">
+                              Added by {item.event.createdByName}
+                            </p>
+                          )}
                         </div>
                       ) : (
                         <div

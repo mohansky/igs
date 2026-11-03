@@ -148,6 +148,11 @@ function SubmissionsPage() {
                       <p className="mt-1 text-sm text-muted-foreground">
                         {submission.subject}
                       </p>
+                      {submission.repliedByName && (
+                        <p className="mt-0.5 text-xs text-muted-foreground">
+                          Replied by {submission.repliedByName}
+                        </p>
+                      )}
                     </div>
                     <span className="shrink-0 text-xs text-muted-foreground">
                       {submission.createdAt

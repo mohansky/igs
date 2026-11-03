@@ -1,7 +1,12 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, count, eq, gte, lte } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/sqlite-core'
 import { db } from '#/db'
 import { staffAttendance, staffProfiles, user } from '#/db/schema'
+
+// Who last saved a record. The marker saves the whole roster at once, so
+// this is "last saved by" for the day.
+const markedBy = alias(user, 'marked_by')
 import { requireRole } from './auth-utils'
 import { currentFyStartYear } from '#/lib/financial-year'
 import { LEAVE_TYPES, leavePolicyFor } from '#/lib/leave-policy'
@@ -106,10 +111,13 @@ export const getStaffAttendanceByDate = createServerFn({ method: 'GET' })
       .leftJoin(staffProfiles, eq(staffProfiles.userId, user.id))
       .where(eq(user.role, 'staff'))
 
-    const records = await db
-      .select()
-      .from(staffAttendance)
-      .where(eq(staffAttendance.date, data.date))
+    const records = (
+      await db
+        .select({ record: staffAttendance, markedByName: markedBy.name })
+        .from(staffAttendance)
+        .leftJoin(markedBy, eq(markedBy.id, staffAttendance.markedByUserId))
+        .where(eq(staffAttendance.date, data.date))
+    ).map((r) => ({ ...r.record, markedByName: r.markedByName }))
 
     return { staff, records }
   })
@@ -148,9 +156,12 @@ export const listStaffAttendance = createServerFn({ method: 'GET' })
         userId: staffAttendance.userId,
         staffName: user.name,
         staffEmail: user.email,
+        markedByName: markedBy.name,
+        markedAt: staffAttendance.updatedAt,
       })
       .from(staffAttendance)
       .leftJoin(user, eq(staffAttendance.userId, user.id))
+      .leftJoin(markedBy, eq(markedBy.id, staffAttendance.markedByUserId))
 
     const result =
       conditions.length > 0

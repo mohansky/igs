@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, desc, ne } from 'drizzle-orm'
+import { and, eq, desc, ne, getTableColumns } from 'drizzle-orm'
 import { hashPassword } from 'better-auth/crypto'
 import { db } from '#/db'
 import {
@@ -496,8 +496,12 @@ export const listSalaryHikes = createServerFn({ method: 'GET' })
       throw new Error('Forbidden')
     }
     return db
-      .select()
+      .select({
+        ...getTableColumns(staffSalaryHikes),
+        createdByName: user.name,
+      })
       .from(staffSalaryHikes)
+      .leftJoin(user, eq(user.id, staffSalaryHikes.createdByUserId))
       .where(eq(staffSalaryHikes.userId, data.userId))
       .orderBy(desc(staffSalaryHikes.effectiveFrom))
   })

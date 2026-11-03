@@ -9,6 +9,7 @@ import { listAttendance } from '#/server/attendance'
 import { listClasses } from '#/server/classes'
 import { currentAcademicYear } from '#/lib/financial-year'
 import { CustomDataTable } from './CustomDataTable'
+import { MarkedBy } from './MarkedBy'
 
 interface AttendanceRecord {
   id: number
@@ -19,6 +20,8 @@ interface AttendanceRecord {
   studentName: string | null
   admissionNumber: string | null
   classId: number | null
+  markedByName: string | null
+  markedAt: Date | string | null
 }
 
 const statusBadgeVariant = (status: string) => {
@@ -156,6 +159,16 @@ export function AttendanceLog() {
           </span>
         ),
       },
+      {
+        accessorKey: 'markedByName',
+        header: 'Marked by',
+        cell: ({ row }) => (
+          <MarkedBy
+            name={row.original.markedByName}
+            at={row.original.markedAt}
+          />
+        ),
+      },
     ],
     [classLabelById, classYearById],
   )
@@ -239,6 +252,7 @@ export function AttendanceLog() {
             { key: 'classId', label: 'Class ID' },
             { key: 'status', label: 'Status' },
             { key: 'notes', label: 'Notes' },
+            { key: 'markedByName', label: 'Marked By' },
           ],
           'attendance-export',
         )

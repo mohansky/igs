@@ -1,5 +1,6 @@
 import { createServerFn } from '@tanstack/react-start'
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
+import { alias } from 'drizzle-orm/sqlite-core'
 import { z } from 'zod'
 import { db } from '#/db'
 import {
@@ -7,7 +8,12 @@ import {
   effectiveClassId,
   studentProfiles,
   studentParents,
+  user,
 } from '#/db/schema'
+
+// Who last saved a record. Every save re-stamps all rows in it, so this is
+// "last saved by", not "first marked by".
+const markedBy = alias(user, 'marked_by')
 import { getSession } from './auth'
 import { requireRole } from './auth-utils'
 
@@ -91,10 +97,13 @@ export const getAttendanceByDate = createServerFn({ method: 'GET' })
           )
       : []
 
-    const allRecords = await db
-      .select()
-      .from(attendance)
-      .where(eq(attendance.date, data.date))
+    const allRecords = (
+      await db
+        .select({ record: attendance, markedByName: markedBy.name })
+        .from(attendance)
+        .leftJoin(markedBy, eq(markedBy.id, attendance.markedByUserId))
+        .where(eq(attendance.date, data.date))
+    ).map((r) => ({ ...r.record, markedByName: r.markedByName }))
 
     const studentProfileIds = students.map((s) => String(s.id))
     const records = data.classId
@@ -133,12 +142,15 @@ export const listAttendance = createServerFn({ method: 'GET' })
         studentName: studentProfiles.studentName,
         admissionNumber: studentProfiles.admissionNumber,
         classId: sql<number | null>`${effectiveClassId}`,
+        markedByName: markedBy.name,
+        markedAt: attendance.updatedAt,
       })
       .from(attendance)
       .leftJoin(
         studentProfiles,
         eq(attendance.studentUserId, studentProfiles.id),
       )
+      .leftJoin(markedBy, eq(markedBy.id, attendance.markedByUserId))
 
     if (data.classId) {
       conditions.push(sql`${effectiveClassId} = ${data.classId}`)

@@ -35,6 +35,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
+import { MarkedBy } from '#/components/dashboard/MarkedBy'
 import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import { MonthlyFinanceOverview } from '#/components/dashboard/MonthlyFinanceOverview'
 import { YearEndClosing } from '#/components/dashboard/YearEndClosing'
@@ -128,6 +129,8 @@ interface Transaction {
   notes: string | null
   attachmentUrl: string | null
   attachmentType: 'file' | 'link' | null
+  createdByName: string | null
+  createdAt: Date | string | null
 }
 
 const expenseCategories = [
@@ -481,6 +484,16 @@ function ExpensesPage() {
         if (!value || value === 'all') return true
         return row.getValue('paymentMethod') === value
       },
+    },
+    {
+      accessorKey: 'createdByName',
+      header: 'Added by',
+      cell: ({ row }) => (
+        <MarkedBy
+          name={row.original.createdByName}
+          at={row.original.createdAt}
+        />
+      ),
     },
     {
       id: 'attachment',

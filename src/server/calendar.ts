@@ -1,7 +1,7 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, gte, lte, or } from 'drizzle-orm'
+import { and, eq, getTableColumns, gte, lte, or } from 'drizzle-orm'
 import { db } from '#/db'
-import { calendarEvents } from '#/db/schema'
+import { calendarEvents, user } from '#/db/schema'
 import { requireRole } from './auth-utils'
 import { getSession } from './auth'
 import { z } from 'zod'
@@ -58,15 +58,19 @@ export const listCalendarEvents = createServerFn({ method: 'GET' })
       conditions.push(eq(calendarEvents.type, data.type))
     }
 
+    const query = db
+      .select({ ...getTableColumns(calendarEvents), createdByName: user.name })
+      .from(calendarEvents)
+      .leftJoin(user, eq(user.id, calendarEvents.createdByUserId))
     const result =
-      conditions.length > 0
-        ? await db
-            .select()
-            .from(calendarEvents)
-            .where(and(...conditions))
-        : await db.select().from(calendarEvents)
+      conditions.length > 0 ? await query.where(and(...conditions)) : await query
 
-    return result
+    // Parents/students see the calendar too; who added an event is staff-only.
+    const role = (session.user as { role?: string }).role ?? 'student'
+    const showAuthor = ['admin', 'staff', 'auditor'].includes(role)
+    return showAuthor
+      ? result
+      : result.map((ev) => ({ ...ev, createdByName: null }))
   })
 
 export const createCalendarEvent = createServerFn({ method: 'POST' })

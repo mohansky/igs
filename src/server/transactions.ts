@@ -1,8 +1,18 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, desc, gte, lte, inArray, sql, isNotNull } from 'drizzle-orm'
+import {
+  and,
+  eq,
+  desc,
+  gte,
+  lte,
+  inArray,
+  sql,
+  isNotNull,
+  getTableColumns,
+} from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '#/db'
-import { transactions, fees, staffSalaries } from '#/db/schema'
+import { transactions, fees, staffSalaries, user } from '#/db/schema'
 import { fyEndDate, fyStartDate } from '#/lib/financial-year'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
@@ -38,7 +48,10 @@ export const listTransactions = createServerFn({ method: 'GET' })
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const query = db.select().from(transactions)
+    const query = db
+      .select({ ...getTableColumns(transactions), createdByName: user.name })
+      .from(transactions)
+      .leftJoin(user, eq(user.id, transactions.createdByUserId))
     const filtered =
       data.fyStartYear != null
         ? query.where(

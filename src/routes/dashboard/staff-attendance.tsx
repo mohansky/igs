@@ -29,6 +29,7 @@ import {
 import LoadIcon from '#/components/icons/LoadIcon'
 import type { StaffAttendanceStatus } from '#/server/staff-attendance'
 import { LeaveBalanceCompact } from '#/components/dashboard/LeaveBalance'
+import { LastSavedBy, MarkedBy } from '#/components/dashboard/MarkedBy'
 import { fyStartYearOf } from '#/lib/financial-year'
 import { attendanceStatusLabel } from '#/lib/leave-policy'
 import type { LeaveType } from '#/lib/leave-policy'
@@ -62,6 +63,10 @@ function StaffAttendanceMarker() {
   const [staff, setStaff] = useState<StaffRecord[]>([])
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
+  // Saved rows for the loaded date, kept for the "Last saved by" line.
+  const [savedRecords, setSavedRecords] = useState<
+    { markedByName: string | null; updatedAt: Date | string | null }[]
+  >([])
 
   const loadAttendance = async () => {
     setLoading(true)
@@ -82,8 +87,11 @@ function StaffAttendanceMarker() {
           checkIn: string | null
           checkOut: string | null
           notes: string | null
+          markedByName: string | null
+          updatedAt: Date | string | null
         }[]
       }
+      setSavedRecords(result.records)
 
       const records = result.staff.map((s): StaffRecord => {
         const existing = result.records.find((r) => r.userId === s.id)
@@ -106,6 +114,7 @@ function StaffAttendanceMarker() {
       setLoaded(true)
     } catch {
       setStaff([])
+      setSavedRecords([])
       setLoaded(false)
     } finally {
       setLoading(false)
@@ -168,9 +177,12 @@ function StaffAttendanceMarker() {
           })),
         },
       }),
-    onSuccess: () => {
+    onSuccess: async () => {
       toast.success('Staff attendance saved')
       queryClient.invalidateQueries({ queryKey: ['leave-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['staff-attendance'] })
+      const fresh = await getStaffAttendanceByDate({ data: { date } })
+      setSavedRecords(fresh.records)
     },
     onError: () => toast.error('Failed to save staff attendance'),
   })
@@ -230,6 +242,7 @@ function StaffAttendanceMarker() {
             <Badge variant="destructive">{summary.absent} absent</Badge>
             <Badge variant="warning">{summary.late} late</Badge>
             <Badge variant="success">{summary.leave} leave</Badge>
+            <LastSavedBy records={savedRecords} />
           </div>
 
           <Table>
@@ -398,6 +411,8 @@ interface StaffAttendanceRecord {
   userId: string
   staffName: string | null
   staffEmail: string | null
+  markedByName: string | null
+  markedAt: Date | string | null
 }
 
 const logStatusVariant = (status: string) => {
@@ -467,6 +482,13 @@ const historyColumns: ColumnDef<StaffAttendanceRecord>[] = [
       <span className="text-muted-foreground">
         {(row.getValue('notes') as string | null) ?? '-'}
       </span>
+    ),
+  },
+  {
+    accessorKey: 'markedByName',
+    header: 'Marked by',
+    cell: ({ row }) => (
+      <MarkedBy name={row.original.markedByName} at={row.original.markedAt} />
     ),
   },
 ]

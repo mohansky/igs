@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { eq, desc, inArray } from 'drizzle-orm'
+import { eq, desc, inArray, getTableColumns } from 'drizzle-orm'
 import { z } from 'zod'
 import { db } from '#/db'
 import { staffSalaries, user } from '#/db/schema'
@@ -20,8 +20,12 @@ export const listSalaries = createServerFn({ method: 'GET' }).handler(
   async () => {
     await requireRole(['admin'])
     return db
-      .select()
+      .select({
+        ...getTableColumns(staffSalaries),
+        createdByName: user.name,
+      })
       .from(staffSalaries)
+      .leftJoin(user, eq(user.id, staffSalaries.createdByUserId))
       .orderBy(desc(staffSalaries.month), staffSalaries.staffName)
   },
 )
