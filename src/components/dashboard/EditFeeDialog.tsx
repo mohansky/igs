@@ -14,6 +14,7 @@ import { Label } from '#/components/ui/label'
 import { updateFeeRecord } from '#/server/fees'
 import { listStudents } from '#/server/students'
 import type { FeeStatusValue } from '#/server/fees'
+import { FeeCategorySelect } from './FeeCategorySelect'
 
 interface FeeRecord {
   id: number
@@ -26,6 +27,7 @@ interface FeeRecord {
   notes: string | null
   studentName: string | null
   admissionNumber: string | null
+  categoryId: number | null
 }
 
 interface StudentOption {
@@ -49,6 +51,7 @@ export function EditFeeDialog({
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [status, setStatus] = useState<FeeStatusValue | ''>('')
   const [selectedStudentUserId, setSelectedStudentUserId] = useState('')
   const [selectedStudentProfileId, setSelectedStudentProfileId] = useState<
@@ -69,6 +72,7 @@ export function EditFeeDialog({
       setAmount(String(fee.amount))
       setDueDate(fee.dueDate)
       setDescription(fee.description ?? '')
+      setCategoryId(fee.categoryId ? String(fee.categoryId) : '')
       setStatus(fee.status as FeeStatusValue)
       setSelectedStudentUserId(fee.studentUserId)
       setSelectedStudentProfileId(fee.studentProfileId)
@@ -109,6 +113,8 @@ export function EditFeeDialog({
           dueDate,
           description: description || undefined,
           status: status === '' ? undefined : status,
+          // Old fees may stay uncategorised; once set, it can only change.
+          categoryId: categoryId ? Number(categoryId) : undefined,
         },
       }),
     onSuccess: () => {
@@ -116,7 +122,8 @@ export function EditFeeDialog({
       onOpenChange(false)
       onUpdated()
     },
-    onError: () => toast.error('Failed to update fee record'),
+    onError: (e: Error) =>
+      toast.error(e.message || 'Failed to update fee record'),
   })
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -230,6 +237,17 @@ export function EditFeeDialog({
                 value={dueDate}
                 onChange={(e) => setDueDate(e.target.value)}
                 required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="edit-category">Category</Label>
+              <FeeCategorySelect
+                id="edit-category"
+                value={categoryId}
+                onChange={setCategoryId}
+                currentId={fee.categoryId}
+                placeholder="Uncategorised — choose a category"
+                enabled={open}
               />
             </div>
             <div className="space-y-2">

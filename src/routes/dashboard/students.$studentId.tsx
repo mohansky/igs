@@ -64,6 +64,8 @@ interface FeeRecordRaw {
   notes: string | null
   isOverdue: boolean
   isOpen: boolean
+  categoryId: number | null
+  categoryName: string | null
   receivedByUserId: string | null
   receivedByName: string | null
 }

@@ -28,6 +28,7 @@ interface FeeRecord {
   description: string | null
   isOverdue: boolean
   isOpen: boolean
+  categoryName: string | null
 }
 
 const statusBadgeVariant = (status: string) => {
@@ -128,6 +129,12 @@ export function FeeStudentView({
   */
 
   const columns: ColumnDef<FeeRecord>[] = [
+    {
+      // Parents just see a dash for older fees with no category.
+      accessorKey: 'categoryName',
+      header: 'Category',
+      cell: ({ row }) => row.original.categoryName ?? '—',
+    },
     {
       accessorKey: 'description',
       header: 'Description',

@@ -28,6 +28,7 @@ import {
 import { Input } from '#/components/ui/input'
 // import { ArrowUpDownIcon } from 'lucide-react'
 import { cn, formatDate, formatCurrency } from '#/lib/utils'
+import { UNCATEGORISED_LABEL } from '#/lib/fee-categories'
 import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
 import { CustomDataTable } from './CustomDataTable'
 import { FeePaymentsDialog } from './FeePaymentsDialog'
@@ -63,6 +64,8 @@ interface FeeRecord {
   isOverdue: boolean
   // Concession fee: no amount due, never outstanding or overdue.
   isOpen: boolean
+  categoryId: number | null
+  categoryName: string | null
   receivedByUserId: string | null
   receivedByName: string | null
 }
@@ -200,6 +203,18 @@ export function FeeTable({
     ]
   }, [fees])
 
+  // Categories present in the data, plus Uncategorised for older fees.
+  const categoryOptions = useMemo(() => {
+    const names = new Set<string>()
+    for (const f of fees) names.add(f.categoryName ?? UNCATEGORISED_LABEL)
+    return [
+      { label: 'All categories', value: 'all' },
+      ...Array.from(names)
+        .sort((a, b) => a.localeCompare(b))
+        .map((name) => ({ label: name, value: name })),
+    ]
+  }, [fees])
+
   const filteredFees = useMemo(() => {
     return fees.filter((f) => {
       if (
@@ -327,6 +342,19 @@ export function FeeTable({
       filterFn: (row, _id, value) => {
         if (!value || value === 'all') return true
         return row.getValue('class') === value
+      },
+    },
+    {
+      id: 'category',
+      accessorFn: (row) => row.categoryName ?? UNCATEGORISED_LABEL,
+      header: 'Category',
+      cell: ({ row }) =>
+        row.original.categoryName ?? (
+          <span className="text-muted-foreground">{UNCATEGORISED_LABEL}</span>
+        ),
+      filterFn: (row, _id, value) => {
+        if (!value || value === 'all') return true
+        return row.getValue('category') === value
       },
     },
     {
@@ -597,6 +625,13 @@ export function FeeTable({
             label: 'Class',
             type: 'select',
             options: classOptions,
+          },
+          {
+            column: 'category',
+            placeholder: 'Filter by category',
+            label: 'Category',
+            type: 'select',
+            options: categoryOptions,
           },
           {
             column: 'description',

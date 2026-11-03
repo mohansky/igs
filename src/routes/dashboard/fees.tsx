@@ -18,6 +18,7 @@ import {
   bulkDeleteFees,
 } from '#/server/fees'
 import { downloadCsv } from '#/lib/csv'
+import { UNCATEGORISED_LABEL } from '#/lib/fee-categories'
 import { getChildrenByParent, getStudentProfile } from '#/server/students'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import DownloadIcon from '#/components/icons/DownloadIcon'
@@ -57,6 +58,8 @@ export interface FeeRecord {
   classSection: string | null
   isOverdue: boolean
   isOpen: boolean
+  categoryId: number | null
+  categoryName: string | null
   receivedByUserId: string | null
   receivedByName: string | null
 }
@@ -136,8 +139,12 @@ function FeesPage() {
               variant="outline"
               onClick={() =>
                 downloadCsv(
-                  fees,
+                  fees.map((f) => ({
+                    ...f,
+                    category: f.categoryName ?? UNCATEGORISED_LABEL,
+                  })),
                   [
+                    { key: 'category', label: 'Category' },
                     { key: 'studentName', label: 'Student' },
                     { key: 'admissionNumber', label: 'Admission #' },
                     { key: 'className', label: 'Class' },

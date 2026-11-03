@@ -483,6 +483,29 @@ export const staffSalaryHikes = sqliteTable('staff_salary_hikes', {
   ),
 })
 
+// What a fee is for (Tuition, Books, …). Pass-through categories are cost
+// recovery (books, uniform) rather than fee income. `key` identifies the
+// seeded rows in code (e.g. 'tuition' for bulk fees and concessions), so
+// renaming a category doesn't break anything; admin-added rows have none.
+export const feeCategories = sqliteTable('fee_categories', {
+  id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
+  name: text().notNull(),
+  key: text().unique(),
+  sortOrder: integer('sort_order')
+    .notNull()
+    .default(sql`0`),
+  // Boolean defaults as sql`0`/sql`1`: see CLAUDE.md (drizzle-kit push bug).
+  isActive: integer('is_active', { mode: 'boolean' })
+    .notNull()
+    .default(sql`1`),
+  isPassThrough: integer('is_pass_through', { mode: 'boolean' })
+    .notNull()
+    .default(sql`0`),
+  createdAt: integer('created_at', { mode: 'timestamp' }).default(
+    sql`(unixepoch())`,
+  ),
+})
+
 export const fees = sqliteTable('fees', {
   id: integer({ mode: 'number' }).primaryKey({ autoIncrement: true }),
   studentUserId: text('student_user_id').notNull(),
@@ -506,6 +529,9 @@ export const fees = sqliteTable('fees', {
   isOpen: integer('is_open', { mode: 'boolean' })
     .notNull()
     .default(sql`0`),
+  // Required for new fees (enforced in the app); null on fees created before
+  // categories existed, shown as "Uncategorised".
+  categoryId: integer('category_id').references(() => feeCategories.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,
   ),

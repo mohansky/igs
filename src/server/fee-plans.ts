@@ -6,8 +6,10 @@ import {
   eq,
   gte,
   inArray,
+  isNull,
   lte,
   max,
+  or,
   sql,
   sum,
 } from 'drizzle-orm'
@@ -26,6 +28,12 @@ import { fyEndDate, fyStartDate } from '#/lib/financial-year'
 import { schoolToday } from '#/lib/fee-math'
 import { requireRole } from './auth-utils'
 import { syncFeeFromPayments } from './fees'
+import { getTuitionCategoryId } from './fee-categories'
+
+// Concessions apply to tuition only. Old fees with no category count as
+// possible tuition (most were bulk tuition fees); other categories never do.
+const tuitionOrUncategorised = (tuitionId: number) =>
+  or(isNull(fees.categoryId), eq(fees.categoryId, tuitionId))
 
 // Fee plans are admin business. GET endpoints are also open to the read-only
 // auditor (trustees); writes are admin-only. Never exposed to staff/parents.
@@ -78,6 +86,7 @@ export const getFeePlanOptions = createServerFn({ method: 'GET' })
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const { start, end } = yearRange(data.academicYear)
+    const tuitionId = await getTuitionCategoryId()
 
     const candidateFees = await db
       .select({
@@ -86,21 +95,25 @@ export const getFeePlanOptions = createServerFn({ method: 'GET' })
         dueDate: fees.dueDate,
         description: fees.description,
         paidAmount: fees.paidAmount,
+        categoryId: fees.categoryId,
       })
       .from(fees)
       .where(
         and(
           eq(fees.studentUserId, String(data.studentProfileId)),
           eq(fees.isOpen, false),
+          tuitionOrUncategorised(tuitionId),
           gte(fees.dueDate, start),
           lte(fees.dueDate, end),
         ),
       )
       .orderBy(fees.dueDate)
 
-    // Suggest: the student's own tuition fee for the year, else the amount
-    // most used for fees in the student's class that year (bulk fees).
+    // Suggest: the student's own tuition fee for the year (by category, then
+    // by description for old fees), else the amount most used for tuition
+    // fees in the student's class that year (bulk fees).
     const tuition =
+      candidateFees.find((f) => f.categoryId === tuitionId) ??
       candidateFees.find((f) => /tuition/i.test(f.description ?? '')) ??
       candidateFees[0]
     let suggestedReferenceFee: number | null = tuition?.amount ?? null
@@ -113,6 +126,7 @@ export const getFeePlanOptions = createServerFn({ method: 'GET' })
           and(
             sql`${effectiveClassId} = (SELECT COALESCE(current_class_id, class_id) FROM student_profiles WHERE id = ${data.studentProfileId})`,
             eq(fees.isOpen, false),
+            tuitionOrUncategorised(tuitionId),
             gte(fees.dueDate, start),
             lte(fees.dueDate, end),
           ),
@@ -153,6 +167,7 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
     const studentKey = String(data.studentProfileId)
 
     return db.transaction(async (tx) => {
+      const tuitionId = await getTuitionCategoryId(tx)
       const [existing] = await tx
         .select()
         .from(studentFeePlans)
@@ -182,6 +197,7 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
               id: fees.id,
               studentUserId: fees.studentUserId,
               isOpen: fees.isOpen,
+              categoryId: fees.categoryId,
             })
             .from(fees)
             .where(eq(fees.id, data.convertFeeId))
@@ -189,9 +205,18 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
           if (!fee || fee.studentUserId !== studentKey) {
             throw new Error('That fee does not belong to this student.')
           }
+          if (fee.categoryId !== null && fee.categoryId !== tuitionId) {
+            throw new Error('Only a tuition fee can become a concession fee.')
+          }
+          // An old uncategorised fee becomes Tuition Fee as it's converted.
           await tx
             .update(fees)
-            .set({ isOpen: true, amount: 0, updatedAt: new Date() })
+            .set({
+              isOpen: true,
+              amount: 0,
+              categoryId: tuitionId,
+              updatedAt: new Date(),
+            })
             .where(eq(fees.id, fee.id))
           openFeeId = fee.id
         } else if (!openFeeId) {
@@ -204,6 +229,7 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
               description: `Tuition Fee ${data.academicYear}`,
               isOpen: true,
               status: 'open',
+              categoryId: tuitionId,
             })
             .returning({ id: fees.id })
           openFeeId = created.id

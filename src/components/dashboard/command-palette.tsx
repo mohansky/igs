@@ -20,6 +20,8 @@ import {
   MoneySendSquareIcon,
   Image01Icon,
   Discount01Icon,
+  ChartBarLineIcon,
+  Tag01Icon,
 } from 'hugeicons-react'
 import { cn } from '#/lib/utils'
 
@@ -138,6 +140,20 @@ const NAV_LINKS: NavLink[] = [
     to: '/dashboard/concessions',
     roles: ['admin', 'auditor'],
     icon: Discount01Icon,
+  },
+  {
+    kind: 'nav',
+    label: 'Fee Summary',
+    to: '/dashboard/fee-summary',
+    roles: ['admin', 'auditor'],
+    icon: ChartBarLineIcon,
+  },
+  {
+    kind: 'nav',
+    label: 'Fee Categories',
+    to: '/dashboard/fee-categories',
+    roles: ['admin'],
+    icon: Tag01Icon,
   },
   {
     kind: 'nav',

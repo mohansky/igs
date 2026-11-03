@@ -63,6 +63,8 @@ import {
   UserSearch01Icon,
   Image01Icon,
   Discount01Icon,
+  ChartBarLineIcon,
+  Tag01Icon,
 } from 'hugeicons-react'
 import {
   Avatar,
@@ -122,6 +124,20 @@ const navItems: NavItem[] = [
     roles: ['admin'],
     group: 'admin',
     icon: Discount01Icon,
+  },
+  {
+    to: '/dashboard/fee-summary',
+    label: 'Fee Summary',
+    roles: ['admin'],
+    group: 'admin',
+    icon: ChartBarLineIcon,
+  },
+  {
+    to: '/dashboard/fee-categories',
+    label: 'Fee Categories',
+    roles: ['admin'],
+    group: 'admin',
+    icon: Tag01Icon,
   },
   {
     to: '/dashboard/calendar',
@@ -257,6 +273,9 @@ function DashboardLayout() {
     '/dashboard/users',
     '/dashboard/my-attendance',
     '/dashboard/my-salaries',
+    // Admin-only editing pages (their routes redirect auditors anyway).
+    '/dashboard/gallery',
+    '/dashboard/fee-categories',
   ])
   const filteredNav = navItems.filter(
     (item) =>

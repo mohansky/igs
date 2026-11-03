@@ -14,6 +14,7 @@ import { Label } from '#/components/ui/label'
 import { createFeeRecord } from '#/server/fees'
 import { listStudents } from '#/server/students'
 import AddIcon from '../icons/AddIcon'
+import { FeeCategorySelect } from './FeeCategorySelect'
 
 interface StudentItem {
   id: number
@@ -31,6 +32,7 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
   const [showResults, setShowResults] = useState(false)
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
+  const [categoryId, setCategoryId] = useState('')
   const [description, setDescription] = useState('')
 
   const { data: students = [] } = useQuery({
@@ -56,6 +58,7 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
           studentUserId: String(selectedStudent!.id),
           amount: Number(amount),
           dueDate,
+          categoryId: Number(categoryId),
           description: description || undefined,
         },
       }),
@@ -64,7 +67,8 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
       resetForm()
       onCreated()
     },
-    onError: () => toast.error('Failed to create fee record'),
+    onError: (e: Error) =>
+      toast.error(e.message || 'Failed to create fee record'),
   })
 
   const resetForm = () => {
@@ -72,6 +76,7 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
     setStudentSearch('')
     setAmount('')
     setDueDate('')
+    setCategoryId('')
     setDescription('')
     setShowResults(false)
   }
@@ -95,7 +100,7 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
     createMutation.mutate()
   }
 
-  const canSubmit = !!selectedStudent && !!amount && !!dueDate
+  const canSubmit = !!selectedStudent && !!amount && !!dueDate && !!categoryId
 
   return (
     <Dialog
@@ -182,6 +187,16 @@ export function CreateFeeDialog({ onCreated }: { onCreated: () => void }) {
               type="date"
               value={dueDate}
               onChange={(e) => setDueDate(e.target.value)}
+              required
+            />
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="fee-category">Category</Label>
+            <FeeCategorySelect
+              id="fee-category"
+              value={categoryId}
+              onChange={setCategoryId}
+              enabled={open}
               required
             />
           </div>

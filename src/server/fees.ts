@@ -4,6 +4,7 @@ import { db } from '#/db'
 import {
   classes,
   effectiveClassId,
+  feeCategories,
   feePayments,
   fees,
   studentFeePlans,
@@ -21,6 +22,7 @@ import {
 } from '#/lib/fee-math'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
+import { assertActiveCategory, getTuitionCategoryId } from './fee-categories'
 
 const dateString = z
   .string()
@@ -127,12 +129,15 @@ export const createFeeRecord = createServerFn({ method: 'POST' })
       studentUserId: z.string().min(1),
       amount: z.number().positive(),
       dueDate: dateString,
+      // Required for every new fee (old fees may have none).
+      categoryId: z.number().int().positive(),
       description: z.string().max(500).optional(),
       notes: z.string().max(2000).optional(),
     }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
+    await assertActiveCategory(data.categoryId)
     const result = await db.insert(fees).values(data).returning()
     return result[0]
   })
@@ -244,11 +249,14 @@ export const getStudentFees = createServerFn({ method: 'GET' })
           description: fees.description,
           notes: fees.notes,
           isOpen: fees.isOpen,
+          categoryId: fees.categoryId,
+          categoryName: feeCategories.name,
           receivedByUserId: fees.receivedByUserId,
           receivedByName: user.name,
         })
         .from(fees)
         .leftJoin(user, eq(user.id, fees.receivedByUserId))
+        .leftJoin(feeCategories, eq(feeCategories.id, fees.categoryId))
 
     // If querying by profile ID (for parent viewing child's fees)
     if (data.studentProfileId) {
@@ -284,6 +292,7 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
       dueDate: dateString.optional(),
       description: z.string().max(500).optional(),
       status: feeStatus.optional(),
+      categoryId: z.number().int().positive().optional(),
       notes: z.string().max(2000).optional(),
     }),
   )
@@ -292,7 +301,11 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
     const { feeId, ...updates } = data
 
     const [existing] = await db
-      .select({ status: fees.status, isOpen: fees.isOpen })
+      .select({
+        status: fees.status,
+        isOpen: fees.isOpen,
+        categoryId: fees.categoryId,
+      })
       .from(fees)
       .where(eq(fees.id, feeId))
       .limit(1)
@@ -304,6 +317,20 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
       throw new Error(
         "This is a concession fee. Change the student's fee plan instead.",
       )
+    }
+    if (
+      updates.categoryId !== undefined &&
+      updates.categoryId !== existing?.categoryId
+    ) {
+      // Moving to a different category: it must be active (keeping an old,
+      // now-inactive one is fine).
+      await assertActiveCategory(updates.categoryId)
+      if (
+        existing?.isOpen &&
+        updates.categoryId !== (await getTuitionCategoryId())
+      ) {
+        throw new Error('A concession fee is always Tuition Fee.')
+      }
     }
 
     // If status is being changed, record who did it
@@ -355,6 +382,8 @@ export const listFees = createServerFn({ method: 'GET' })
         description: fees.description,
         notes: fees.notes,
         isOpen: fees.isOpen,
+        categoryId: fees.categoryId,
+        categoryName: feeCategories.name,
         studentName: studentProfiles.studentName,
         admissionNumber: studentProfiles.admissionNumber,
         classId: classes.id,
@@ -367,6 +396,7 @@ export const listFees = createServerFn({ method: 'GET' })
       .leftJoin(studentProfiles, eq(fees.studentUserId, studentProfiles.id))
       .leftJoin(classes, sql`${classes.id} = ${effectiveClassId}`)
       .leftJoin(user, eq(user.id, fees.receivedByUserId))
+      .leftJoin(feeCategories, eq(feeCategories.id, fees.categoryId))
 
     const result =
       conditions.length > 0
@@ -440,11 +470,16 @@ export const createBulkFees = createServerFn({ method: 'POST' })
       classId: z.number().int().positive(),
       amount: z.number().positive(),
       dueDate: dateString,
+      // Defaults to Tuition Fee.
+      categoryId: z.number().int().positive().optional(),
       description: z.string().max(500).optional(),
     }),
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
+    const tuitionId = await getTuitionCategoryId()
+    const categoryId = data.categoryId ?? tuitionId
+    await assertActiveCategory(categoryId)
 
     // Get all active students in the class
     const students = await db
@@ -465,14 +500,15 @@ export const createBulkFees = createServerFn({ method: 'POST' })
     }
 
     // Concession students for the class's academic year pay what they can
-    // into their open fee instead of getting the standard fee.
+    // into their open (tuition) fee instead of getting the standard tuition
+    // fee. Other categories (books, uniform, …) are billed to them as usual.
     const [cls] = await db
       .select({ academicYear: classes.academicYear })
       .from(classes)
       .where(eq(classes.id, data.classId))
       .limit(1)
     const concessionIds = new Set(
-      cls
+      cls && categoryId === tuitionId
         ? (
             await db
               .select({ id: studentFeePlans.studentProfileId })
@@ -499,6 +535,7 @@ export const createBulkFees = createServerFn({ method: 'POST' })
           studentUserId: String(s.id),
           amount: data.amount,
           dueDate: data.dueDate,
+          categoryId,
           description: data.description,
         })),
       )
@@ -507,6 +544,8 @@ export const createBulkFees = createServerFn({ method: 'POST' })
     return {
       created: billed.length,
       skipped: skipped.map((s) => s.studentName),
+      // Only tuition runs skip concession students.
+      appliesConcessions: categoryId === tuitionId,
     }
   })
 

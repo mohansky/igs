@@ -33,6 +33,8 @@ import { Route as DashboardMySalariesRouteImport } from './routes/dashboard/my-s
 import { Route as DashboardMyAttendanceRouteImport } from './routes/dashboard/my-attendance'
 import { Route as DashboardGalleryRouteImport } from './routes/dashboard/gallery'
 import { Route as DashboardFeesRouteImport } from './routes/dashboard/fees'
+import { Route as DashboardFeeSummaryRouteImport } from './routes/dashboard/fee-summary'
+import { Route as DashboardFeeCategoriesRouteImport } from './routes/dashboard/fee-categories'
 import { Route as DashboardExpensesRouteImport } from './routes/dashboard/expenses'
 import { Route as DashboardEnquiriesRouteImport } from './routes/dashboard/enquiries'
 import { Route as DashboardDocsRouteImport } from './routes/dashboard/docs'
@@ -171,6 +173,16 @@ const DashboardFeesRoute = DashboardFeesRouteImport.update({
   path: '/fees',
   getParentRoute: () => DashboardRoute,
 } as any)
+const DashboardFeeSummaryRoute = DashboardFeeSummaryRouteImport.update({
+  id: '/fee-summary',
+  path: '/fee-summary',
+  getParentRoute: () => DashboardRoute,
+} as any)
+const DashboardFeeCategoriesRoute = DashboardFeeCategoriesRouteImport.update({
+  id: '/fee-categories',
+  path: '/fee-categories',
+  getParentRoute: () => DashboardRoute,
+} as any)
 const DashboardExpensesRoute = DashboardExpensesRouteImport.update({
   id: '/expenses',
   path: '/expenses',
@@ -276,6 +288,8 @@ export interface FileRoutesByFullPath {
   '/dashboard/docs': typeof DashboardDocsRoute
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
+  '/dashboard/fee-categories': typeof DashboardFeeCategoriesRoute
+  '/dashboard/fee-summary': typeof DashboardFeeSummaryRoute
   '/dashboard/fees': typeof DashboardFeesRoute
   '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
@@ -317,6 +331,8 @@ export interface FileRoutesByTo {
   '/dashboard/docs': typeof DashboardDocsRoute
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
+  '/dashboard/fee-categories': typeof DashboardFeeCategoriesRoute
+  '/dashboard/fee-summary': typeof DashboardFeeSummaryRoute
   '/dashboard/fees': typeof DashboardFeesRoute
   '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
@@ -360,6 +376,8 @@ export interface FileRoutesById {
   '/dashboard/docs': typeof DashboardDocsRoute
   '/dashboard/enquiries': typeof DashboardEnquiriesRoute
   '/dashboard/expenses': typeof DashboardExpensesRoute
+  '/dashboard/fee-categories': typeof DashboardFeeCategoriesRoute
+  '/dashboard/fee-summary': typeof DashboardFeeSummaryRoute
   '/dashboard/fees': typeof DashboardFeesRoute
   '/dashboard/gallery': typeof DashboardGalleryRoute
   '/dashboard/my-attendance': typeof DashboardMyAttendanceRoute
@@ -404,6 +422,8 @@ export interface FileRouteTypes {
     | '/dashboard/docs'
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
+    | '/dashboard/fee-categories'
+    | '/dashboard/fee-summary'
     | '/dashboard/fees'
     | '/dashboard/gallery'
     | '/dashboard/my-attendance'
@@ -445,6 +465,8 @@ export interface FileRouteTypes {
     | '/dashboard/docs'
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
+    | '/dashboard/fee-categories'
+    | '/dashboard/fee-summary'
     | '/dashboard/fees'
     | '/dashboard/gallery'
     | '/dashboard/my-attendance'
@@ -487,6 +509,8 @@ export interface FileRouteTypes {
     | '/dashboard/docs'
     | '/dashboard/enquiries'
     | '/dashboard/expenses'
+    | '/dashboard/fee-categories'
+    | '/dashboard/fee-summary'
     | '/dashboard/fees'
     | '/dashboard/gallery'
     | '/dashboard/my-attendance'
@@ -697,6 +721,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DashboardFeesRouteImport
       parentRoute: typeof DashboardRoute
     }
+    '/dashboard/fee-summary': {
+      id: '/dashboard/fee-summary'
+      path: '/fee-summary'
+      fullPath: '/dashboard/fee-summary'
+      preLoaderRoute: typeof DashboardFeeSummaryRouteImport
+      parentRoute: typeof DashboardRoute
+    }
+    '/dashboard/fee-categories': {
+      id: '/dashboard/fee-categories'
+      path: '/fee-categories'
+      fullPath: '/dashboard/fee-categories'
+      preLoaderRoute: typeof DashboardFeeCategoriesRouteImport
+      parentRoute: typeof DashboardRoute
+    }
     '/dashboard/expenses': {
       id: '/dashboard/expenses'
       path: '/expenses'
@@ -820,6 +858,8 @@ interface DashboardRouteChildren {
   DashboardDocsRoute: typeof DashboardDocsRoute
   DashboardEnquiriesRoute: typeof DashboardEnquiriesRoute
   DashboardExpensesRoute: typeof DashboardExpensesRoute
+  DashboardFeeCategoriesRoute: typeof DashboardFeeCategoriesRoute
+  DashboardFeeSummaryRoute: typeof DashboardFeeSummaryRoute
   DashboardFeesRoute: typeof DashboardFeesRoute
   DashboardGalleryRoute: typeof DashboardGalleryRoute
   DashboardMyAttendanceRoute: typeof DashboardMyAttendanceRoute
@@ -847,6 +887,8 @@ const DashboardRouteChildren: DashboardRouteChildren = {
   DashboardDocsRoute: DashboardDocsRoute,
   DashboardEnquiriesRoute: DashboardEnquiriesRoute,
   DashboardExpensesRoute: DashboardExpensesRoute,
+  DashboardFeeCategoriesRoute: DashboardFeeCategoriesRoute,
+  DashboardFeeSummaryRoute: DashboardFeeSummaryRoute,
   DashboardFeesRoute: DashboardFeesRoute,
   DashboardGalleryRoute: DashboardGalleryRoute,
   DashboardMyAttendanceRoute: DashboardMyAttendanceRoute,

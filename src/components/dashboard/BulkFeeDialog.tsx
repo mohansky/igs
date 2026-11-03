@@ -20,6 +20,8 @@ import {
 } from '#/components/ui/select'
 import { createBulkFees } from '#/server/fees'
 import { listClasses } from '#/server/classes'
+import { TUITION_KEY } from '#/lib/fee-categories'
+import { FeeCategorySelect, feeCategoriesQuery } from './FeeCategorySelect'
 
 export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
   const [open, setOpen] = useState(false)
@@ -27,10 +29,20 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
   const [amount, setAmount] = useState('')
   const [dueDate, setDueDate] = useState('')
   const [description, setDescription] = useState('')
+  // '' = not chosen yet, which shows (and sends) Tuition Fee.
+  const [categoryId, setCategoryId] = useState('')
+  const { data: categories = [] } = useQuery({
+    ...feeCategoriesQuery,
+    enabled: open,
+  })
+  const tuition = categories.find((c) => c.key === TUITION_KEY)
+  const shownCategoryId = categoryId || (tuition ? String(tuition.id) : '')
+  const isTuition = !!tuition && shownCategoryId === String(tuition.id)
   // Shown after a run: concession students are skipped, by name.
   const [result, setResult] = useState<{
     created: number
     skipped: string[]
+    appliesConcessions: boolean
   } | null>(null)
 
   const { data: classes = [] } = useQuery({
@@ -61,6 +73,7 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
           classId: Number(classId),
           amount: Number(amount),
           dueDate,
+          categoryId: shownCategoryId ? Number(shownCategoryId) : undefined,
           description: description || undefined,
         },
       }),
@@ -78,6 +91,7 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
     setAmount('')
     setDueDate('')
     setDescription('')
+    setCategoryId('')
   }
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -111,8 +125,12 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
           <div className="space-y-4">
             <p className="text-sm font-medium">
               Created {result.created} fee{result.created === 1 ? '' : 's'}
-              {' · '}Skipped {result.skipped.length} concession student
-              {result.skipped.length === 1 ? '' : 's'}
+              {result.appliesConcessions && (
+                <>
+                  {' · '}Skipped {result.skipped.length} concession student
+                  {result.skipped.length === 1 ? '' : 's'}
+                </>
+              )}
             </p>
             {result.skipped.length > 0 && (
               <div className="rounded-md border bg-muted/30 p-3">
@@ -141,8 +159,10 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
           <>
             <p className="text-sm text-muted-foreground">
               This will create a fee record for every active student in the
-              selected class, except students on the concession plan for that
-              class&apos;s academic year.
+              selected class
+              {isTuition
+                ? ", except students on the concession plan for that class's academic year (they pay into their open tuition fee)."
+                : '. Concession students are included: concessions apply to tuition only.'}
             </p>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
@@ -182,6 +202,16 @@ export function BulkFeeDialog({ onCreated }: { onCreated: () => void }) {
                   type="date"
                   value={dueDate}
                   onChange={(e) => setDueDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="bulk-category">Category</Label>
+                <FeeCategorySelect
+                  id="bulk-category"
+                  value={shownCategoryId}
+                  onChange={setCategoryId}
+                  enabled={open}
                   required
                 />
               </div>

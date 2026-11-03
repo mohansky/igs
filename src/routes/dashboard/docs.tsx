@@ -213,7 +213,9 @@ function DocsPage() {
               </li>
               <li>
                 Select the student, enter the <Strong>amount</Strong>,{' '}
-                <Strong>due date</Strong>, and a <Strong>description</Strong>.
+                <Strong>due date</Strong>, choose a <Strong>category</Strong>{' '}
+                (required), and add a <Strong>description</Strong>. Bulk fees
+                default to Tuition Fee.
               </li>
               <li>
                 Click <Strong>Create</Strong>. The fee appears with a
@@ -277,6 +279,34 @@ function DocsPage() {
                   <li>
                     <NavLink>Concessions</NavLink> reports the reference fee,
                     amount received and support given per student, per year.
+                  </li>
+                  <li>
+                    Concessions apply to <Strong>Tuition Fee</Strong> only.
+                    Concession students are billed other categories (books,
+                    uniform, …) as usual.
+                  </li>
+                </ul>
+
+                <h3 className="mb-2 mt-4 text-sm font-semibold">
+                  Fee Categories
+                </h3>
+                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+                  <li>
+                    <NavLink>Fee Categories</NavLink>: add, rename, reorder
+                    and deactivate categories. A category can only be deleted
+                    if no fee uses it; inactive ones disappear from dropdowns
+                    but still show on old fees.
+                  </li>
+                  <li>
+                    <Strong>Pass-through</Strong> categories (books, uniform)
+                    are cost recovery and are totalled separately from fee
+                    income in <NavLink>Fee Summary</NavLink>.
+                  </li>
+                  <li>
+                    Fees created before categories existed show as{' '}
+                    <Strong>Uncategorised</Strong>. The{' '}
+                    <Strong>Uncategorised fees</Strong> tab suggests a category
+                    from each description; nothing changes until you apply.
                   </li>
                 </ul>
               </>

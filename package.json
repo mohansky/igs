@@ -18,6 +18,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:push": "drizzle-kit push",
     "db:push:prod": "drizzle-kit push --config drizzle.prod.config.ts",
+    "db:seed:categories": "tsx src/db/seed-fee-categories.ts",
+    "db:seed:categories:prod": "tsx src/db/seed-fee-categories.ts --prod",
     "db:pull": "drizzle-kit pull",
     "db:studio": "drizzle-kit studio",
     "cf-typegen": "wrangler types"
