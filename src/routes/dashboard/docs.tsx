@@ -6,630 +6,832 @@ export const Route = createFileRoute('/dashboard/docs')({
   component: DocsPage,
 })
 
+const ROLE_LABELS: Record<string, string> = {
+  admin: 'Admin',
+  staff: 'Staff',
+  student: 'Parent / Student',
+  auditor: 'Auditor (view-only)',
+}
+
 function DocsPage() {
   const { session } = Route.useRouteContext()
   const userRole = (session.user as { role?: string }).role ?? 'student'
+  const isAdmin = userRole === 'admin'
+  const isStaff = userRole === 'staff'
+  const isParent = userRole === 'student'
+  const isAuditor = userRole === 'auditor'
+  const isSchool = isAdmin || isStaff
+
+  // Sections in page order; each renders only for the roles that can use it.
+  const sections: { id: string; title: string; show: boolean }[] = [
+    { id: 'getting-around', title: 'Getting around', show: true },
+    { id: 'overview', title: 'Overview', show: true },
+    { id: 'attendance', title: 'Attendance', show: isSchool || isParent },
+    { id: 'my-pages', title: 'My Attendance & Salaries', show: isStaff },
+    { id: 'fees', title: 'Fees', show: isAdmin || isParent },
+    { id: 'concessions', title: 'Concessions', show: isAdmin || isAuditor },
+    {
+      id: 'fee-categories',
+      title: isAdmin ? 'Fee Categories & Fee Summary' : 'Fee Summary',
+      show: isAdmin || isAuditor,
+    },
+    { id: 'students', title: 'Students', show: isSchool },
+    { id: 'enquiries', title: 'Enquiries', show: isSchool },
+    { id: 'submissions', title: 'Contact Submissions', show: isSchool },
+    { id: 'calendar', title: 'Calendar', show: true },
+    { id: 'staff', title: 'Staff', show: isAdmin },
+    { id: 'staff-attendance', title: 'Staff Attendance', show: isAdmin },
+    { id: 'salaries', title: 'Staff Salaries', show: isAdmin },
+    { id: 'expenses', title: 'Expenses & Income', show: isAdmin },
+    { id: 'classes', title: 'Classes', show: isAdmin },
+    { id: 'users', title: 'Users', show: isAdmin },
+    { id: 'gallery', title: 'Gallery', show: isAdmin },
+    { id: 'profile', title: 'Profile & Preferences', show: true },
+    { id: 'tips', title: 'General Tips', show: true },
+  ]
+  const visible = sections.filter((s) => s.show)
+  const titleOf = (id: string) => sections.find((s) => s.id === id)!.title
 
   return (
     <div className="mx-auto max-w-3xl space-y-8">
       <div>
         <h1 className="text-2xl font-bold">Dashboard Guide</h1>
         <p className="mt-1 text-muted-foreground">
-          A quick guide to help you navigate and use the school dashboard.
+          How to use the school dashboard. This guide only shows the parts you
+          can use as <Strong>{ROLE_LABELS[userRole] ?? userRole}</Strong>.
         </p>
       </div>
+
+      <nav aria-label="On this page" className="rounded-lg border p-4">
+        <p className="mb-2 text-sm font-semibold">On this page</p>
+        <ul className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2">
+          {visible.map((s) => (
+            <li key={s.id}>
+              <a
+                href={`#${s.id}`}
+                className="text-primary underline-offset-2 hover:underline"
+              >
+                {s.title}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+
+      <Separator />
+
+      {/* Getting around */}
+      <Section id="getting-around" title={titleOf('getting-around')}>
+        <Bullets>
+          <li>
+            The <Strong>sidebar</Strong> lists every page you have access to.
+            {(isAdmin || isAuditor) &&
+              ' School-wide pages are grouped under Administration.'}{' '}
+            On a phone, tap the <Strong>sidebar button</Strong> at the top left
+            to open it.
+          </li>
+          <li>
+            Press <Kbd>Ctrl</Kbd> + <Kbd>K</Kbd> (<Kbd>⌘</Kbd> + <Kbd>K</Kbd> on
+            a Mac) to open the <Strong>search palette</Strong> and jump to any
+            page
+            {isSchool && ', student or calendar event'} by typing its name.
+          </li>
+          <li>
+            Forgot your password? On the sign-in page click{' '}
+            <Strong>Forgot password?</Strong> and enter your email. A reset link
+            valid for one hour is emailed to you. If your account has no real
+            email address, ask the school office to reset it.
+          </li>
+          <li>
+            The dashboard can be installed as an app from your browser menu
+            (&quot;Install app&quot; / &quot;Add to Home Screen&quot;).
+          </li>
+        </Bullets>
+      </Section>
 
       <Separator />
 
       {/* Overview */}
-      <Section title="Overview">
-        <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+      <Section id="overview" title={titleOf('overview')}>
+        <Bullets>
           <li>
-            Click <NavLink>Overview</NavLink> in the sidebar (or the IGS
-            Dashboard logo) to return to the main dashboard.
+            Click <NavLink>Overview</NavLink> (or the IGS logo) to return to the
+            main dashboard.
           </li>
-          {userRole === 'student' ? (
+          {isParent && (
             <>
               <li>
-                If you have children linked to your account, their names and
-                admission numbers are displayed as cards.
+                Children linked to your account are shown as cards with their
+                admission numbers.
               </li>
               <li>
-                Quick-link cards let you jump to <Strong>Attendance</Strong>,{' '}
-                <Strong>Fees</Strong>, <Strong>Calendar</Strong>, and{' '}
+                Quick links take you to <Strong>Attendance</Strong>,{' '}
+                <Strong>Fees</Strong>, <Strong>Calendar</Strong> and{' '}
                 <Strong>Profile</Strong>.
               </li>
             </>
-          ) : (
+          )}
+          {isSchool && (
             <>
               <li>
-                Stat cards show <Strong>Total Students</Strong>,{' '}
-                <Strong>Today&apos;s Attendance</Strong>,{' '}
-                <Strong>Fee Collection</Strong>, and{' '}
-                <Strong>Pending Fees</Strong> at a glance.
+                Stat cards show <Strong>Total Students</Strong> and{' '}
+                <Strong>Today&apos;s Attendance</Strong>
+                {isAdmin && (
+                  <>
+                    , plus <Strong>Fee Collection</Strong> and{' '}
+                    <Strong>Pending Fees</Strong>
+                  </>
+                )}
+                .
               </li>
               <li>
-                Charts display the <Strong>Attendance Trend</Strong> (last 7
-                days) and <Strong>Income vs Expenses</Strong> (6 months).
+                Charts show the <Strong>Attendance Trend</Strong> for the last 7
+                days
+                {isAdmin && (
+                  <>
+                    {' '}
+                    and <Strong>Income vs Expenses</Strong> for 6 months
+                  </>
+                )}
+                .
               </li>
+              {isAdmin && (
+                <li>
+                  Side cards show fee collection progress,{' '}
+                  <Strong>Alerts</Strong> (overdue fees, low attendance, unread
+                  submissions) and today&apos;s staff attendance. Fee collection
+                  compares standard fees only; concession fees have no fixed
+                  amount.
+                </li>
+              )}
               <li>
-                The sidebar cards show <Strong>Fee Collection</Strong> progress,{' '}
-                <Strong>Alerts</Strong> (overdue fees, low attendance, unread
-                submissions), and <Strong>Staff Attendance</Strong> for today.
+                <Strong>Birthdays this month</Strong> (students and staff),{' '}
+                <Strong>Upcoming Events</Strong> and{' '}
+                <Strong>Recent Activity</Strong> appear below.
               </li>
-              <li>
-                A <Strong>Recent Activity</Strong> feed and{' '}
-                <Strong>This Month</Strong> finance summary (income, expenses,
-                balance, recent transactions) appear below.
-              </li>
-              <li>
-                <Strong>Upcoming Events</Strong> from the calendar are shown
-                with dates and type badges.
-              </li>
-              <li>
-                Quick-link cards at the bottom let you jump to every section
-                with live counts (pending fees, unread submissions, etc.).
-              </li>
+              {isAdmin && (
+                <li>
+                  <Strong>This Month</Strong> sums income, expenses and balance.
+                  Each fee payment counts in the month it was received.
+                </li>
+              )}
             </>
           )}
-        </ol>
+          {isAuditor && (
+            <li>
+              As an auditor you have view-only access to the reports in the
+              sidebar, such as <NavLink>Concessions</NavLink> and{' '}
+              <NavLink>Fee Summary</NavLink>. Nothing you open can be changed.
+            </li>
+          )}
+        </Bullets>
       </Section>
 
       <Separator />
 
       {/* Attendance */}
-      <Section title="Attendance">
-        {userRole === 'student' ? (
-          <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-            <li>
-              Go to <NavLink>Attendance</NavLink> from the sidebar.
-            </li>
-            <li>
-              If you have linked children, use the <Strong>tabs</Strong> to
-              switch between each child&apos;s attendance history.
-            </li>
-            <li>
-              Use the <Strong>date range picker</Strong> to filter by dates and
-              the <Strong>status filter</Strong> to view only Present, Absent,
-              or Late records.
-            </li>
-            <li>Summary badges at the top show overall attendance counts.</li>
-          </ol>
-        ) : (
-          <>
-            <h3 className="mb-2 text-sm font-semibold">Marking Attendance</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Go to <NavLink>Attendance</NavLink> and select the{' '}
-                <Strong>Mark Attendance</Strong> tab.
-              </li>
-              <li>
-                Select the <Strong>date</Strong> using the date picker (defaults
-                to today).
-              </li>
-              <li>
-                Choose a <Strong>class</Strong> from the dropdown and click{' '}
-                <Strong>Load Students</Strong>.
-              </li>
-              <li>
-                For each student, click{' '}
-                <Badge
-                  variant="secondary"
-                  className="bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300"
-                >
-                  P
-                </Badge>{' '}
-                (Present),{' '}
-                <Badge
-                  variant="secondary"
-                  className="bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                >
-                  A
-                </Badge>{' '}
-                (Absent), or{' '}
-                <Badge
-                  variant="secondary"
-                  className="bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300"
-                >
-                  L
-                </Badge>{' '}
-                (Late).
-              </li>
-              <li>
-                Use the <Strong>search bar</Strong> to find a specific student
-                by name.
-              </li>
-              <li>
-                Click <Strong>Save Attendance</Strong> at the bottom.
-              </li>
-            </ol>
-            <Tip>
-              You can re-load the same class and date to update attendance that
-              was already saved.
-            </Tip>
+      {(isSchool || isParent) && (
+        <>
+          <Section id="attendance" title={titleOf('attendance')}>
+            {isParent ? (
+              <Steps>
+                <li>
+                  Go to <NavLink>Attendance</NavLink>.
+                </li>
+                <li>
+                  If more than one child is linked, use the{' '}
+                  <Strong>tabs</Strong> to switch between them.
+                </li>
+                <li>
+                  Use the <Strong>date range</Strong> and{' '}
+                  <Strong>status</Strong> filters to see only Present, Absent or
+                  Late days. Badges at the top show the totals.
+                </li>
+              </Steps>
+            ) : (
+              <>
+                <SubHeading first>Marking attendance</SubHeading>
+                <Steps>
+                  <li>
+                    Go to <NavLink>Attendance</NavLink> and open the{' '}
+                    <Strong>Mark Attendance</Strong> tab.
+                  </li>
+                  <li>
+                    Pick the <Strong>date</Strong> (defaults to today) and a{' '}
+                    <Strong>class</Strong>, then click{' '}
+                    <Strong>Load Students</Strong>.
+                  </li>
+                  <li>
+                    For each student click{' '}
+                    <StatusBadge tone="green">P</StatusBadge> Present,{' '}
+                    <StatusBadge tone="red">A</StatusBadge> Absent or{' '}
+                    <StatusBadge tone="yellow">L</StatusBadge> Late. The search
+                    box finds a student by name.
+                  </li>
+                  <li>
+                    Click <Strong>Save Attendance</Strong>.
+                  </li>
+                </Steps>
+                <Tip>
+                  Load the same class and date again to correct a day. A{' '}
+                  <Strong>Last saved by</Strong> line shows who saved that day
+                  last and when.
+                </Tip>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">Viewing History</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Switch to the <Strong>View History</Strong> tab.
-              </li>
-              <li>
-                Filter by <Strong>date range</Strong>,{' '}
-                <Strong>student name</Strong>, or <Strong>status</Strong>.
-              </li>
-              <li>Click any column header to sort the table.</li>
-            </ol>
-          </>
-        )}
-      </Section>
+                <SubHeading>Viewing history</SubHeading>
+                <Steps>
+                  <li>
+                    Open the <Strong>View History</Strong> tab.
+                  </li>
+                  <li>
+                    Filter by <Strong>date range</Strong>,{' '}
+                    <Strong>student</Strong> or <Strong>status</Strong>. The{' '}
+                    <Strong>Marked by</Strong> column shows who saved each
+                    record.
+                  </li>
+                  <li>
+                    Click <Strong>Export CSV</Strong> to download what&apos;s
+                    shown.
+                  </li>
+                </Steps>
+              </>
+            )}
+          </Section>
 
-      <Separator />
+          <Separator />
+        </>
+      )}
+
+      {/* My pages — staff */}
+      {isStaff && (
+        <>
+          <Section id="my-pages" title={titleOf('my-pages')}>
+            <Bullets>
+              <li>
+                <NavLink>My Attendance</NavLink> lists your own attendance
+                (check-in/out times, notes) and{' '}
+                <Strong>My leave this school year</Strong>: casual (CL) and sick
+                (SL) leave used and left. The school year runs May to April.
+              </li>
+              <li>
+                <NavLink>My Salaries</NavLink> lists your monthly salary records
+                with their status. Click <Strong>Slip</Strong> to open a
+                printable salary slip (use Print / Save as PDF).
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
 
       {/* Fees */}
-      <Section title="Fees">
-        {userRole === 'student' ? (
-          <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-            <li>
-              Go to <NavLink>Fees</NavLink> from the sidebar.
-            </li>
-            <li>
-              If you have linked children, use the <Strong>tabs</Strong> to
-              switch between each child&apos;s fee records.
-            </li>
-            <li>
-              Summary badges show <Strong>Total Due</Strong>,{' '}
-              <Strong>Total Paid</Strong>, and <Strong>Balance</Strong>.
-            </li>
-            <li>
-              Use the <Strong>date range picker</Strong> and{' '}
-              <Strong>status filter</Strong> to narrow down records.
-            </li>
-          </ol>
-        ) : (
-          <>
-            <h3 className="mb-2 text-sm font-semibold">Viewing Fees</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Go to <NavLink>Fees</NavLink> from the sidebar to see all fee
-                records across students.
-              </li>
-              <li>
-                Use <Strong>date range</Strong> and <Strong>status</Strong>{' '}
-                filters to narrow results. Click column headers to sort.
-              </li>
-              <li>
-                Click <Strong>Export CSV</Strong> to download the fee data.
-              </li>
-            </ol>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Creating Fee Records
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Click <Strong>Create Fee</Strong> to add a fee for a single
-                student, or <Strong>Bulk Fee</Strong> to create fees for
-                multiple students at once.
-              </li>
-              <li>
-                Select the student, enter the <Strong>amount</Strong>,{' '}
-                <Strong>due date</Strong>, choose a <Strong>category</Strong>{' '}
-                (required), and add a <Strong>description</Strong>. Bulk fees
-                default to Tuition Fee.
-              </li>
-              <li>
-                Click <Strong>Create</Strong>. The fee appears with a
-                &quot;pending&quot; status.
-              </li>
-            </ol>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Recording a Payment
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Find the fee in the table and click <Strong>Pay</Strong>.
-              </li>
-              <li>
-                Enter the <Strong>amount paid</Strong>, the{' '}
-                <Strong>payment date</Strong> (defaults to today; can be
-                backdated, not future-dated), the{' '}
-                <Strong>payment method</Strong>, and optionally a{' '}
-                <Strong>receipt number</Strong>.
-              </li>
-              <li>
-                Click <Strong>Record Payment</Strong>. The status updates to
-                &quot;paid&quot;.
-              </li>
-              <li>
-                To correct a payment&apos;s amount or date, open the
-                fee&apos;s payment history (eye icon) and click{' '}
-                <Strong>Edit</Strong>. Payments in a closed financial year
-                can&apos;t be changed.
-              </li>
-            </ol>
-
-            {(userRole === 'admin' || userRole === 'auditor') && (
+      {(isAdmin || isParent) && (
+        <>
+          <Section id="fees" title={titleOf('fees')}>
+            {isParent ? (
+              <Steps>
+                <li>
+                  Go to <NavLink>Fees</NavLink>.
+                </li>
+                <li>
+                  If more than one child is linked, use the{' '}
+                  <Strong>tabs</Strong> to switch between them.
+                </li>
+                <li>
+                  Badges show <Strong>Total Due</Strong>,{' '}
+                  <Strong>Total Paid</Strong> and <Strong>Balance</Strong>. Each
+                  fee shows its category (e.g. Tuition Fee, Books).
+                </li>
+                <li>
+                  Use the <Strong>date range</Strong> and{' '}
+                  <Strong>status</Strong> filters to narrow the list.
+                </li>
+              </Steps>
+            ) : (
               <>
-                <h3 className="mb-2 mt-4 text-sm font-semibold">
-                  Concession (pay what you can)
-                </h3>
-                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+                <SubHeading first>Viewing fees</SubHeading>
+                <Steps>
                   <li>
-                    On a student&apos;s <Strong>Fees</Strong> tab, use{' '}
-                    <Strong>Change plan</Strong> to put them on the concession
-                    plan for an academic year. Pick their existing tuition fee
-                    to convert (its payments are kept), or create a new open
-                    fee.
+                    Go to <NavLink>Fees</NavLink> to see every student&apos;s
+                    fees.
                   </li>
                   <li>
-                    An open fee has no amount due: it&apos;s never outstanding
-                    or overdue, and accepts any payment amount. Parents see
-                    what they&apos;ve paid, without the word
-                    &quot;concession&quot;.
+                    Filter by student, description, <Strong>category</Strong>,{' '}
+                    <Strong>status</Strong>, due month, paid month or date
+                    range. Click a column header to sort.
                   </li>
                   <li>
-                    <Strong>Bulk Fee</Strong> skips concession students for
-                    the class&apos;s academic year and lists who was skipped.
+                    Click <Strong>Export CSV</Strong> to download the list
+                    (includes the category).
+                  </li>
+                </Steps>
+
+                <SubHeading>Creating fees</SubHeading>
+                <Steps>
+                  <li>
+                    Click <Strong>Create Fee</Strong> for one student. Pick the
+                    student, enter the <Strong>amount</Strong> and{' '}
+                    <Strong>due date</Strong>, choose a{' '}
+                    <Strong>category</Strong> (required) and add a description.
+                  </li>
+                  <li>
+                    Click <Strong>Bulk Fee</Strong> to bill a whole class at
+                    once. The category defaults to Tuition Fee. For tuition,
+                    students on the concession plan for that school year are
+                    skipped and listed in the result.
+                  </li>
+                  <li>New fees start as &quot;pending&quot;.</li>
+                </Steps>
+
+                <SubHeading>Recording payments</SubHeading>
+                <Steps>
+                  <li>
+                    Click <Strong>Pay</Strong> on a fee.
+                  </li>
+                  <li>
+                    Enter the <Strong>amount paid</Strong>, the{' '}
+                    <Strong>payment date</Strong> (today by default; it can be
+                    backdated but not in the future), the{' '}
+                    <Strong>method</Strong> and optionally a{' '}
+                    <Strong>receipt number</Strong>.
+                  </li>
+                  <li>
+                    Click <Strong>Record Payment</Strong>. The fee becomes
+                    &quot;partial&quot; or &quot;paid&quot;.
+                  </li>
+                  <li>
+                    To correct a payment&apos;s amount or date, open the
+                    fee&apos;s payment history (eye icon) and click{' '}
+                    <Strong>Edit</Strong>. Payments in a closed financial year
+                    can&apos;t be changed.
+                  </li>
+                </Steps>
+
+                <SubHeading>Editing and deleting fees</SubHeading>
+                <Steps>
+                  <li>
+                    Click <Strong>Edit</Strong> to change the student, amount,
+                    due date, category, description or status. A concession fee
+                    can&apos;t be moved to another student.
+                  </li>
+                  <li>
+                    Click <Strong>Delete</Strong> to remove a fee permanently.
+                  </li>
+                </Steps>
+                <Tip>
+                  A student&apos;s own fees are also on their profile:{' '}
+                  <NavLink>Students</NavLink> → View → <Strong>Fees</Strong>{' '}
+                  tab.
+                </Tip>
+              </>
+            )}
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Concessions — admin + auditor */}
+      {(isAdmin || isAuditor) && (
+        <>
+          <Section id="concessions" title={titleOf('concessions')}>
+            <p className="text-sm text-muted-foreground">
+              A concession (pay what you can) plan lets a family pay any amount
+              towards tuition for a school year.
+            </p>
+            <Bullets>
+              {isAdmin && (
+                <>
+                  <li>
+                    On a student&apos;s <Strong>Fees</Strong> tab, click{' '}
+                    <Strong>Change plan</Strong> and choose the school year.
+                    Convert their existing tuition fee (its payments are kept)
+                    or create a new open fee, and set the reference amount.
                   </li>
                   <li>
                     Switching back to <Strong>Standard</Strong> turns the open
                     fee into a normal fee for the reference amount.
                   </li>
-                  <li>
-                    <NavLink>Concessions</NavLink> reports the reference fee,
-                    amount received and support given per student, per year.
-                  </li>
-                  <li>
-                    Concessions apply to <Strong>Tuition Fee</Strong> only.
-                    Concession students are billed other categories (books,
-                    uniform, …) as usual.
-                  </li>
-                </ul>
+                </>
+              )}
+              <li>
+                An open fee has no amount due: it&apos;s never outstanding or
+                overdue and accepts any payment. Parents see what they&apos;ve
+                paid, without the word &quot;concession&quot;.
+              </li>
+              <li>
+                Concessions apply to <Strong>Tuition Fee</Strong> only. Books,
+                uniform and other categories are billed as usual.
+              </li>
+              <li>
+                <NavLink>Concessions</NavLink> reports, per school year, each
+                concession student&apos;s reference fee, amount received,
+                support given so far, number of payments and last payment, with
+                totals.
+              </li>
+            </Bullets>
+          </Section>
 
-                <h3 className="mb-2 mt-4 text-sm font-semibold">
-                  Fee Categories
-                </h3>
-                <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+          <Separator />
+        </>
+      )}
+
+      {/* Fee categories & summary — admin (+ auditor for the summary) */}
+      {(isAdmin || isAuditor) && (
+        <>
+          <Section id="fee-categories" title={titleOf('fee-categories')}>
+            {isAdmin && (
+              <>
+                <SubHeading first>Fee Categories</SubHeading>
+                <Bullets>
                   <li>
                     <NavLink>Fee Categories</NavLink>: add, rename, reorder
-                    and deactivate categories. A category can only be deleted
-                    if no fee uses it; inactive ones disappear from dropdowns
-                    but still show on old fees.
+                    (arrows) and deactivate categories. Inactive categories
+                    disappear from dropdowns but still show on old fees.
                   </li>
                   <li>
-                    <Strong>Pass-through</Strong> categories (books, uniform)
-                    are cost recovery and are totalled separately from fee
-                    income in <NavLink>Fee Summary</NavLink>.
+                    A category can only be deleted if no fee uses it. Tuition
+                    Fee can&apos;t be deactivated or deleted.
+                  </li>
+                  <li>
+                    Mark books, uniform and similar as{' '}
+                    <Strong>pass-through</Strong> (cost recovery) so they are
+                    totalled apart from fee income.
                   </li>
                   <li>
                     Fees created before categories existed show as{' '}
                     <Strong>Uncategorised</Strong>. The{' '}
                     <Strong>Uncategorised fees</Strong> tab suggests a category
-                    from each description; nothing changes until you apply.
+                    from each description; nothing changes until you select rows
+                    and apply.
                   </li>
-                </ul>
+                </Bullets>
               </>
             )}
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Editing &amp; Deleting Fees
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            {isAdmin && <SubHeading>Fee Summary</SubHeading>}
+            <Bullets>
               <li>
-                Click <Strong>Edit</Strong> on any fee to update its details
-                (amount, due date, description, notes).
+                <NavLink>Fee Summary</NavLink> shows, for fees due in a school
+                year (May to April), what was <Strong>billed</Strong>,{' '}
+                <Strong>received</Strong> and is still <Strong>pending</Strong>{' '}
+                in each category.
               </li>
               <li>
-                Click <Strong>Delete</Strong> to permanently remove a fee
-                record.
-              </li>
-            </ol>
-          </>
-        )}
-      </Section>
-
-      <Separator />
-
-      {/* Calendar */}
-      <Section title="Calendar">
-        <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-          <li>
-            Go to <NavLink>Calendar</NavLink> to view the academic calendar.
-          </li>
-          <li>
-            Navigate months using the <Strong>arrow buttons</Strong>. Days with
-            events show colour-coded labels.
-          </li>
-          <li>Click any day to see its events in the sidebar panel.</li>
-          <li>
-            The <Strong>legend</Strong> below explains event type colours: Event
-            (blue), Holiday (green), Exam (orange), Meeting (purple), Deadline
-            (red).
-          </li>
-        </ol>
-        {(userRole === 'admin' || userRole === 'staff') && (
-          <>
-            <h3 className="mb-2 mt-4 text-sm font-semibold">Managing Events</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Click <Strong>Add Event</Strong> at the top (or the{' '}
-                <Strong>+</Strong> button on a selected day) to create a new
-                event.
+                Rows are grouped into fee income and pass-through, each with a
+                subtotal. Billed and pending leave out concession fees, which
+                have no fixed amount; received includes their payments.
               </li>
               <li>
-                Fill in the <Strong>title</Strong>, <Strong>type</Strong>,{' '}
-                <Strong>start date</Strong>, optional <Strong>end date</Strong>,
-                and <Strong>description</Strong>.
+                Pick the year from the dropdown; <Strong>Export CSV</Strong>{' '}
+                downloads the table.
               </li>
-              <li>
-                To edit or delete an event, select the day, then click{' '}
-                <Strong>Edit</Strong> or <Strong>Del</Strong> on the event card.
-              </li>
-            </ol>
-          </>
-        )}
-      </Section>
-
-      <Separator />
-
-      {/* Submissions — staff/admin only */}
-      {(userRole === 'admin' || userRole === 'staff') && (
-        <>
-          <Section title="Contact Submissions">
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Go to <NavLink>Submissions</NavLink> from the sidebar. This
-                shows all messages submitted through the website contact form.
-              </li>
-              <li>
-                Use the <Strong>filter tabs</Strong> (All, New, Read, Replied,
-                Archived) to view submissions by status. Counts appear next to
-                each tab.
-              </li>
-              <li>
-                Click a submission card to <Strong>expand</Strong> it and see
-                the full message, email, and phone number.
-              </li>
-              <li>
-                Use the status buttons to mark a submission as{' '}
-                <Strong>Read</Strong>, <Strong>Replied</Strong>, or{' '}
-                <Strong>Archived</Strong>.
-              </li>
-            </ol>
-            <Tip>
-              New (unread) submissions have a coloured left border to stand out.
-            </Tip>
+            </Bullets>
           </Section>
 
           <Separator />
         </>
       )}
 
-      {/* Students — staff/admin only */}
-      {(userRole === 'admin' || userRole === 'staff') && (
+      {/* Students — admin/staff */}
+      {isSchool && (
         <>
-          <Section title="Students">
-            <h3 className="mb-2 text-sm font-semibold">Viewing Students</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+          <Section id="students" title={titleOf('students')}>
+            <SubHeading first>Finding students</SubHeading>
+            <Steps>
               <li>
-                Go to <NavLink>Students</NavLink> from the sidebar.
+                Go to <NavLink>Students</NavLink>.
               </li>
               <li>
-                Use the <Strong>search bar</Strong> to filter by name or
-                admission number.
+                Search by name or admission number, and filter by class or
+                status. Tap a phone number to call it.
               </li>
               <li>
-                Use the <Strong>gender</Strong> and <Strong>status</Strong>{' '}
-                dropdown filters to narrow results.
+                Use the switch on a row to activate or deactivate a student.{' '}
+                <Strong>Export CSV</Strong> downloads the list.
               </li>
-              <li>
-                Click <Strong>Export CSV</Strong> to download the student list.
-              </li>
-              <li>
-                Click <Strong>View</Strong> on any student to see their full
-                profile, parent info, and fee records.
-              </li>
-            </ol>
+            </Steps>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Adding a New Student
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            <SubHeading>Adding a student</SubHeading>
+            <Steps>
               <li>
-                Click <Strong>Add Student</Strong> at the top of the Students
-                page.
+                Click <Strong>Add Student</Strong>.
               </li>
               <li>
-                Fill in the student details: name, date of birth, gender,
-                admission number, blood group, class, parent information,
-                transport details, and medical notes.
+                Fill in the details: name, date of birth, gender, admission
+                number, class, parents (up to 3), transport, previous school and
+                medical notes. Optionally upload a photo.
               </li>
               <li>
-                Optionally upload a <Strong>photo</Strong>.
+                Click <Strong>Save</Strong>.
               </li>
-              <li>
-                Click <Strong>Save</Strong>. The student appears in the list.
-              </li>
-            </ol>
+            </Steps>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Student Detail Page
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            <SubHeading>Student page</SubHeading>
+            <Bullets>
               <li>
-                Click <Strong>View</Strong> on any student row to open their
-                detail page with photo, basic info, emergency contact,
-                transport, previous school, and medical cards.
+                Click <Strong>View</Strong> on a student. Tabs:{' '}
+                <Strong>Profile</Strong>
+                {isAdmin && (
+                  <>
+                    , <Strong>Fees</Strong>
+                  </>
+                )}
+                , <Strong>Attendance</Strong> and <Strong>Documents</Strong>{' '}
+                (upload and download files).
               </li>
               <li>
-                The <Strong>Parent / Guardian</Strong> section shows on-profile
-                parent info (up to 3 guardians) and linked user accounts.
+                Under <Strong>Parent / Guardian</Strong>, click{' '}
+                <Strong>Link Parent Account</Strong> to connect a parent&apos;s
+                login, or <Strong>Unlink</Strong> to remove it. Linked parents
+                see this child&apos;s attendance and fees.
               </li>
               <li>
-                Click <Strong>Link Parent Account</Strong> to search for and
-                link a parent&apos;s user account. Click <Strong>Unlink</Strong>{' '}
-                to remove a link.
+                Click <Strong>Edit Profile</Strong> to change details.
               </li>
-              <li>
-                Switch to the <Strong>Fees</Strong> tab to view, record
-                payments, edit, or delete fee records for that student.
-              </li>
-              <li>
-                Click <Strong>Edit Profile</Strong> to modify any student
-                details.
-              </li>
-            </ol>
-
-            <h3 className="mb-2 mt-4 text-sm font-semibold">
-              Deactivating &amp; Deleting
-            </h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
-              <li>
-                Click <Strong>Deactivate</Strong> to mark a student as inactive
-                (reversible).
-              </li>
-              {userRole === 'admin' && (
+              {isAdmin && (
                 <li>
-                  Click <Strong>Delete</Strong> to permanently remove a student
-                  profile. Attendance and fee records are kept.
+                  <Strong>Delete</Strong> permanently removes a student profile.
+                  A student with recorded fee payments can&apos;t be deleted;
+                  deactivate them instead.
                 </li>
               )}
-            </ol>
+            </Bullets>
           </Section>
 
           <Separator />
         </>
       )}
 
-      {/* Staff Attendance — admin only */}
-      {userRole === 'admin' && (
+      {/* Enquiries — admin/staff */}
+      {isSchool && (
         <>
-          <Section title="Staff Attendance">
-            <h3 className="mb-2 text-sm font-semibold">Marking Attendance</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+          <Section id="enquiries" title={titleOf('enquiries')}>
+            <Bullets>
               <li>
-                Go to <NavLink>Staff Attendance</NavLink> and select the{' '}
-                <Strong>Mark Attendance</Strong> tab.
+                <NavLink>Enquiries</NavLink> tracks admission enquiries from
+                phone calls and walk-ins. Click <Strong>New Enquiry</Strong> to
+                add one with the child&apos;s and parent&apos;s details and how
+                they heard about the school.
               </li>
               <li>
-                Pick a <Strong>date</Strong> and click{' '}
+                Move each enquiry along with its status buttons:{' '}
+                <Strong>New</Strong> → <Strong>Visit Scheduled</Strong> →{' '}
+                <Strong>Visited</Strong> → <Strong>Applied</Strong>, or{' '}
+                <Strong>Closed</Strong>.
+              </li>
+              <li>
+                Set a <Strong>campus visit date and time</Strong> and keep{' '}
+                <Strong>internal notes</Strong> on the enquiry. The tabs at the
+                top filter by status, with counts.
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Submissions — admin/staff */}
+      {isSchool && (
+        <>
+          <Section id="submissions" title={titleOf('submissions')}>
+            <Bullets>
+              <li>
+                <NavLink>Submissions</NavLink> holds messages sent through the
+                website&apos;s contact and admissions forms, including the
+                child&apos;s age or class.
+              </li>
+              <li>
+                Filter with the tabs (All, New, Read, Replied, Archived). New
+                messages have a coloured left border.
+              </li>
+              <li>
+                Click a message to expand it, then mark it <Strong>Read</Strong>
+                , <Strong>Replied</Strong> or <Strong>Archived</Strong>. Marking
+                it Replied records <Strong>Replied by</Strong> with your name.
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Calendar */}
+      <Section id="calendar" title={titleOf('calendar')}>
+        <Bullets>
+          <li>
+            <NavLink>Calendar</NavLink> shows the school calendar. Use the
+            arrows to change month and click a day to see its events.
+          </li>
+          <li>
+            Event colours: Event (blue), Holiday (green), Exam (orange), Meeting
+            (purple), Deadline (red).
+          </li>
+          {isSchool && (
+            <li>
+              Student and staff <Strong>birthdays</Strong> show as pink chips,
+              with an <Strong>Upcoming Birthdays</Strong> list for the month.
+              They come from the date of birth on each active profile.
+            </li>
+          )}
+        </Bullets>
+        {isSchool && (
+          <>
+            <SubHeading>Managing events</SubHeading>
+            <Steps>
+              <li>
+                Click <Strong>Add Event</Strong> (or <Strong>+</Strong> on a
+                selected day).
+              </li>
+              <li>
+                Enter the title, type, start date, optional end date and
+                description, then save.
+              </li>
+              <li>
+                To change one, select its day and click <Strong>Edit</Strong> or{' '}
+                <Strong>Del</Strong>. Each event shows who added it.
+              </li>
+            </Steps>
+          </>
+        )}
+      </Section>
+
+      <Separator />
+
+      {/* Staff — admin */}
+      {isAdmin && (
+        <>
+          <Section id="staff" title={titleOf('staff')}>
+            <Bullets>
+              <li>
+                <NavLink>Staff</NavLink> lists every staff member. Filter by
+                department or status, use the switch to activate or deactivate,
+                and click <Strong>Add Staff</Strong> to create a profile (and
+                login).
+              </li>
+              <li>
+                A staff profile holds personal, contact and emergency details,
+                qualifications, bank/UPI details, default{' '}
+                <Strong>check-in/out times</Strong> (pre-filled when marking
+                staff attendance) and the <Strong>salary structure</Strong>{' '}
+                (basic, allowances, deductions) used by payroll.
+              </li>
+              <li>
+                Profile tabs: <Strong>Profile</Strong>, <Strong>Salary</Strong>,{' '}
+                <Strong>Attendance</Strong> (with leave balance) and{' '}
+                <Strong>Documents</Strong>.
+              </li>
+              <li>
+                On the <Strong>Salary</Strong> tab, record a{' '}
+                <Strong>salary hike</Strong>: the old salary, the dates it
+                applied and the new salary. It is a record only; update the
+                salary structure separately for payroll to change.
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Staff Attendance — admin */}
+      {isAdmin && (
+        <>
+          <Section id="staff-attendance" title={titleOf('staff-attendance')}>
+            <SubHeading first>Marking</SubHeading>
+            <Steps>
+              <li>
+                Go to <NavLink>Staff Attendance</NavLink> →{' '}
+                <Strong>Mark Attendance</Strong>, pick a date and click{' '}
                 <Strong>Load Staff</Strong>.
               </li>
               <li>
-                For each staff member, choose <Strong>P</Strong> (Present),{' '}
-                <Strong>A</Strong> (Absent), <Strong>L</Strong> (Late),{' '}
-                <Strong>CL</Strong> (Casual leave), or <Strong>SL</Strong>{' '}
-                (Sick leave).
+                Choose <Strong>P</Strong> (Present), <Strong>A</Strong>{' '}
+                (Absent), <Strong>L</Strong> (Late), <Strong>CL</Strong> (Casual
+                leave) or <Strong>SL</Strong> (Sick leave). Adjust check-in/out
+                times and add notes if needed.
               </li>
               <li>
-                Optionally set <Strong>Check In</Strong> /{' '}
-                <Strong>Check Out</Strong> times and add <Strong>Notes</Strong>.
+                Click <Strong>Save Attendance</Strong>.
               </li>
-              <li>
-                Click <Strong>Save Attendance</Strong> to save all records.
-              </li>
-            </ol>
+            </Steps>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">Viewing History</h3>
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+            <SubHeading>History</SubHeading>
+            <Bullets>
               <li>
-                Switch to the <Strong>View History</Strong> tab.
+                <Strong>View History</Strong> filters by staff, status or date.
+                Badges total Present, Absent, Late and Leave, and the{' '}
+                <Strong>Marked by</Strong> column shows who saved each record.
               </li>
-              <li>
-                Filter by <Strong>staff name</Strong>, <Strong>status</Strong>,
-                or <Strong>date</Strong>.
-              </li>
-              <li>
-                Summary badges show Present, Absent, Late, and Leave totals.
-              </li>
-            </ol>
+            </Bullets>
 
-            <h3 className="mb-2 mt-4 text-sm font-semibold">Leave Balances</h3>
-            <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+            <SubHeading>Leave balances</SubHeading>
+            <Bullets>
               <li>
                 Each school year (May to April) staff get{' '}
                 <Strong>12 casual</Strong> and <Strong>6 sick</Strong> leave.
-                For 2026-27 the allowance started on 1 October 2026:{' '}
+                For 2026-27 the allowance started on 1 October 2026 at{' '}
                 <Strong>8 casual</Strong> and <Strong>6 sick</Strong>.
               </li>
               <li>
-                Days marked <Strong>CL</Strong> or <Strong>SL</Strong> count
-                against the balance. <Strong>A</Strong> (Absent) never does.
+                Only <Strong>CL</Strong> and <Strong>SL</Strong> count against
+                the balance; <Strong>A</Strong> (Absent) never does.
               </li>
               <li>
                 Balances show in the <Strong>Leave used</Strong> column while
-                marking, and on each staff member&apos;s profile under{' '}
-                <Strong>Attendance</Strong>. Staff see their own on{' '}
-                <NavLink>My Attendance</NavLink>.
+                marking and on the staff profile&apos;s Attendance tab. Staff
+                see their own on <NavLink>My Attendance</NavLink>.
               </li>
               <li>
-                Leave days saved before casual/sick existed show as{' '}
-                <Strong>leave (no type)</Strong> and aren&apos;t counted. Open
-                that date, click CL or SL, and save to classify them.
+                Leave saved before CL/SL existed shows as{' '}
+                <Strong>leave (no type)</Strong> and isn&apos;t counted. Load
+                that date, choose CL or SL and save.
               </li>
-            </ul>
+            </Bullets>
           </Section>
 
           <Separator />
         </>
       )}
 
-      {/* Users — admin only */}
-      {userRole === 'admin' && (
+      {/* Staff Salaries — admin */}
+      {isAdmin && (
         <>
-          <Section title="Users">
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+          <Section id="salaries" title={titleOf('salaries')}>
+            <Steps>
               <li>
-                Go to <NavLink>Users</NavLink> from the sidebar to see all
-                registered accounts.
+                In <NavLink>Staff Salaries</NavLink>, choose a month and click{' '}
+                <Strong>Run Payroll</Strong>. It creates a pending salary record
+                for each active staff member from their salary structure.
+                Running it again only adds missing records.
               </li>
               <li>
-                Use the <Strong>search</Strong> and <Strong>role filter</Strong>{' '}
-                to find specific users.
+                Click <Strong>Edit</Strong> on a record to adjust it, or add a
+                one-off record with <Strong>New Salary Record</Strong>.
               </li>
               <li>
-                To change a user&apos;s role, use the <Strong>Actions</Strong>{' '}
-                dropdown on their row and select a new role.
+                Mark salaries paid one at a time or select several and{' '}
+                <Strong>Mark salaries as paid</Strong> with the paid date and
+                method.
               </li>
               <li>
-                To create a new user account, click <Strong>Create User</Strong>{' '}
-                at the top.
+                Open a <Strong>slip</Strong> to print or save it as a PDF. Staff
+                see their own records and slips on <Strong>My Salaries</Strong>.
               </li>
-              <li>
-                The <Strong>Linked Students</Strong> column shows which student
-                profiles are linked to each parent account.
-              </li>
-            </ol>
+            </Steps>
           </Section>
 
           <Separator />
         </>
       )}
 
-      {/* Classes — admin only */}
-      {userRole === 'admin' && (
+      {/* Expenses — admin */}
+      {isAdmin && (
         <>
-          <Section title="Classes">
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+          <Section id="expenses" title={titleOf('expenses')}>
+            <Bullets>
               <li>
-                Go to <NavLink>Classes</NavLink> from the sidebar.
+                <NavLink>Expenses</NavLink> shows cards for total income,
+                expenses and balance.
               </li>
               <li>
-                Click <Strong>Add Class</Strong>, fill in the name (e.g.
-                &quot;Nursery&quot;), section (e.g. &quot;A&quot;), academic
-                year, and capacity, then click <Strong>Save</Strong>.
+                Click <Strong>Add Transaction</Strong> to record an expense or
+                income: category, amount, date, vendor, payment method, receipt
+                number and notes. Switching the type changes the category list.
               </li>
               <li>
-                Click <Strong>Edit</Strong> on any row to update its details.
+                Filter by date range, month, category, vendor or method. Each
+                entry shows who added it.
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Classes — admin */}
+      {isAdmin && (
+        <>
+          <Section id="classes" title={titleOf('classes')}>
+            <Bullets>
+              <li>
+                In <NavLink>Classes</NavLink>, click <Strong>Add Class</Strong>{' '}
+                and enter the name (e.g. &quot;Nursery&quot;), section, academic
+                year and capacity.
               </li>
               <li>
-                Click <Strong>Delete</Strong> to remove a class.
+                <Strong>Edit</Strong> or <Strong>Delete</Strong> a class from
+                its row.
               </li>
-            </ol>
+            </Bullets>
             <Tip>
-              Classes must be created before you can assign students or mark
-              attendance.
+              Create classes before assigning students or marking attendance.
+              Bulk fees use the class&apos;s academic year to decide which
+              concession plans apply.
             </Tip>
           </Section>
 
@@ -637,36 +839,76 @@ function DocsPage() {
         </>
       )}
 
-      {/* Expenses — admin only */}
-      {userRole === 'admin' && (
+      {/* Users — admin */}
+      {isAdmin && (
         <>
-          <Section title="Expenses &amp; Income">
-            <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+          <Section id="users" title={titleOf('users')}>
+            <Bullets>
               <li>
-                Go to <NavLink>Expenses</NavLink> from the sidebar.
+                <NavLink>Users</NavLink> lists every login. Search, or filter by
+                role.
               </li>
               <li>
-                Three summary cards show <Strong>Total Income</Strong>,{' '}
-                <Strong>Total Expenses</Strong>, and <Strong>Balance</Strong>.
+                Click <Strong>Create User</Strong> to add a login. Public
+                sign-up is closed, so accounts are created here (staff logins
+                also by Add Staff). Then link a parent&apos;s login from the
+                student&apos;s page.
               </li>
               <li>
-                Click <Strong>Add Transaction</Strong> to record an income or
-                expense entry with category, amount, date, vendor, payment
-                method, receipt number, and notes.
+                Change a role from the row&apos;s <Strong>Actions</Strong> menu:
+                <ul className="mt-1 ml-5 list-disc space-y-1">
+                  <li>
+                    <Strong>Admin</Strong>: everything.
+                  </li>
+                  <li>
+                    <Strong>Staff</Strong>: student attendance, students,
+                    calendar, enquiries and submissions; no fees.
+                  </li>
+                  <li>
+                    <Strong>Student</Strong>: parents and students; sees only
+                    linked children.
+                  </li>
+                  <li>
+                    <Strong>Auditor</Strong>: view-only access to reports, for
+                    trustees.
+                  </li>
+                </ul>
               </li>
               <li>
-                Use the <Strong>search bar</Strong> to filter by description.
+                The <Strong>Linked Students</Strong> column shows which children
+                each parent account can see.
+              </li>
+            </Bullets>
+          </Section>
+
+          <Separator />
+        </>
+      )}
+
+      {/* Gallery — admin */}
+      {isAdmin && (
+        <>
+          <Section id="gallery" title={titleOf('gallery')}>
+            <Bullets>
+              <li>
+                The public gallery shows the photos in the storage bucket&apos;s{' '}
+                <Strong>gallery/</Strong> folder. A loose photo is a single
+                card; each subfolder becomes an event card named after the
+                folder (&quot;Founders-Day-26&quot; → &quot;Founders Day
+                26&quot;).
               </li>
               <li>
-                Click <Strong>Edit</Strong> to update or <Strong>Delete</Strong>{' '}
-                to remove a transaction.
+                In <NavLink>Gallery</NavLink>, use the arrows to set the order
+                of the top level or of a folder, then click{' '}
+                <Strong>Save order</Strong>. The first photo in a folder is its
+                cover.
               </li>
-            </ol>
-            <Tip>
-              Switch the <Strong>Type</Strong> between Expense and Income to see
-              the matching category list (e.g. Salaries, Utilities for expenses;
-              Donations, Grants for income).
-            </Tip>
+              <li>
+                Anything not ordered follows date order: new uploads appear at
+                the top, and new photos at the end of their folder.{' '}
+                <Strong>Back to date order</Strong> clears a saved order.
+              </li>
+            </Bullets>
           </Section>
 
           <Separator />
@@ -674,83 +916,105 @@ function DocsPage() {
       )}
 
       {/* Profile */}
-      <Section title="Profile">
-        <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+      <Section id="profile" title={titleOf('profile')}>
+        <Bullets>
           <li>
-            Go to <NavLink>Profile</NavLink> from the sidebar.
+            In <NavLink>Profile</NavLink>, update your name and photo under{' '}
+            <Strong>Account</Strong> and click <Strong>Save Changes</Strong>.
           </li>
           <li>
-            The <Strong>Account</Strong> section shows your name, email, role,
-            and avatar. Upload or change your photo, update your name, then
-            click <Strong>Save Changes</Strong>.
+            <Strong>Change Password</Strong> needs your current password and a
+            new one of at least 10 characters.
           </li>
           <li>
-            Use the <Strong>Change Password</Strong> section to update your
-            password (minimum 8 characters).
+            <Strong>Preferences</Strong> (saved on this device): theme, rows per
+            table, compact or comfortable density, date format, whether the
+            sidebar starts open, and the page you land on after signing in.
           </li>
-          {userRole === 'student' && (
-            <>
-              <li>
-                The <Strong>Linked Children</Strong> section shows any student
-                profiles connected to your account.
-              </li>
-              <li>
-                The <Strong>Student Profile</Strong> section lets you view and
-                update your personal details, transport info, emergency
-                contacts, and medical information.
-              </li>
-            </>
+          {isParent && (
+            <li>
+              <Strong>Linked Children</Strong> lists the student profiles
+              connected to your account. Ask the school office if a child is
+              missing.
+            </li>
           )}
-        </ol>
+        </Bullets>
       </Section>
 
       <Separator />
 
       {/* General tips */}
-      <Section title="General Tips">
-        <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+      <Section id="tips" title={titleOf('tips')}>
+        <Bullets>
           <li>
-            All tables support <Strong>sorting</Strong> — click any column
-            header to sort ascending or descending.
+            Click a column header to sort a table; click again to reverse.
           </li>
           <li>
-            Use the <Strong>search and filter</Strong> fields above tables to
-            narrow down results.
+            Filters above a table narrow it down; pagination controls are below
+            it.
           </li>
           <li>
-            Use the <Strong>pagination controls</Strong> at the bottom of tables
-            to navigate through pages.
+            Dates and &quot;today&quot; follow India time. The school and
+            financial year runs <Strong>May to April</Strong>.
           </li>
           <li>
-            On mobile, tap the <Strong>sidebar trigger</Strong> at the top left
-            to open the navigation.
+            Switch between light and dark mode with the theme toggle, or set it
+            in Preferences.
           </li>
-          <li>
-            Use the <Strong>theme toggle</Strong> in the site header to switch
-            between light and dark mode.
-          </li>
-          <li>
-            Data is loaded on demand — you will see a{' '}
-            <Strong>skeleton loading state</Strong> while content fetches.
-          </li>
-        </ul>
+        </Bullets>
       </Section>
     </div>
   )
 }
 
 function Section({
+  id,
   title,
   children,
 }: {
+  id: string
   title: string
   children: React.ReactNode
 }) {
   return (
-    <div className="space-y-3">
+    <section id={id} className="scroll-mt-20 space-y-3">
       <h2 className="text-xl font-semibold">{title}</h2>
       {children}
-    </div>
+    </section>
+  )
+}
+
+function SubHeading({
+  first,
+  children,
+}: {
+  first?: boolean
+  children: React.ReactNode
+}) {
+  return (
+    <h3
+      className={
+        first ? 'mb-2 text-sm font-semibold' : 'mt-4 mb-2 text-sm font-semibold'
+      }
+    >
+      {children}
+    </h3>
+  )
+}
+
+function Steps({ children }: { children: React.ReactNode }) {
+  return (
+    <ol className="list-inside list-decimal space-y-2 text-sm text-muted-foreground">
+      {children}
+    </ol>
+  )
+}
+
+function Bullets({ children }: { children: React.ReactNode }) {
+  return (
+    <ul className="list-inside list-disc space-y-2 text-sm text-muted-foreground">
+      {children}
+    </ul>
   )
 }
 
@@ -763,6 +1027,35 @@ function NavLink({ children }: { children: React.ReactNode }) {
     <span className="font-medium text-primary underline underline-offset-2">
       {children}
     </span>
+  )
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="rounded border bg-muted px-1.5 py-0.5 font-mono text-xs text-foreground">
+      {children}
+    </kbd>
+  )
+}
+
+const BADGE_TONES = {
+  green: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300',
+  red: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300',
+  yellow:
+    'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300',
+}
+
+function StatusBadge({
+  tone,
+  children,
+}: {
+  tone: keyof typeof BADGE_TONES
+  children: React.ReactNode
+}) {
+  return (
+    <Badge variant="secondary" className={BADGE_TONES[tone]}>
+      {children}
+    </Badge>
   )
 }
 

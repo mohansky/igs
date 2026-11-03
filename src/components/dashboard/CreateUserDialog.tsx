@@ -90,7 +90,7 @@ export function CreateUserDialog({ onCreated }: { onCreated: () => void }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              minLength={8}
+              minLength={10}
             />
           </div>
           <div className="space-y-2">

@@ -200,10 +200,10 @@ export function StaffForm({
                   <Input
                     required
                     type="password"
-                    minLength={8}
+                    minLength={10}
                     value={data.password ?? ''}
                     onChange={(e) => update('password', e.target.value)}
-                    placeholder="Minimum 8 characters"
+                    placeholder="Minimum 10 characters"
                   />
                 </div>
               )}

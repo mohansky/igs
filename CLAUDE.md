@@ -8,9 +8,10 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev          # Dev server on port 3000
 pnpm build        # Production build (Cloudflare Workers)
 pnpm test         # Run tests (Vitest)
-pnpm lint         # ESLint check
+pnpm lint         # ESLint check — currently fails: `eslint` itself isn't a devDependency
 pnpm format       # Prettier check
-pnpm check        # Auto-fix format + lint
+pnpm check        # Auto-fix format + lint (the eslint half fails, as above)
+pnpm exec tsc --noEmit  # Type check (no script for it)
 
 # Database (Drizzle ORM + SQLite) — see "Database workflow" below before
 # touching schema.ts. In practice only db:push / db:push:prod are used.
@@ -65,7 +66,24 @@ Blog posts are markdown/MDX files in `content/blog/`. Managed by **Content Colle
 
 - **Better Auth** for authentication (`src/lib/auth.ts` server, `src/lib/auth-client.ts` client)
 - **Drizzle ORM** with SQLite (`src/db/schema.ts` for schema, `drizzle.config.ts` for config)
-- Server functions via `createServerFn` from `@tanstack/react-start`
+- Server functions via `createServerFn` from `@tanstack/react-start`, in `src/server/*.ts`, with zod `inputValidator`s
+- Cloudflare R2 (via the AWS S3 SDK, `src/server/r2-client.ts`) for uploads and the public gallery, which lists the bucket's `gallery/` prefix live; Resend for email (loaded on demand)
+
+### Roles and access
+
+- Roles: `admin`, `staff`, `student` (parents share it and see only linked children), and `auditor` (view-only, for trustees). Type in `src/lib/roles.ts`.
+- Protected server functions call `requireRole([...])` (`src/server/auth-utils.ts`). The auditor passes any `requireRole` on a **GET** (unless `{ allowAuditor: false }`), never on a POST, so a GET must never write — `server-fn-invariants.test.ts` enforces this.
+- Route `beforeLoad` guards are separate from the sidebar (`navItems` / `auditorHidden` in `src/routes/dashboard.tsx`) and the command palette; keep all three in step when adding a page.
+- Staff have no fee access at all (nav, routes and server). Concession status is admin/auditor only, never shown to staff or parents.
+- The in-app help page is `src/routes/dashboard/docs.tsx`, role-gated per section; update it when a feature's user-facing behaviour changes.
+
+### Domain notes
+
+- School and financial year run **May–April** (`src/lib/financial-year.ts`; labels like `2026-27`). "Today" for fees is India time (`schoolToday()` in `src/lib/fee-math.ts`); payment dates can't be in the future.
+- `fees.studentUserId` holds the student **profile** id as a string, not a login user id (students may have no login). Join with `eq(fees.studentUserId, studentProfiles.id)`.
+- Concession (open) fees: `fees.is_open = 1`, amount 0, status `open`; excluded from dues, overdue and collection rates, always in the Tuition category. Plans per academic year live in `student_fee_plans`.
+- Fee categories: find seeded ones by `key` (e.g. `TUITION_KEY`), never by name — admins can rename them. `category_id` is nullable for old fees ("Uncategorised").
+- Staff leave balances are computed from `staff_attendance` (CL/SL) by `src/lib/leave-policy.ts`; there's no balance table.
 
 ### Database workflow (read before editing schema.ts)
 
@@ -81,7 +99,7 @@ Schema changes go through `db:push`, which diffs `schema.ts` against the target 
 - Flow for a schema change: edit `schema.ts` → user runs `pnpm db:push` (staging) and checks it → user runs `pnpm db:push:prod` → then deploy. Any database also needs `pnpm db:seed:categories` (or `:prod`) once, after the push that created `fee_categories`; bulk fees and concessions look up the Tuition category by `key`. Code that reads a new table or column must not be deployed before the production push, or those pages break. Never run either push unprompted, same as `pnpm deploy`.
 - A purely additive change (new table, new nullable column) is safe; column/type changes or renames can make `db:push` ask for a destructive confirmation, so read what it's asking before answering yes.
 - **Never answer yes to a "truncate" prompt** — it deletes every row in that table. If one appears for an additive change, abort and fix the schema.
-- **Boolean defaults on NOT NULL columns: write `.default(sql\`0\`)` / `sql\`1\``, not `.default(false)` / `true`.** drizzle-kit 0.31's libsql push checks `!column.default`, so a `false` default reads as "no default" and it offers to truncate the table (this happened with `fees.is_open`, 2026-11). To preview what a push will run without touching a database, diff two schemas offline with `generateSQLiteDrizzleJson` / `generateSQLiteMigration` from `drizzle-kit/api`.
+- **Boolean defaults on NOT NULL columns: write `.default(sql\`0\`)`/`sql\`1\``, not `.default(false)`/`true`.** drizzle-kit 0.31's libsql push checks `!column.default`, so a `false` default reads as "no default" and it offers to truncate the table (this happened with `fees.is_open`, 2026-11). To preview what a push will run without touching a database, diff two schemas offline with `generateSQLiteDrizzleJson` / `generateSQLiteMigration` from `drizzle-kit/api`.
 - The staging branch doesn't sync with production; recreate it (`turso db destroy igs-staging`, then `turso db create igs-staging --from-db <prod>`) when fresher data is needed.
 
 ### Key Conventions

@@ -460,7 +460,7 @@ function PasswordSection() {
     currentPassword.trim() &&
     newPassword.trim() &&
     newPassword === confirmPassword &&
-    newPassword.length >= 8
+    newPassword.length >= 10
 
   return (
     <Card>
@@ -485,7 +485,7 @@ function PasswordSection() {
               type="password"
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
-              placeholder="Min 8 characters"
+              placeholder="Min 10 characters"
             />
           </div>
           <div className="space-y-2">
