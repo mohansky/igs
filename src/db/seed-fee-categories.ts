@@ -21,6 +21,7 @@ console.log(
   `${PROD ? '⚠️  PRODUCTION' : 'Staging'} database: ${new URL(process.env.DATABASE_URL).host}`,
 )
 
+import { sql } from 'drizzle-orm'
 import { drizzle } from 'drizzle-orm/libsql'
 import { feeCategories } from './schema'
 import { DEFAULT_FEE_CATEGORIES } from '../lib/fee-categories'
@@ -33,23 +34,35 @@ const db = drizzle({
 })
 
 async function main() {
+  // drizzle-kit 0.31's libsql push has created fee_categories without its
+  // unique index on key, and later pushes then fail on `DROP INDEX` for it.
+  // Create it here (a no-op if it exists) so every database has it.
+  await db.run(
+    sql`CREATE UNIQUE INDEX IF NOT EXISTS fee_categories_key_idx ON fee_categories (key)`,
+  )
+  console.log('Unique index on fee_categories.key: ok')
+
+  // Check existing keys rather than ON CONFLICT, so this works the same
+  // with or without that index.
+  const existing = await db
+    .select({ key: feeCategories.key })
+    .from(feeCategories)
+  const have = new Set(existing.map((r) => r.key))
+  const missing = DEFAULT_FEE_CATEGORIES.map((c, i) => ({
+    key: c.key,
+    name: c.name,
+    isPassThrough: c.isPassThrough,
+    sortOrder: i,
+  })).filter((c) => !have.has(c.key))
+  if (missing.length === 0) {
+    console.log('All default categories already exist; nothing changed.')
+    return
+  }
   const inserted = await db
     .insert(feeCategories)
-    .values(
-      DEFAULT_FEE_CATEGORIES.map((c, i) => ({
-        key: c.key,
-        name: c.name,
-        isPassThrough: c.isPassThrough,
-        sortOrder: i,
-      })),
-    )
-    .onConflictDoNothing({ target: feeCategories.key })
+    .values(missing)
     .returning({ name: feeCategories.name })
-  console.log(
-    inserted.length > 0
-      ? `Added: ${inserted.map((r) => r.name).join(', ')}`
-      : 'All default categories already exist; nothing changed.',
-  )
+  console.log(`Added: ${inserted.map((r) => r.name).join(', ')}`)
 }
 
 main().then(() => process.exit(0))
