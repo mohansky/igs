@@ -85,18 +85,20 @@ export function EditFeeDialog({
   const filtered = useMemo(() => {
     if (!studentSearch.trim()) return []
     const q = studentSearch.toLowerCase()
+    // Any student can hold a fee, with or without a login account.
     return students
       .filter(
         (s) =>
-          s.userId &&
-          (s.studentName.toLowerCase().includes(q) ||
-            (s.admissionNumber?.toLowerCase().includes(q) ?? false)),
+          s.studentName.toLowerCase().includes(q) ||
+          (s.admissionNumber?.toLowerCase().includes(q) ?? false),
       )
       .slice(0, 8)
   }, [studentSearch, students])
 
   const selectStudent = (s: StudentOption) => {
-    setSelectedStudentUserId(s.userId!)
+    // fees.studentUserId holds the student *profile* id (as a string), the
+    // same as Create Fee and bulk fees — not the login user id.
+    setSelectedStudentUserId(String(s.id))
     setSelectedStudentProfileId(s.id)
     setSelectedStudentName(s.studentName)
     setStudentSearch('')

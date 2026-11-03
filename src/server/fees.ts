@@ -305,10 +305,36 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
         status: fees.status,
         isOpen: fees.isOpen,
         categoryId: fees.categoryId,
+        studentUserId: fees.studentUserId,
       })
       .from(fees)
       .where(eq(fees.id, feeId))
       .limit(1)
+    if (!existing) throw new Error('Fee record not found')
+
+    // Moving a fee to another student: fees.studentUserId is the student
+    // *profile* id, so it must name an existing profile (a login user id here
+    // would orphan the fee). A concession fee belongs to its student's plan.
+    if (
+      updates.studentUserId !== undefined &&
+      updates.studentUserId !== existing.studentUserId
+    ) {
+      if (existing.isOpen) {
+        throw new Error(
+          'A concession fee belongs to its student and cannot be moved.',
+        )
+      }
+      const profileId = Number(updates.studentUserId)
+      const [profile] = Number.isInteger(profileId)
+        ? await db
+            .select({ id: studentProfiles.id })
+            .from(studentProfiles)
+            .where(eq(studentProfiles.id, profileId))
+            .limit(1)
+        : []
+      if (!profile) throw new Error('Student not found.')
+    }
+
     // A concession fee's amount and status come from the student's fee plan.
     if (
       existing?.isOpen &&
