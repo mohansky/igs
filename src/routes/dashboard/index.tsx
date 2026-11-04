@@ -10,14 +10,16 @@ import { getDashboardStats } from '#/server/analytics'
 import { listBirthdays, type Birthday } from '#/server/birthdays'
 import {
   getMonthlyOverview,
+  getTransactionCategoryTotals,
   type MonthlyOverviewRow,
+  type TransactionType,
 } from '#/server/transactions'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
 import {
   typeBadgeVariant,
   BIRTHDAY_BADGE_VARIANT,
 } from '#/lib/calendar-event-style'
-import { format, parseISO } from 'date-fns'
+import { format, parseISO, subMonths } from 'date-fns'
 import {
   Calendar03Icon,
   Invoice02Icon,
@@ -121,9 +123,7 @@ function AdminDashboard({
         <UpcomingEventsCard events={stats.upcomingEvents} />
       )}
 
-      {birthdays.length > 0 && (
-        <UpcomingBirthdaysCard birthdays={birthdays} />
-      )}
+      {birthdays.length > 0 && <UpcomingBirthdaysCard birthdays={birthdays} />}
 
       {/* Quick links — moved to top */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -266,44 +266,53 @@ function AdminDashboard({
           </div>
           <FeeStatusCard stats={stats} />
         </div>
-        {stats.recentTransactions.length > 0 && (
-          <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">Recent Transactions</CardTitle>
-              <Link to="/dashboard/expenses">
-                <span className="text-sm text-primary hover:underline">
-                  View all
-                </span>
-              </Link>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              {stats.recentTransactions.map((txn) => (
-                <div
-                  key={txn.id}
-                  className="flex items-center justify-between rounded-md border px-3 py-2"
-                >
-                  <div>
-                    <p className="text-sm font-medium">
-                      {txn.description || txn.category}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {formatDate(txn.date)} · {txn.category}
-                    </p>
-                  </div>
-                  <span
-                    className={cn(
-                      'text-sm font-medium',
-                      txn.type === 'income' ? 'text-green-600' : 'text-red-600',
-                    )}
-                  >
-                    {txn.type === 'income' ? '+' : '-'}
-                    {formatCurrency(txn.amount)}
-                  </span>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
-        )}
+        <div className="grid gap-4 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            {stats.recentTransactions.length > 0 && (
+              <Card>
+                <CardHeader className="flex-row items-center justify-between space-y-0">
+                  <CardTitle className="text-base">
+                    Recent Transactions
+                  </CardTitle>
+                  <Link to="/dashboard/expenses">
+                    <span className="text-sm text-primary hover:underline">
+                      View all
+                    </span>
+                  </Link>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {stats.recentTransactions.map((txn) => (
+                    <div
+                      key={txn.id}
+                      className="flex items-center justify-between rounded-md border px-3 py-2"
+                    >
+                      <div>
+                        <p className="text-sm font-medium">
+                          {txn.description || txn.category}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {formatDate(txn.date)} · {txn.category}
+                        </p>
+                      </div>
+                      <span
+                        className={cn(
+                          'text-sm font-medium',
+                          txn.type === 'income'
+                            ? 'text-green-600'
+                            : 'text-red-600',
+                        )}
+                      >
+                        {txn.type === 'income' ? '+' : '-'}
+                        {formatCurrency(txn.amount)}
+                      </span>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          <TransactionCategoryCard />
+        </div>
       </section>
 
       {/* ── Activity / Alerts ── */}
@@ -334,9 +343,7 @@ function StaffDashboard({
         <UpcomingEventsCard events={stats.upcomingEvents} />
       )}
 
-      {birthdays.length > 0 && (
-        <UpcomingBirthdaysCard birthdays={birthdays} />
-      )}
+      {birthdays.length > 0 && <UpcomingBirthdaysCard birthdays={birthdays} />}
 
       {/* Quick links — moved to top */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -697,32 +704,217 @@ function DonutChart({
   )
 }
 
+// Categorical slots: the validated palette in fixed order, light / dark
+// steps. Written out in full so Tailwind generates the classes.
+const CATEGORY_COLORS = [
+  {
+    stroke: 'stroke-[#2a78d6] dark:stroke-[#3987e5]',
+    dot: 'bg-[#2a78d6] dark:bg-[#3987e5]',
+  },
+  {
+    stroke: 'stroke-[#eb6834] dark:stroke-[#d95926]',
+    dot: 'bg-[#eb6834] dark:bg-[#d95926]',
+  },
+  {
+    stroke: 'stroke-[#1baf7a] dark:stroke-[#199e70]',
+    dot: 'bg-[#1baf7a] dark:bg-[#199e70]',
+  },
+  {
+    stroke: 'stroke-[#eda100] dark:stroke-[#c98500]',
+    dot: 'bg-[#eda100] dark:bg-[#c98500]',
+  },
+  {
+    stroke: 'stroke-[#e87ba4] dark:stroke-[#d55181]',
+    dot: 'bg-[#e87ba4] dark:bg-[#d55181]',
+  },
+  { stroke: 'stroke-[#008300]', dot: 'bg-[#008300]' },
+  {
+    stroke: 'stroke-[#6250d6] dark:stroke-[#9085e9]',
+    dot: 'bg-[#6250d6] dark:bg-[#9085e9]',
+  },
+]
+const OTHER_COLOR = {
+  stroke: 'stroke-muted-foreground/40',
+  dot: 'bg-muted-foreground/40',
+}
+const OTHER_LABEL = 'Other'
+
+function TransactionCategoryCard() {
+  const [type, setType] = useState<TransactionType>('expense')
+  const [range, setRange] = useState<FinanceRange>('6')
+  const { data: rows = [], isLoading } = useQuery({
+    queryKey: ['transaction-category-totals'],
+    queryFn: () => getTransactionCategoryTotals(),
+  })
+
+  // Colour follows the category, ranked by all-time total for this type, so
+  // changing the month range never repaints a slice. Past the palette's
+  // seven slots, categories fold into "Other" (as does one named Other).
+  const colorOf = useMemo(() => {
+    const allTime = new Map<string, number>()
+    for (const r of rows) {
+      if (r.type !== type || r.category === OTHER_LABEL) continue
+      allTime.set(r.category, (allTime.get(r.category) ?? 0) + r.amount)
+    }
+    const ranked = [...allTime.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, CATEGORY_COLORS.length)
+    return new Map(ranked.map(([c], i) => [c, i]))
+  }, [rows, type])
+
+  const slices = useMemo(() => {
+    // Calendar months: this month and the N-1 before it.
+    const fromMonth =
+      range === 'all'
+        ? ''
+        : format(subMonths(new Date(), Number(range) - 1), 'yyyy-MM')
+    const totals = new Map<string, number>()
+    for (const r of rows) {
+      if (r.type !== type || r.month < fromMonth) continue
+      const key = colorOf.has(r.category) ? r.category : OTHER_LABEL
+      totals.set(key, (totals.get(key) ?? 0) + r.amount)
+    }
+    return (
+      [...totals.entries()]
+        .map(([label, value]) => {
+          const slot = colorOf.get(label)
+          return {
+            label,
+            value,
+            slot: slot ?? CATEGORY_COLORS.length,
+            color: slot === undefined ? OTHER_COLOR : CATEGORY_COLORS[slot],
+          }
+        })
+        // Palette order (= all-time rank), Other last.
+        .sort((a, b) => a.slot - b.slot)
+    )
+  }, [rows, type, range, colorOf])
+  const total = slices.reduce((s, x) => s + x.value, 0)
+  const pct = (v: number) => Math.round((v / total) * 100)
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-base">Transactions by Category</CardTitle>
+        <Link to="/dashboard/expenses">
+          <span className="text-sm text-primary hover:underline">View all</span>
+        </Link>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="flex flex-wrap gap-2">
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={type}
+            onValueChange={(v) => {
+              if (v) setType(v as TransactionType)
+            }}
+          >
+            <ToggleGroupItem value="expense">Expenses</ToggleGroupItem>
+            <ToggleGroupItem value="income">Income</ToggleGroupItem>
+          </ToggleGroup>
+          <ToggleGroup
+            type="single"
+            variant="outline"
+            size="sm"
+            value={range}
+            onValueChange={(v) => {
+              if (v) setRange(v as FinanceRange)
+            }}
+          >
+            {FINANCE_RANGE_OPTIONS.map((opt) => (
+              <ToggleGroupItem key={opt.value} value={opt.value}>
+                {opt.label}
+              </ToggleGroupItem>
+            ))}
+          </ToggleGroup>
+        </div>
+
+        {isLoading ? (
+          <Skeleton className="h-40 w-full" />
+        ) : total === 0 ? (
+          <p className="py-8 text-center text-sm text-muted-foreground">
+            No {type === 'expense' ? 'expenses' : 'income'} recorded in the
+            selected range.
+          </p>
+        ) : (
+          <div className="flex flex-wrap items-center gap-4">
+            <MultiSegmentDonut
+              size={120}
+              segments={slices.map((s) => ({
+                label: s.label,
+                value: s.value,
+                className: s.color.stroke,
+                title: `${s.label}: ${formatCurrency(s.value)} (${pct(s.value)}%)`,
+              }))}
+              centerLabel={`${slices.length}`}
+              centerSubLabel={slices.length === 1 ? 'category' : 'categories'}
+            />
+            <ul className="min-w-40 flex-1 space-y-1 text-xs">
+              {slices.map((s) => (
+                <li key={s.label} className="flex items-center gap-2">
+                  <span
+                    className={cn(
+                      'size-2.5 shrink-0 rounded-full',
+                      s.color.dot,
+                    )}
+                  />
+                  <span className="truncate text-muted-foreground">
+                    {s.label}
+                  </span>
+                  <span className="ml-auto font-medium">
+                    {formatCurrency(s.value)}
+                  </span>
+                  <span className="w-8 shrink-0 text-right text-muted-foreground">
+                    {pct(s.value)}%
+                  </span>
+                </li>
+              ))}
+              <li className="flex items-center gap-2 border-t pt-1">
+                <span className="text-muted-foreground">Total</span>
+                <span className="ml-auto font-medium">
+                  {formatCurrency(total)}
+                </span>
+                <span className="w-8 shrink-0" />
+              </li>
+            </ul>
+          </div>
+        )}
+        <p className="text-[11px] text-muted-foreground">
+          Transactions entered on the Expenses page only; fee payments and
+          salaries aren&apos;t included.
+        </p>
+      </CardContent>
+    </Card>
+  )
+}
+
 function FeeStatusCard({ stats }: { stats: Stats }) {
   const b = stats.fees.statusBreakdown
+  // Slices by status; "overdue" (past the due date) is shown per slice,
+  // since a partly paid fee can also be overdue.
   const segments = [
     {
       label: 'Paid',
       value: b.paid,
+      overdue: 0,
       className: 'stroke-green-500',
       dot: 'bg-green-500',
     },
     {
-      label: 'Pending',
-      value: b.pending,
-      className: 'stroke-amber-500',
-      dot: 'bg-amber-500',
-    },
-    {
       label: 'Partial',
       value: b.partial,
+      overdue: b.partialOverdue,
       className: 'stroke-blue-500',
       dot: 'bg-blue-500',
     },
     {
-      label: 'Overdue',
-      value: b.overdue,
-      className: 'stroke-red-500',
-      dot: 'bg-red-500',
+      label: 'Pending',
+      value: b.pending,
+      overdue: b.pendingOverdue,
+      className: 'stroke-amber-500',
+      dot: 'bg-amber-500',
     },
   ]
   const total = segments.reduce((s, x) => s + x.value, 0)
@@ -749,15 +941,20 @@ function FeeStatusCard({ stats }: { stats: Stats }) {
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-xs">
+        <div className="space-y-1 text-xs">
           {segments.map((s) => (
             <div key={s.label} className="flex items-center gap-2">
               <span className={cn('size-2.5 rounded-full', s.dot)} />
               <span className="text-muted-foreground">{s.label}:</span>
               <span className="font-medium">{s.value}</span>
+              {s.overdue > 0 && (
+                <span className="text-muted-foreground">
+                  · {s.overdue === s.value ? 'all' : s.overdue} overdue
+                </span>
+              )}
             </div>
           ))}
-          <div className="col-span-2 mt-1 text-muted-foreground">
+          <div className="mt-1 text-muted-foreground">
             Total: {total} fee record{total === 1 ? '' : 's'}
           </div>
         </div>
@@ -772,7 +969,12 @@ function MultiSegmentDonut({
   centerLabel,
   centerSubLabel,
 }: {
-  segments: { label: string; value: number; className: string }[]
+  segments: {
+    label: string
+    value: number
+    className: string
+    title?: string
+  }[]
   size?: number
   centerLabel?: string
   centerSubLabel?: string
@@ -820,7 +1022,12 @@ function MultiSegmentDonut({
                   strokeDasharray={`${arc} ${circumference}`}
                   strokeDashoffset={dashoffset}
                   strokeLinecap="butt"
-                />
+                >
+                  <title>
+                    {s.title ??
+                      `${s.label}: ${s.value} (${Math.round((s.value / total) * 100)}%)`}
+                  </title>
+                </circle>
               )
             })}
       </svg>

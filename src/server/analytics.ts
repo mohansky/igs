@@ -70,12 +70,20 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
           .select({
             totalDue: sql<number>`COALESCE(SUM(${fees.amount}), 0)`,
             totalCollected: sql<number>`COALESCE(SUM(${fees.paidAmount}), 0)`,
-            pendingCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') THEN 1 ELSE 0 END)`,
+            // 'overdue' can be set by hand in Edit Fee; it means unpaid, so
+            // it counts as pending. Overdue itself is derived from the due
+            // date, not stored.
+            pendingCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial', 'overdue') THEN 1 ELSE 0 END)`,
             paidCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'paid' THEN 1 ELSE 0 END)`,
-            overdueCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial') AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
-            // Mutually exclusive buckets for the pie chart:
-            pendingOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'pending' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
-            partialOnTimeCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' AND ${fees.dueDate} >= ${today} THEN 1 ELSE 0 END)`,
+            overdueCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'partial', 'overdue') AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
+            // Pie chart slices are by status (paid / partial / pending); how
+            // many of each unpaid slice are past due is shown alongside.
+            // (Previously overdue was its own slice, so once every due date
+            // had passed, Pending and Partial always read 0.)
+            partialCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' THEN 1 ELSE 0 END)`,
+            unpaidCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'overdue') THEN 1 ELSE 0 END)`,
+            partialOverdueCount: sql<number>`SUM(CASE WHEN ${fees.status} = 'partial' AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
+            unpaidOverdueCount: sql<number>`SUM(CASE WHEN ${fees.status} IN ('pending', 'overdue') AND ${fees.dueDate} < ${today} THEN 1 ELSE 0 END)`,
           })
           .from(fees)
           // Due vs collected compares standard fees only. Concession (open)
@@ -89,8 +97,10 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
             pendingCount: 0,
             paidCount: 0,
             overdueCount: 0,
-            pendingOnTimeCount: 0,
-            partialOnTimeCount: 0,
+            partialCount: 0,
+            unpaidCount: 0,
+            partialOverdueCount: 0,
+            unpaidOverdueCount: 0,
           },
         ]
 
@@ -373,9 +383,10 @@ export const getDashboardStats = createServerFn({ method: 'GET' }).handler(
         paidCount: Number(feeStats[0].paidCount) || 0,
         statusBreakdown: {
           paid: Number(feeStats[0].paidCount) || 0,
-          pending: Number(feeStats[0].pendingOnTimeCount) || 0,
-          partial: Number(feeStats[0].partialOnTimeCount) || 0,
-          overdue: Number(feeStats[0].overdueCount) || 0,
+          partial: Number(feeStats[0].partialCount) || 0,
+          pending: Number(feeStats[0].unpaidCount) || 0,
+          partialOverdue: Number(feeStats[0].partialOverdueCount) || 0,
+          pendingOverdue: Number(feeStats[0].unpaidOverdueCount) || 0,
         },
       },
       alerts: {

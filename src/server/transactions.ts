@@ -147,6 +147,41 @@ export type MonthlyOverviewRow = {
   net: number
 }
 
+export interface TransactionCategoryTotal {
+  month: string // YYYY-MM
+  type: TransactionType
+  category: string
+  amount: number
+}
+
+// Manual transaction totals per month, type and category, for the
+// dashboard's category donut (the client picks the month range). Fee
+// payments and salaries aren't transactions, so they're not in here.
+export const getTransactionCategoryTotals = createServerFn({
+  method: 'GET',
+}).handler(async (): Promise<TransactionCategoryTotal[]> => {
+  await requireRole(['admin'])
+  const rows = await db
+    .select({
+      month: sql<string>`substr(${transactions.date}, 1, 7)`,
+      type: transactions.type,
+      category: transactions.category,
+      amount: sql<number>`COALESCE(SUM(${transactions.amount}), 0)`,
+    })
+    .from(transactions)
+    .groupBy(
+      sql`substr(${transactions.date}, 1, 7)`,
+      transactions.type,
+      transactions.category,
+    )
+  return rows.map((r) => ({
+    month: r.month,
+    type: r.type as TransactionType,
+    category: r.category,
+    amount: Number(r.amount) || 0,
+  }))
+})
+
 export const getMonthlyOverview = createServerFn({ method: 'GET' }).handler(
   async (): Promise<MonthlyOverviewRow[]> => {
     await requireRole(['admin'])
