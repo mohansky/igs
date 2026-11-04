@@ -365,7 +365,8 @@ function DocsPage() {
                   </li>
                   <li>
                     To correct a payment&apos;s amount or date, open the
-                    fee&apos;s payment history (eye icon) and click{' '}
+                    fee&apos;s <Strong>⋮</Strong> menu →{' '}
+                    <Strong>Payment history</Strong> and click{' '}
                     <Strong>Edit</Strong>. Payments in a closed financial year
                     can&apos;t be changed.
                   </li>
@@ -374,12 +375,19 @@ function DocsPage() {
                 <SubHeading>Editing and deleting fees</SubHeading>
                 <Steps>
                   <li>
-                    Click <Strong>Edit</Strong> to change the student, amount,
+                    Open the <Strong>⋮</Strong> menu at the end of a row and
+                    choose <Strong>Edit</Strong> to change the student, amount,
                     due date, category, description or status. A concession fee
                     can&apos;t be moved to another student.
                   </li>
                   <li>
-                    Click <Strong>Delete</Strong> to remove a fee permanently.
+                    Choose <Strong>Delete</Strong> from the same menu to remove
+                    a fee permanently.
+                  </li>
+                  <li>
+                    If the table is wider than the screen, scroll it sideways
+                    (shift + mouse wheel, or swipe on a phone) to see every
+                    column.
                   </li>
                 </Steps>
                 <Tip>

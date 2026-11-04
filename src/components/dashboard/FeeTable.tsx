@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import TrashIcon from '#/components/icons/TrashIcon'
 import EditIcon from '#/components/icons/EditIcon'
 import EyeIcon from '#/components/icons/EyeIcon'
-import { IconButton } from '#/components/dashboard/IconButton'
+import { MoreVerticalIcon } from 'hugeicons-react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Link } from '@tanstack/react-router'
 import { Badge } from '#/components/ui/badge'
@@ -25,11 +25,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '#/components/ui/dialog'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
 import { Input } from '#/components/ui/input'
 // import { ArrowUpDownIcon } from 'lucide-react'
 import { cn, formatDate, formatCurrency } from '#/lib/utils'
 import { UNCATEGORISED_LABEL } from '#/lib/fee-categories'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Card } from '#/components/ui/card'
 import { CustomDataTable } from './CustomDataTable'
 import { FeePaymentsDialog } from './FeePaymentsDialog'
 import { Label } from '#/components/ui/label'
@@ -406,54 +412,58 @@ export function FeeTable({
       },
     },
     {
-      id: 'pay',
-      header: 'Pay',
+      id: 'actions',
+      header: () => <span className="sr-only">Actions</span>,
+      // Pinned to the right edge so Pay and the menu stay in view while the
+      // other columns scroll sideways. Opaque background so they don't show
+      // through; the shadow marks the edge.
+      meta: {
+        className:
+          'sticky right-0 z-10 bg-muted shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]',
+      },
       cell: ({ row }) => {
         const fee = row.original
+        const hasPayments = (fee.paidAmount ?? 0) > 0
         return (
-          <div>
+          <div className="flex items-center justify-end gap-1">
             {(fee.isOpen || fee.status !== 'paid') && (
               <Button size="xs" onClick={() => onRecordPayment(fee)}>
                 Pay
               </Button>
             )}
-          </div>
-        )
-      },
-    },
-    {
-      id: 'actions',
-      header: 'Actions',
-      cell: ({ row }) => {
-        const fee = row.original
-        const hasPayments = (fee.paidAmount ?? 0) > 0
-        return (
-          <div className="flex gap-1">
-            {hasPayments && (
-              <IconButton
-                tooltip="View payment history"
-                icon={EyeIcon}
-                size="xs"
-                onClick={() => setPaymentsTarget(fee)}
-              />
-            )}
-            {/* A concession fee's amount comes from the student's fee plan. */}
-            {!fee.isOpen && (
-              <IconButton
-                tooltip="Edit"
-                icon={EditIcon}
-                className="text-primary"
-                size="xs"
-                onClick={() => onEditFee(fee)}
-              />
-            )}
-            <IconButton
-              tooltip="Delete"
-              icon={TrashIcon}
-              className="text-destructive"
-              size="xs"
-              onClick={() => setDeleteTarget(fee)}
-            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Actions for ${fee.studentName ?? 'this fee'}`}
+                >
+                  <MoreVerticalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {hasPayments && (
+                  <DropdownMenuItem onSelect={() => setPaymentsTarget(fee)}>
+                    <EyeIcon className="size-4" />
+                    Payment history
+                  </DropdownMenuItem>
+                )}
+                {/* A concession fee's amount comes from the student's fee plan. */}
+                {!fee.isOpen && (
+                  <DropdownMenuItem onSelect={() => onEditFee(fee)}>
+                    <EditIcon className="size-4" />
+                    Edit
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => setDeleteTarget(fee)}
+                >
+                  <TrashIcon className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )
       },
@@ -497,70 +507,31 @@ export function FeeTable({
 
   return (
     <>
-      <div className="mb-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Fees
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold">
-              {formatCurrency(summary.totalDue)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {summary.count} record{summary.count === 1 ? '' : 's'}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Collected
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(summary.totalCollected)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Outstanding
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                summary.outstanding > 0 ? 'text-amber-600' : 'text-green-600',
-              )}
-            >
-              {formatCurrency(summary.outstanding)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Overdue
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                summary.overdueCount > 0
-                  ? 'text-red-600'
-                  : 'text-muted-foreground',
-              )}
-            >
-              {summary.overdueCount}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="mb-4 grid grid-cols-2 gap-3 md:grid-cols-4">
+        <StatCard
+          label="Total Fees"
+          value={formatCurrency(summary.totalDue)}
+          note={`${summary.count} record${summary.count === 1 ? '' : 's'}`}
+        />
+        <StatCard
+          label="Collected"
+          value={formatCurrency(summary.totalCollected)}
+          valueClassName="text-green-600"
+        />
+        <StatCard
+          label="Outstanding"
+          value={formatCurrency(summary.outstanding)}
+          valueClassName={
+            summary.outstanding > 0 ? 'text-amber-600' : 'text-green-600'
+          }
+        />
+        <StatCard
+          label="Overdue"
+          value={String(summary.overdueCount)}
+          valueClassName={
+            summary.overdueCount > 0 ? 'text-red-600' : 'text-muted-foreground'
+          }
+        />
       </div>
 
       {(onBulkPay || onBulkDelete) && selected.length > 0 && (
@@ -790,5 +761,29 @@ export function FeeTable({
         </AlertDialogContent>
       </AlertDialog>
     </>
+  )
+}
+
+// A compact summary tile: the shared Card's py-6 / gap-6 is too tall for a
+// row of four numbers above a table.
+function StatCard({
+  label,
+  value,
+  note,
+  valueClassName,
+}: {
+  label: string
+  value: string
+  note?: string
+  valueClassName?: string
+}) {
+  return (
+    <Card className="gap-0.5 px-4 py-3">
+      <p className="text-xs font-medium text-muted-foreground">{label}</p>
+      <p className={cn('truncate text-lg font-bold', valueClassName)}>
+        {value}
+      </p>
+      {note && <p className="text-xs text-muted-foreground">{note}</p>}
+    </Card>
   )
 }

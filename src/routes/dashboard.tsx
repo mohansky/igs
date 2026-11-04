@@ -493,7 +493,10 @@ function DashboardLayout() {
         </SidebarFooter>
       </Sidebar>
 
-      <SidebarInset>
+      {/* min-w-0: as a flex item it would otherwise grow to fit wide tables
+          and push the page past the screen; this keeps tables scrolling
+          inside their own containers. */}
+      <SidebarInset className="min-w-0">
         <header className="flex h-12 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <Separator orientation="vertical" className="mr-2 h-4" />

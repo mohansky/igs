@@ -239,7 +239,10 @@ export function CustomDataTable<TData, TValue>(
                       header.getContext(),
                     )
                     return (
-                      <TableHead key={header.id}>
+                      <TableHead
+                        key={header.id}
+                        className={header.column.columnDef.meta?.className}
+                      >
                         {canSort ? (
                           <button
                             type="button"
@@ -273,7 +276,10 @@ export function CustomDataTable<TData, TValue>(
                     className="even:bg-muted/50"
                   >
                     {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id}>
+                      <TableCell
+                        key={cell.id}
+                        className={cell.column.columnDef.meta?.className}
+                      >
                         {flexRender(
                           cell.column.columnDef.cell,
                           cell.getContext(),
