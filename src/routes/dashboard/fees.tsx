@@ -8,6 +8,9 @@ import { CreateFeeDialog } from '#/components/dashboard/CreateFeeDialog'
 import { RecordPaymentDialog } from '#/components/dashboard/RecordPaymentDialog'
 import { EditFeeDialog } from '#/components/dashboard/EditFeeDialog'
 import { BulkFeeDialog } from '#/components/dashboard/BulkFeeDialog'
+import { ConcessionReport } from '#/components/dashboard/ConcessionReport'
+import { FeeSummary } from '#/components/dashboard/FeeSummary'
+import { FeeCategoriesManager } from '#/components/dashboard/FeeCategoriesManager'
 import { Button } from '#/components/ui/button'
 import { Skeleton } from '#/components/ui/skeleton'
 import { Card, CardContent } from '#/components/ui/card'
@@ -23,7 +26,31 @@ import { getChildrenByParent, getStudentProfile } from '#/server/students'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import DownloadIcon from '#/components/icons/DownloadIcon'
 
+const FEE_TABS = ['fees', 'concessions', 'summary', 'categories'] as const
+type FeeTab = (typeof FEE_TABS)[number]
+
+const TAB_LABELS: Record<FeeTab, string> = {
+  fees: 'Fees',
+  concessions: 'Concessions',
+  summary: 'Fee Summary',
+  categories: 'Categories',
+}
+
+// Which tabs each role gets. Auditors (trustees) see the reports but not the
+// editable fee table; parents get no tabs, just their children's fees.
+function tabsFor(role: string): FeeTab[] {
+  if (role === 'admin') return [...FEE_TABS]
+  if (role === 'auditor') return ['concessions', 'summary']
+  return []
+}
+
 export const Route = createFileRoute('/dashboard/fees')({
+  // ?tab=concessions etc., so tabs can be linked to (and old pages redirect).
+  validateSearch: (search: Record<string, unknown>): { tab?: FeeTab } => ({
+    tab: FEE_TABS.includes(search.tab as FeeTab)
+      ? (search.tab as FeeTab)
+      : undefined,
+  }),
   beforeLoad: ({ context }) => {
     // Fees is admin-managed; students/parents see their own fees below.
     // Staff have no fee access.
@@ -67,7 +94,57 @@ export interface FeeRecord {
 function FeesPage() {
   const { session } = Route.useRouteContext()
   const userRole = (session.user as { role?: string }).role ?? 'student'
-  const isAdmin = userRole === 'admin'
+  const search = Route.useSearch()
+  const navigate = Route.useNavigate()
+
+  const tabs = tabsFor(userRole)
+  const activeTab =
+    search.tab && tabs.includes(search.tab) ? search.tab : tabs[0]
+  const setTab = (tab: string) =>
+    navigate({
+      // The first tab is the default, so leave it out of the URL.
+      search: { tab: tab === tabs[0] ? undefined : (tab as FeeTab) },
+      replace: true,
+    })
+
+  return (
+    <div className="space-y-6">
+      <h1 className="text-2xl font-bold">Fees</h1>
+      {tabs.length === 0 ? (
+        <ParentFeeView userId={session.user.id} />
+      ) : (
+        <Tabs value={activeTab} onValueChange={setTab}>
+          <TabsList className="h-auto flex-wrap">
+            {tabs.map((t) => (
+              <TabsTrigger key={t} value={t}>
+                {TAB_LABELS[t]}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+          {tabs.includes('fees') && (
+            <TabsContent value="fees" className="mt-4">
+              <AdminFeesTab />
+            </TabsContent>
+          )}
+          <TabsContent value="concessions" className="mt-4">
+            <ConcessionReport />
+          </TabsContent>
+          <TabsContent value="summary" className="mt-4">
+            <FeeSummary />
+          </TabsContent>
+          {tabs.includes('categories') && (
+            <TabsContent value="categories" className="mt-4">
+              <FeeCategoriesManager />
+            </TabsContent>
+          )}
+        </Tabs>
+      )}
+    </div>
+  )
+}
+
+// All students' fees, with create/pay/edit/delete. Admin only.
+function AdminFeesTab() {
   const queryClient = useQueryClient()
 
   const [selectedFee, setSelectedFee] = useState<FeeRecord | null>(null)
@@ -78,7 +155,6 @@ function FeesPage() {
   const { data: fees = [], isLoading: feesLoading } = useQuery({
     queryKey: ['fees'],
     queryFn: () => listFees({ data: {} }) as Promise<FeeRecord[]>,
-    enabled: isAdmin,
   })
 
   const invalidateFees = () =>
@@ -130,54 +206,49 @@ function FeesPage() {
   })
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h1 className="text-2xl font-bold">Fees</h1>
-        {isAdmin && (
-          <div className="flex flex-wrap gap-2">
-            <Button
-              variant="outline"
-              onClick={() =>
-                downloadCsv(
-                  fees.map((f) => ({
-                    ...f,
-                    category: f.categoryName ?? UNCATEGORISED_LABEL,
-                  })),
-                  [
-                    { key: 'category', label: 'Category' },
-                    { key: 'studentName', label: 'Student' },
-                    { key: 'admissionNumber', label: 'Admission #' },
-                    { key: 'className', label: 'Class' },
-                    { key: 'classSection', label: 'Section' },
-                    { key: 'description', label: 'Description' },
-                    { key: 'amount', label: 'Amount' },
-                    { key: 'paidAmount', label: 'Paid' },
-                    { key: 'dueDate', label: 'Due Date' },
-                    { key: 'paidDate', label: 'Paid Date' },
-                    { key: 'status', label: 'Status' },
-                    { key: 'paymentMethod', label: 'Payment Method' },
-                    { key: 'receiptNumber', label: 'Receipt #' },
-                    { key: 'razorpayOrderId', label: 'Razorpay Order ID' },
-                    { key: 'razorpayPaymentId', label: 'Razorpay Payment ID' },
-                    { key: 'receivedByName', label: 'Received By' },
-                  ],
-                  'fees-export',
-                )
-              }
-              disabled={fees.length === 0}
-            >
-              <DownloadIcon className="h-4 w-4" />
-              Export CSV
-            </Button>
-            <BulkFeeDialog onCreated={invalidateFees} />
-            <CreateFeeDialog onCreated={invalidateFees} />
-          </div>
-        )}
+    <div className="space-y-4">
+      <div className="flex flex-wrap gap-2 sm:justify-end">
+        <Button
+          variant="outline"
+          onClick={() =>
+            downloadCsv(
+              fees.map((f) => ({
+                ...f,
+                category: f.categoryName ?? UNCATEGORISED_LABEL,
+              })),
+              [
+                { key: 'category', label: 'Category' },
+                { key: 'studentName', label: 'Student' },
+                { key: 'admissionNumber', label: 'Admission #' },
+                { key: 'className', label: 'Class' },
+                { key: 'classSection', label: 'Section' },
+                { key: 'description', label: 'Description' },
+                { key: 'amount', label: 'Amount' },
+                { key: 'paidAmount', label: 'Paid' },
+                { key: 'dueDate', label: 'Due Date' },
+                { key: 'paidDate', label: 'Paid Date' },
+                { key: 'status', label: 'Status' },
+                { key: 'paymentMethod', label: 'Payment Method' },
+                { key: 'receiptNumber', label: 'Receipt #' },
+                { key: 'razorpayOrderId', label: 'Razorpay Order ID' },
+                { key: 'razorpayPaymentId', label: 'Razorpay Payment ID' },
+                { key: 'receivedByName', label: 'Received By' },
+              ],
+              'fees-export',
+            )
+          }
+          disabled={fees.length === 0}
+        >
+          <DownloadIcon className="h-4 w-4" />
+          Export CSV
+        </Button>
+        <BulkFeeDialog onCreated={invalidateFees} />
+        <CreateFeeDialog onCreated={invalidateFees} />
       </div>
 
-      {isAdmin && feesLoading && <FeeTableSkeleton />}
-
-      {isAdmin && !feesLoading ? (
+      {feesLoading ? (
+        <FeeTableSkeleton />
+      ) : (
         <>
           <FeeTable
             fees={fees}
@@ -202,8 +273,6 @@ function FeesPage() {
             onUpdated={invalidateFees}
           />
         </>
-      ) : (
-        <ParentFeeView userId={session.user.id} />
       )}
     </div>
   )

@@ -62,9 +62,6 @@ import {
   UnfoldMoreIcon,
   UserSearch01Icon,
   Image01Icon,
-  Discount01Icon,
-  ChartBarLineIcon,
-  Tag01Icon,
 } from 'hugeicons-react'
 import {
   Avatar,
@@ -106,6 +103,8 @@ const navItems: NavItem[] = [
     label: 'Fees',
     // Admins see this under Administration; students/parents get it in
     // their flat nav (they view and pay their own fees). Staff: no access.
+    // Auditors see it too (every admin item) and get only the report tabs:
+    // Concessions and Fee Summary.
     roles: ['admin', 'student'],
     group: 'admin',
     icon: Invoice02Icon,
@@ -116,28 +115,6 @@ const navItems: NavItem[] = [
     roles: ['admin'],
     group: 'admin',
     icon: MoneyReceiveSquareIcon,
-  },
-  {
-    // Auditors (trustees) see it too: they see every admin route.
-    to: '/dashboard/concessions',
-    label: 'Concessions',
-    roles: ['admin'],
-    group: 'admin',
-    icon: Discount01Icon,
-  },
-  {
-    to: '/dashboard/fee-summary',
-    label: 'Fee Summary',
-    roles: ['admin'],
-    group: 'admin',
-    icon: ChartBarLineIcon,
-  },
-  {
-    to: '/dashboard/fee-categories',
-    label: 'Fee Categories',
-    roles: ['admin'],
-    group: 'admin',
-    icon: Tag01Icon,
   },
   {
     to: '/dashboard/calendar',
@@ -275,7 +252,6 @@ function DashboardLayout() {
     '/dashboard/my-salaries',
     // Admin-only editing pages (their routes redirect auditors anyway).
     '/dashboard/gallery',
-    '/dashboard/fee-categories',
   ])
   const filteredNav = navItems.filter(
     (item) =>

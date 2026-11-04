@@ -134,6 +134,7 @@ const NAV_LINKS: NavLink[] = [
     roles: ['admin'],
     icon: MoneyReceiveSquareIcon,
   },
+  // These three are tabs on the Fees page; their old paths redirect there.
   {
     kind: 'nav',
     label: 'Concession Report',
@@ -163,6 +164,12 @@ const NAV_LINKS: NavLink[] = [
     icon: Image01Icon,
   },
 ]
+
+const AUDITOR_HIDDEN = new Set([
+  '/dashboard/users',
+  '/dashboard/fee-categories',
+  '/dashboard/gallery',
+])
 
 interface CommandPaletteProps {
   userRole: Role
@@ -211,11 +218,12 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
     const q = query.trim().toLowerCase()
     const items: ResultItem[] = []
 
-    // The view-only auditor sees every link except user management.
+    // The view-only auditor sees every link except user management and
+    // admin-only editing pages (matching `auditorHidden` in the sidebar).
     const navItems = NAV_LINKS.filter(
       (l) =>
         l.roles.includes(userRole) ||
-        (userRole === 'auditor' && l.to !== '/dashboard/users'),
+        (userRole === 'auditor' && !AUDITOR_HIDDEN.has(l.to)),
     )
     for (const link of navItems) {
       if (!q || link.label.toLowerCase().includes(q)) {

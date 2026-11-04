@@ -179,9 +179,10 @@ function DocsPage() {
           )}
           {isAuditor && (
             <li>
-              As an auditor you have view-only access to the reports in the
-              sidebar, such as <NavLink>Concessions</NavLink> and{' '}
-              <NavLink>Fee Summary</NavLink>. Nothing you open can be changed.
+              As an auditor you have view-only access to reports: open{' '}
+              <NavLink>Fees</NavLink> for the <Strong>Concessions</Strong> and{' '}
+              <Strong>Fee Summary</Strong> tabs. Nothing you open can be
+              changed.
             </li>
           )}
         </Bullets>
@@ -314,7 +315,9 @@ function DocsPage() {
                 <Steps>
                   <li>
                     Go to <NavLink>Fees</NavLink> to see every student&apos;s
-                    fees.
+                    fees. Its tabs are <Strong>Fees</Strong>,{' '}
+                    <Strong>Concessions</Strong>, <Strong>Fee Summary</Strong>{' '}
+                    and <Strong>Categories</Strong> (see below).
                   </li>
                   <li>
                     Filter by student, description, <Strong>category</Strong>,{' '}
@@ -425,10 +428,10 @@ function DocsPage() {
                 uniform and other categories are billed as usual.
               </li>
               <li>
-                <NavLink>Concessions</NavLink> reports, per school year, each
-                concession student&apos;s reference fee, amount received,
-                support given so far, number of payments and last payment, with
-                totals.
+                The <NavLink>Fees</NavLink> → <Strong>Concessions</Strong> tab
+                reports, per school year, each concession student&apos;s
+                reference fee, amount received, support given so far, number of
+                payments and last payment, with totals.
               </li>
             </Bullets>
           </Section>
@@ -446,9 +449,10 @@ function DocsPage() {
                 <SubHeading first>Fee Categories</SubHeading>
                 <Bullets>
                   <li>
-                    <NavLink>Fee Categories</NavLink>: add, rename, reorder
-                    (arrows) and deactivate categories. Inactive categories
-                    disappear from dropdowns but still show on old fees.
+                    On <NavLink>Fees</NavLink> → <Strong>Categories</Strong>,
+                    add, rename, reorder (arrows) and deactivate categories.
+                    Inactive categories disappear from dropdowns but still show
+                    on old fees.
                   </li>
                   <li>
                     A category can only be deleted if no fee uses it. Tuition
@@ -473,10 +477,10 @@ function DocsPage() {
             {isAdmin && <SubHeading>Fee Summary</SubHeading>}
             <Bullets>
               <li>
-                <NavLink>Fee Summary</NavLink> shows, for fees due in a school
-                year (May to April), what was <Strong>billed</Strong>,{' '}
-                <Strong>received</Strong> and is still <Strong>pending</Strong>{' '}
-                in each category.
+                The <NavLink>Fees</NavLink> → <Strong>Fee Summary</Strong> tab
+                shows, for fees due in a school year (May to April), what was{' '}
+                <Strong>billed</Strong>, <Strong>received</Strong> and is still{' '}
+                <Strong>pending</Strong> in each category.
               </li>
               <li>
                 Rows are grouped into fee income and pass-through, each with a
