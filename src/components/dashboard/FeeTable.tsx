@@ -33,9 +33,9 @@ import {
 } from '#/components/ui/dropdown-menu'
 import { Input } from '#/components/ui/input'
 // import { ArrowUpDownIcon } from 'lucide-react'
-import { cn, formatDate, formatCurrency } from '#/lib/utils'
+import { formatDate, formatCurrency } from '#/lib/utils'
 import { UNCATEGORISED_LABEL } from '#/lib/fee-categories'
-import { Card } from '#/components/ui/card'
+import { StatCard } from './StatCard'
 import { CustomDataTable } from './CustomDataTable'
 import { FeePaymentsDialog } from './FeePaymentsDialog'
 import { Label } from '#/components/ui/label'
@@ -761,29 +761,5 @@ export function FeeTable({
         </AlertDialogContent>
       </AlertDialog>
     </>
-  )
-}
-
-// A compact summary tile: the shared Card's py-6 / gap-6 is too tall for a
-// row of four numbers above a table.
-function StatCard({
-  label,
-  value,
-  note,
-  valueClassName,
-}: {
-  label: string
-  value: string
-  note?: string
-  valueClassName?: string
-}) {
-  return (
-    <Card className="gap-0.5 px-4 py-3">
-      <p className="text-xs font-medium text-muted-foreground">{label}</p>
-      <p className={cn('truncate text-lg font-bold', valueClassName)}>
-        {value}
-      </p>
-      {note && <p className="text-xs text-muted-foreground">{note}</p>}
-    </Card>
   )
 }

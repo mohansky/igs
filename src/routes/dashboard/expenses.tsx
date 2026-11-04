@@ -32,12 +32,13 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '#/components/ui/alert-dialog'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Card, CardContent } from '#/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { MarkedBy } from '#/components/dashboard/MarkedBy'
 import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import { MonthlyFinanceOverview } from '#/components/dashboard/MonthlyFinanceOverview'
+import { StatCard, StatCardSkeleton } from '#/components/dashboard/StatCard'
 import { YearEndClosing } from '#/components/dashboard/YearEndClosing'
 import { Skeleton } from '#/components/ui/skeleton'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
@@ -821,16 +822,9 @@ function ExpensesPage() {
         <TabsContent value="transactions" className="space-y-6">
           {isLoading ? (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-3 sm:grid-cols-3">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <Card key={i}>
-                    <CardHeader className="pb-2">
-                      <Skeleton className="h-4 w-24" />
-                    </CardHeader>
-                    <CardContent>
-                      <Skeleton className="h-7 w-28" />
-                    </CardContent>
-                  </Card>
+                  <StatCardSkeleton key={i} />
                 ))}
               </div>
               <Card>
@@ -857,49 +851,24 @@ function ExpensesPage() {
             </>
           ) : (
             <>
-              <div className="grid gap-4 sm:grid-cols-3">
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Total Income
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-green-600">
-                      +{formatCurrency(totalIncome)}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Total Expenses
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-2xl font-bold text-red-600">
-                      -{formatCurrency(totalExpenses)}
-                    </p>
-                  </CardContent>
-                </Card>
-                <Card>
-                  <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
-                      Balance
-                    </CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p
-                      className={cn(
-                        'text-2xl font-bold',
-                        balance >= 0 ? 'text-green-600' : 'text-red-600',
-                      )}
-                    >
-                      {balance >= 0 ? '+' : '-'}
-                      {formatCurrency(Math.abs(balance))}
-                    </p>
-                  </CardContent>
-                </Card>
+              <div className="grid gap-3 sm:grid-cols-3">
+                <StatCard
+                  label="Total Income"
+                  value={`+${formatCurrency(totalIncome)}`}
+                  valueClassName="text-green-600"
+                />
+                <StatCard
+                  label="Total Expenses"
+                  value={`-${formatCurrency(totalExpenses)}`}
+                  valueClassName="text-red-600"
+                />
+                <StatCard
+                  label="Balance"
+                  value={`${balance >= 0 ? '+' : '-'}${formatCurrency(Math.abs(balance))}`}
+                  valueClassName={
+                    balance >= 0 ? 'text-green-600' : 'text-red-600'
+                  }
+                />
               </div>
 
               {selected.length > 0 && (

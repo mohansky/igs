@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Card, CardContent } from '#/components/ui/card'
+import { StatCard, StatCardSkeleton } from './StatCard'
 import { Label } from '#/components/ui/label'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { Skeleton } from '#/components/ui/skeleton'
@@ -163,16 +164,9 @@ export function MonthlyFinanceOverview() {
   if (isLoading) {
     return (
       <div className="space-y-4">
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-7 w-32" />
-              </CardContent>
-            </Card>
+            <StatCardSkeleton key={i} />
           ))}
         </div>
         <Card>
@@ -253,61 +247,25 @@ export function MonthlyFinanceOverview() {
         </Button>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-3">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Income (All Sources)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              +{formatCurrency(totals.totalIncome)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {formatCurrency(totals.feesCollected)} fees ·{' '}
-              {formatCurrency(totals.manualIncome)} other
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Expenses (All Sources)
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-red-600">
-              -{formatCurrency(totals.totalExpenses)}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              {formatCurrency(totals.salariesPaid)} salaries ·{' '}
-              {formatCurrency(totals.manualExpenses)} other
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Net
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={cn(
-                'text-2xl font-bold',
-                totals.net >= 0 ? 'text-green-600' : 'text-red-600',
-              )}
-            >
-              {totals.net >= 0 ? '+' : '-'}
-              {formatCurrency(Math.abs(totals.net))}
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground">
-              Across {filteredRows.length} month
-              {filteredRows.length === 1 ? '' : 's'}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          label="Total Income (All Sources)"
+          value={`+${formatCurrency(totals.totalIncome)}`}
+          valueClassName="text-green-600"
+          note={`${formatCurrency(totals.feesCollected)} fees · ${formatCurrency(totals.manualIncome)} other`}
+        />
+        <StatCard
+          label="Total Expenses (All Sources)"
+          value={`-${formatCurrency(totals.totalExpenses)}`}
+          valueClassName="text-red-600"
+          note={`${formatCurrency(totals.salariesPaid)} salaries · ${formatCurrency(totals.manualExpenses)} other`}
+        />
+        <StatCard
+          label="Net"
+          value={`${totals.net >= 0 ? '+' : '-'}${formatCurrency(Math.abs(totals.net))}`}
+          valueClassName={totals.net >= 0 ? 'text-green-600' : 'text-red-600'}
+          note={`Across ${filteredRows.length} month${filteredRows.length === 1 ? '' : 's'}`}
+        />
       </div>
 
       <CustomDataTable
