@@ -15,6 +15,7 @@ import {
   type TransactionType,
 } from '#/server/transactions'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
+import { OTHER_CATEGORY } from '#/lib/transaction-categories'
 import {
   typeBadgeVariant,
   BIRTHDAY_BADGE_VARIANT,
@@ -737,7 +738,8 @@ const OTHER_COLOR = {
   stroke: 'stroke-muted-foreground/40',
   dot: 'bg-muted-foreground/40',
 }
-const OTHER_LABEL = 'Other'
+// Folding slice for the long tail; the category named Other joins it.
+const OTHER_LABEL = OTHER_CATEGORY
 
 function TransactionCategoryCard() {
   const [type, setType] = useState<TransactionType>('expense')

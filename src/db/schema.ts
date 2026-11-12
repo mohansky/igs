@@ -421,6 +421,10 @@ export const transactions = sqliteTable('transactions', {
   notes: text(),
   attachmentUrl: text('attachment_url'),
   attachmentType: text('attachment_type'), // 'file' | 'link'
+  // Shared by the lines a transaction was split into (splitTransaction);
+  // null for ordinary rows. A plain id, not a foreign key: the original row
+  // is deleted when it's split.
+  splitGroupId: text('split_group_id'),
   createdByUserId: text('created_by_user_id').references(() => user.id),
   createdAt: integer('created_at', { mode: 'timestamp' }).default(
     sql`(unixepoch())`,

@@ -824,10 +824,29 @@ function DocsPage() {
                 Click <Strong>Add Transaction</Strong> to record an expense or
                 income: category, amount, date, vendor, payment method, receipt
                 number and notes. Switching the type changes the category list.
+                A transaction in <Strong>Other</Strong> needs a description.
+              </li>
+              <li>
+                Don&apos;t record salaries here: paid salaries from{' '}
+                <Strong>Staff</Strong> are already counted in the Monthly
+                Overview.
               </li>
               <li>
                 Filter by date range, month, category, vendor or method. Each
-                entry shows who added it.
+                entry shows who added it. Older categories that are no longer
+                offered (e.g. Supplies) show in the filter as{' '}
+                <Strong>(old)</Strong>.
+              </li>
+              <li>
+                From the ⋮ menu at the end of a row: <Strong>Duplicate</Strong>{' '}
+                opens a new entry filled in from that row, dated today (handy
+                for repeat purchases like snacks or photocopies).{' '}
+                <Strong>Split</Strong> divides one bill into lines in different
+                categories, e.g. cleaning items and food bought together. The
+                lines must add up exactly to the original amount. They keep its
+                date, vendor, receipt and attachment, and show a{' '}
+                <Strong>Split</Strong> badge; click it to see the other lines
+                and the original total.
               </li>
             </Bullets>
           </Section>

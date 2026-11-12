@@ -14,6 +14,12 @@ import { z } from 'zod'
 import { db } from '#/db'
 import { transactions, feePayments, staffSalaries, user } from '#/db/schema'
 import { fyEndDate, fyStartDate } from '#/lib/financial-year'
+import { isValidCategory, needsDescription } from '#/lib/transaction-categories'
+import {
+  MAX_SPLIT_LINES,
+  MIN_SPLIT_LINES,
+  splitAddsUp,
+} from '#/lib/transaction-split'
 import { assertDatesUnlocked } from './accounting'
 import { requireRole } from './auth-utils'
 
@@ -22,11 +28,28 @@ const dateString = z
   .regex(/^\d{4}-\d{2}-\d{2}$/, 'Expected YYYY-MM-DD')
 
 // `type` drives the income/expense SUM(CASE …) in the year-end summary, so it
-// must be one of exactly two values. `category` is admin-curated (Supplies,
-// Maintenance, …) rather than a fixed set, so it's bounded but not enumerated.
+// must be one of exactly two values. `category` must be one of that type's
+// categories in src/lib/transaction-categories.ts (checked in the handlers,
+// since an edit may keep a row's older category).
 export const transactionType = z.enum(['income', 'expense'])
 export type TransactionType = z.infer<typeof transactionType>
 const optText = (max = 500) => z.string().max(max).nullish()
+
+// Throws unless the category is allowed for the type, and an "Other" entry
+// has a description. `keep` is the row's category before an edit: leaving
+// it unchanged is allowed even if it's no longer in the list.
+function assertCategory(
+  t: { type: TransactionType; category: string; description?: string | null },
+  keep?: { type: TransactionType; category: string },
+) {
+  const unchanged = keep && keep.type === t.type && keep.category === t.category
+  if (!unchanged && !isValidCategory(t.type, t.category)) {
+    throw new Error(`"${t.category}" is not a ${t.type} category.`)
+  }
+  if (needsDescription(t.category) && !t.description?.trim()) {
+    throw new Error('Add a description for a transaction in "Other".')
+  }
+}
 
 const transactionFields = {
   type: transactionType,
@@ -68,6 +91,7 @@ export const createTransaction = createServerFn({ method: 'POST' })
   .inputValidator(z.object(transactionFields))
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
+    assertCategory(data)
     await assertDatesUnlocked(data.date)
     const result = await db
       .insert(transactions)
@@ -88,11 +112,31 @@ export const updateTransaction = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const [existing] = await db
-      .select({ date: transactions.date })
+      .select({
+        date: transactions.date,
+        type: transactions.type,
+        category: transactions.category,
+        description: transactions.description,
+      })
       .from(transactions)
       .where(eq(transactions.id, data.id))
       .limit(1)
     if (!existing) throw new Error('Transaction not found')
+    const before = {
+      type: existing.type as TransactionType,
+      category: existing.category,
+    }
+    assertCategory(
+      {
+        type: data.updates.type ?? before.type,
+        category: data.updates.category ?? before.category,
+        description:
+          data.updates.description !== undefined
+            ? data.updates.description
+            : existing.description,
+      },
+      before,
+    )
     await assertDatesUnlocked(existing.date, data.updates.date)
     const result = await db
       .update(transactions)
@@ -115,6 +159,77 @@ export const deleteTransaction = createServerFn({ method: 'POST' })
     await assertDatesUnlocked(existing.date)
     await db.delete(transactions).where(eq(transactions.id, data.id))
     return { success: true }
+  })
+
+// Replace one transaction with 2+ lines (e.g. a bill with cleaning items and
+// food on it) that add up to exactly its amount. The lines keep the
+// original's date, type, vendor, payment method, receipt, attachment, notes
+// and creator, and share a split_group_id. The original row is deleted, in
+// the same DB transaction as the inserts. Splitting a line again keeps it in
+// the same group, so the group still sums to the first original's amount.
+export const splitTransaction = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      id: z.number().int().positive(),
+      lines: z
+        .array(
+          z.object({
+            category: z.string().trim().min(1).max(100),
+            amount: z.number().positive(),
+            description: optText(),
+          }),
+        )
+        .min(MIN_SPLIT_LINES)
+        .max(MAX_SPLIT_LINES),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireRole(['admin'])
+    const [original] = await db
+      .select()
+      .from(transactions)
+      .where(eq(transactions.id, data.id))
+      .limit(1)
+    if (!original) throw new Error('Transaction not found')
+    await assertDatesUnlocked(original.date)
+
+    const type = original.type as TransactionType
+    // Lines must use current categories, even if the original's is retired.
+    for (const line of data.lines) assertCategory({ type, ...line })
+    if (
+      !splitAddsUp(
+        original.amount,
+        data.lines.map((l) => l.amount),
+      )
+    ) {
+      throw new Error(
+        'The lines must add up exactly to the original amount, with each line more than zero.',
+      )
+    }
+
+    const splitGroupId = original.splitGroupId ?? crypto.randomUUID()
+    const { id: _id, updatedAt: _updatedAt, ...carried } = original
+    const inserted = await db.transaction(async (tx) => {
+      const removed = await tx
+        .delete(transactions)
+        .where(eq(transactions.id, original.id))
+        .returning({ id: transactions.id })
+      // Someone else deleted or split it in the meantime.
+      if (removed.length !== 1) throw new Error('Transaction not found')
+      return tx
+        .insert(transactions)
+        .values(
+          data.lines.map((line) => ({
+            ...carried,
+            category: line.category,
+            amount: line.amount,
+            description: line.description?.trim() || null,
+            splitGroupId,
+          })),
+        )
+        .returning({ id: transactions.id })
+    })
+    return { splitGroupId, ids: inserted.map((r) => r.id) }
   })
 
 export const bulkDeleteTransactions = createServerFn({ method: 'POST' })

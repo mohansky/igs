@@ -4,7 +4,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { format, parseISO } from 'date-fns'
 import type { ColumnDef } from '@tanstack/react-table'
-import { Calendar03Icon, FileAttachmentIcon } from 'hugeicons-react'
+import {
+  Calendar03Icon,
+  Copy01Icon,
+  FileAttachmentIcon,
+  MoreVerticalIcon,
+  SplitIcon,
+} from 'hugeicons-react'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'
 import { Label } from '#/components/ui/label'
@@ -56,7 +62,14 @@ import { getAccountingSettings, listFinancialYears } from '#/server/accounting'
 import { uploadToR2 } from '#/server/upload'
 import TrashIcon from '#/components/icons/TrashIcon'
 import EditIcon from '#/components/icons/EditIcon'
-import { IconButton } from '#/components/dashboard/IconButton'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
+import { SplitTransactionDialog } from '#/components/dashboard/SplitTransactionDialog'
 import {
   Select,
   SelectContent,
@@ -66,6 +79,12 @@ import {
 } from '#/components/ui/select'
 import AddIcon from '#/components/icons/AddIcon'
 import type { TransactionType } from '#/server/transactions'
+import {
+  categoriesFor,
+  categoryFilterNames,
+  isValidCategory,
+  needsDescription,
+} from '#/lib/transaction-categories'
 
 const R2_BASE_URL = import.meta.env.VITE_R2_BASE_URL ?? ''
 
@@ -130,32 +149,10 @@ interface Transaction {
   notes: string | null
   attachmentUrl: string | null
   attachmentType: 'file' | 'link' | null
+  splitGroupId: string | null
   createdByName: string | null
   createdAt: Date | string | null
 }
-
-const expenseCategories = [
-  'Salaries',
-  'Utilities',
-  'Maintenance',
-  'Supplies',
-  'Equipment',
-  'Transport',
-  'Events',
-  'Marketing',
-  'Insurance',
-  'Rent',
-  'Other',
-]
-
-const incomeCategories = [
-  'Donations',
-  'Grants',
-  'Rentals',
-  'Events',
-  'Interest',
-  'Other',
-]
 
 const paymentMethods = ['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'Card']
 
@@ -166,6 +163,7 @@ function ExpensesPage() {
   const [deleteId, setDeleteId] = useState<number | null>(null)
   const [selected, setSelected] = useState<Transaction[]>([])
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
+  const [splitTarget, setSplitTarget] = useState<Transaction | null>(null)
 
   // Form state
   const [type, setType] = useState<TransactionType>('expense')
@@ -397,6 +395,22 @@ function ExpensesPage() {
     setDialogOpen(true)
   }
 
+  // A new entry pre-filled from an existing one, dated today, for repeat
+  // purchases (snacks, photocopies). Receipt and attachment aren't copied,
+  // and a retired category is left for the user to pick again.
+  const openDuplicate = (txn: Transaction) => {
+    setEditing(null)
+    resetForm()
+    setType(txn.type)
+    setCategory(isValidCategory(txn.type, txn.category) ? txn.category : '')
+    setAmount(txn.amount.toString())
+    setDescription(txn.description ?? '')
+    setPaymentMethod(txn.paymentMethod ?? '')
+    setVendor(txn.vendor ?? '')
+    setNotes(txn.notes ?? '')
+    setDialogOpen(true)
+  }
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     saveMutation.mutate()
@@ -406,7 +420,41 @@ function ExpensesPage() {
     setDeleteId(id)
   }
 
-  const categories = type === 'income' ? incomeCategories : expenseCategories
+  // When editing a row saved under a category that's since been retired
+  // (e.g. "Supplies"), keep it selectable so the row can be saved as is.
+  const legacyCategory =
+    editing &&
+    category === editing.category &&
+    editing.type === type &&
+    !isValidCategory(type, category)
+      ? category
+      : null
+  const categories = categoriesFor(type)
+  const descriptionRequired = needsDescription(category)
+
+  // Lines of each split, from the rows loaded (all lines share a date, so
+  // they're always in the same financial year).
+  const splitGroups = useMemo(() => {
+    const groups = new Map<string, Transaction[]>()
+    for (const t of items) {
+      if (!t.splitGroupId) continue
+      const list = groups.get(t.splitGroupId) ?? []
+      list.push(t)
+      groups.set(t.splitGroupId, list)
+    }
+    return groups
+  }, [items])
+
+  const categoryFilterOptions = useMemo(() => {
+    const { current, legacy } = categoryFilterNames(
+      items.map((t) => t.category),
+    )
+    return [
+      { label: 'All', value: 'all' },
+      ...current.map((c) => ({ label: c, value: c })),
+      ...legacy.map((c) => ({ label: `${c} (old)`, value: c })),
+    ]
+  }, [items])
 
   // Summary calculations follow every active filter, including the
   // table's column filters
@@ -440,6 +488,68 @@ function ExpensesPage() {
     {
       accessorKey: 'category',
       header: 'Category',
+      cell: ({ row }) => {
+        const txn = row.original
+        const siblings = txn.splitGroupId
+          ? (splitGroups.get(txn.splitGroupId) ?? [])
+          : []
+        if (siblings.length === 0) return txn.category
+        const total = siblings.reduce((s, t) => s + t.amount, 0)
+        return (
+          <span className="flex items-center gap-1.5">
+            {txn.category}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button
+                  type="button"
+                  className="rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                  aria-label="Show the other lines of this split"
+                >
+                  <Badge
+                    variant="outline"
+                    className="cursor-pointer px-1.5 text-[10px] hover:bg-accent"
+                  >
+                    Split
+                  </Badge>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent align="start" className="w-72 p-3">
+                <p className="mb-2 text-xs text-muted-foreground">
+                  Split from one {txn.type} on {formatDate(txn.date)}
+                </p>
+                <ul className="space-y-1 text-sm">
+                  {siblings.map((t) => (
+                    <li
+                      key={t.id}
+                      className={cn(
+                        'flex justify-between gap-3',
+                        t.id === txn.id && 'font-medium',
+                      )}
+                    >
+                      <span className="min-w-0 truncate">
+                        {t.category}
+                        {t.description && (
+                          <span className="text-muted-foreground">
+                            {' '}
+                            · {t.description}
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0">
+                        {formatCurrency(t.amount)}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+                <div className="mt-2 flex justify-between border-t pt-2 text-sm font-semibold">
+                  <span>Original total</span>
+                  <span>{formatCurrency(total)}</span>
+                </div>
+              </PopoverContent>
+            </Popover>
+          </span>
+        )
+      },
       filterFn: (row, _id, value) => {
         if (!value || value === 'all') return true
         return row.getValue('category') === value
@@ -523,26 +633,51 @@ function ExpensesPage() {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: () => <span className="sr-only">Actions</span>,
       enableSorting: false,
+      // Pinned to the right edge while the other columns scroll sideways,
+      // as on the Fees and Students tables.
+      meta: {
+        className:
+          'sticky right-0 z-10 bg-muted shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]',
+      },
       cell: ({ row }) => {
         const txn = row.original
         return (
-          <div className="flex gap-1">
-            <IconButton
-              size="xs"
-              tooltip="Edit"
-              icon={EditIcon}
-              className="text-primary"
-              onClick={() => openEdit(txn)}
-            />
-            <IconButton
-              size="xs"
-              tooltip="Delete"
-              icon={TrashIcon}
-              className="text-destructive"
-              onClick={() => handleDelete(txn.id)}
-            />
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Actions for ${txn.description ?? txn.category}`}
+                >
+                  <MoreVerticalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onSelect={() => openEdit(txn)}>
+                  <EditIcon className="size-4" />
+                  Edit
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => openDuplicate(txn)}>
+                  <Copy01Icon className="size-4" />
+                  Duplicate
+                </DropdownMenuItem>
+                <DropdownMenuItem onSelect={() => setSplitTarget(txn)}>
+                  <SplitIcon className="size-4" />
+                  Split
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  variant="destructive"
+                  onSelect={() => handleDelete(txn.id)}
+                >
+                  <TrashIcon className="size-4" />
+                  Delete
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )
       },
@@ -605,6 +740,11 @@ function ExpensesPage() {
                           {cat}
                         </SelectItem>
                       ))}
+                      {legacyCategory && (
+                        <SelectItem value={legacyCategory}>
+                          {legacyCategory} (old)
+                        </SelectItem>
+                      )}
                     </SelectContent>
                   </Select>
                 </div>
@@ -653,11 +793,21 @@ function ExpensesPage() {
                 </Popover>
               </div>
               <div className="space-y-2">
-                <Label>Description</Label>
+                <Label>
+                  Description
+                  {descriptionRequired && (
+                    <span className="text-destructive">*</span>
+                  )}
+                </Label>
                 <Input
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Brief description"
+                  required={descriptionRequired}
+                  placeholder={
+                    descriptionRequired
+                      ? 'Required for Other: what was it for?'
+                      : 'Brief description'
+                  }
                 />
               </div>
               <div className="grid gap-4 sm:grid-cols-2">
@@ -804,7 +954,12 @@ function ExpensesPage() {
               <Button
                 type="submit"
                 className="w-full"
-                disabled={saveMutation.isPending || !category || !amount}
+                disabled={
+                  saveMutation.isPending ||
+                  !category ||
+                  !amount ||
+                  (descriptionRequired && !description.trim())
+                }
               >
                 {saveMutation.isPending ? 'Saving...' : 'Save'}
               </Button>
@@ -991,13 +1146,7 @@ function ExpensesPage() {
                     placeholder: 'Filter by category',
                     type: 'select',
                     label: 'Category',
-                    options: [
-                      { label: 'All', value: 'all' },
-                      ...[...expenseCategories, ...incomeCategories]
-                        .filter((v, i, a) => a.indexOf(v) === i)
-                        .sort()
-                        .map((c) => ({ label: c, value: c })),
-                    ],
+                    options: categoryFilterOptions,
                   },
                   {
                     column: 'vendor',
@@ -1028,6 +1177,20 @@ function ExpensesPage() {
           <YearEndClosing />
         </TabsContent>
       </Tabs>
+
+      <SplitTransactionDialog
+        txn={splitTarget}
+        onOpenChange={(open) => {
+          if (!open) setSplitTarget(null)
+        }}
+        onSplit={() => {
+          setSelected([])
+          invalidate()
+          queryClient.invalidateQueries({
+            queryKey: ['transaction-category-totals'],
+          })
+        }}
+      />
 
       <ConfirmDialog
         open={deleteId !== null}
