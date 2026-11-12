@@ -5,8 +5,10 @@
 // Not in the expense list on purpose:
 // - Salaries: paid salaries come from Staff salary records and are already
 //   counted in the Monthly Overview, so a manual entry would count twice.
-// - Supplies: split into Teaching Materials, Stationery & Printing, Cleaning
-//   & Housekeeping, Food & Refreshments and Books & Uniforms for Resale.
+// - Supplies: split into Teaching Materials, Stationery, Printing, Cleaning
+//   & Housekeeping, Food & Refreshments, Books and Uniforms.
+// - Books & Uniforms for Resale, Stationery & Printing (briefly used):
+//   split into Books / Uniforms and Stationery / Printing.
 // - Insurance: part of Professional & Compliance.
 //
 // Each transaction stores its category as plain text, so renaming one here
@@ -18,7 +20,10 @@ export const OTHER_CATEGORY = 'Other'
 
 export const EXPENSE_CATEGORIES = [
   'Teaching Materials',
-  'Stationery & Printing',
+  // Office stationery, files, pens, seals, ID cards.
+  'Stationery',
+  // Photocopies, printouts, certificates, report cards.
+  'Printing',
   'Cleaning & Housekeeping',
   'Food & Refreshments',
   'Maintenance',
@@ -32,7 +37,10 @@ export const EXPENSE_CATEGORIES = [
   // CA/audit fees, registrations, bank charges, software subscriptions,
   // insurance.
   'Professional & Compliance',
-  'Books & Uniforms for Resale',
+  // Textbooks and uniforms the school buys (mostly to sell on to parents;
+  // those sales are income under Sale of Books & Uniforms).
+  'Books',
+  'Uniforms',
   OTHER_CATEGORY,
 ] as const
 

@@ -8,14 +8,24 @@ import {
 } from './transaction-categories'
 
 describe('transaction categories', () => {
-  it('drops Salaries, Supplies and Insurance from expenses', () => {
-    for (const gone of ['Salaries', 'Supplies', 'Insurance']) {
+  it('drops retired expense categories', () => {
+    for (const gone of [
+      'Salaries',
+      'Supplies',
+      'Insurance',
+      'Books & Uniforms for Resale',
+      'Stationery & Printing',
+    ]) {
       expect(isValidCategory('expense', gone)).toBe(false)
     }
   })
 
   it('validates against the list for the given type', () => {
     expect(isValidCategory('expense', 'Teaching Materials')).toBe(true)
+    expect(isValidCategory('expense', 'Books')).toBe(true)
+    expect(isValidCategory('expense', 'Uniforms')).toBe(true)
+    expect(isValidCategory('expense', 'Stationery')).toBe(true)
+    expect(isValidCategory('expense', 'Printing')).toBe(true)
     expect(isValidCategory('income', 'Teaching Materials')).toBe(false)
     expect(isValidCategory('income', 'Sale of Books & Uniforms')).toBe(true)
     expect(isValidCategory('expense', 'Sale of Books & Uniforms')).toBe(false)
