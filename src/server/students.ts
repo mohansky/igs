@@ -12,6 +12,7 @@ import {
   user,
   classes,
 } from '#/db/schema'
+import { resolveParents } from '#/lib/guardians'
 import { requireRole } from './auth-utils'
 import { getSession } from './auth'
 
@@ -41,7 +42,22 @@ export const listStudents = createServerFn({ method: 'GET' }).handler(
         currentClassAcademicYear: currentClass.academicYear,
         admissionNumber: studentProfiles.admissionNumber,
         gender: studentProfiles.gender,
+        dateOfBirth: studentProfiles.dateOfBirth,
+        address: studentProfiles.address,
+        parentName: studentProfiles.parentName,
+        parentRelation: studentProfiles.parentRelation,
         parentPhone: studentProfiles.parentPhone,
+        parentEmail: studentProfiles.parentEmail,
+        parent2Name: studentProfiles.parent2Name,
+        parent2Relation: studentProfiles.parent2Relation,
+        parent2Phone: studentProfiles.parent2Phone,
+        parent2Email: studentProfiles.parent2Email,
+        parent3Name: studentProfiles.parent3Name,
+        parent3Relation: studentProfiles.parent3Relation,
+        parent3Phone: studentProfiles.parent3Phone,
+        parent3Email: studentProfiles.parent3Email,
+        emergencyContact: studentProfiles.emergencyContact,
+        emergencyPhone: studentProfiles.emergencyPhone,
         isActive: studentProfiles.isActive,
         photoUrl: studentProfiles.photoUrl,
         userEmail: user.email,
@@ -54,42 +70,56 @@ export const listStudents = createServerFn({ method: 'GET' }).handler(
         eq(studentProfiles.currentClassId, currentClass.id),
       )
 
-    // Fetch all parent links with user info
-    const allLinks = await db
-      .select({
-        studentProfileId: studentParents.studentProfileId,
-        parentUserId: studentParents.parentUserId,
-        relation: studentParents.relation,
-        parentName: user.name,
-        parentEmail: user.email,
-      })
-      .from(studentParents)
-      .innerJoin(user, eq(studentParents.parentUserId, user.id))
-
-    const parentsByStudent = new Map<
-      number,
-      {
-        parentUserId: string
-        parentName: string
-        parentEmail: string
-        relation: string | null
-      }[]
-    >()
-    for (const link of allLinks) {
-      const list = parentsByStudent.get(link.studentProfileId) ?? []
-      list.push({
-        parentUserId: link.parentUserId,
-        parentName: link.parentName,
-        parentEmail: link.parentEmail,
-        relation: link.relation,
-      })
-      parentsByStudent.set(link.studentProfileId, list)
-    }
-
-    return profiles.map((p) => ({
-      ...p,
-      parents: parentsByStudent.get(p.id) ?? [],
-    }))
+    // The three guardian slots are resolved into Father / Mother / one
+    // family email here, so the list gets display-ready columns.
+    return profiles.map(
+      ({
+        parentName,
+        parentRelation,
+        parentPhone,
+        parentEmail,
+        parent2Name,
+        parent2Relation,
+        parent2Phone,
+        parent2Email,
+        parent3Name,
+        parent3Relation,
+        parent3Phone,
+        parent3Email,
+        userEmail,
+        ...p
+      }) => {
+        const { father, mother, email } = resolveParents([
+          {
+            name: parentName,
+            relation: parentRelation,
+            phone: parentPhone,
+            email: parentEmail,
+          },
+          {
+            name: parent2Name,
+            relation: parent2Relation,
+            phone: parent2Phone,
+            email: parent2Email,
+          },
+          {
+            name: parent3Name,
+            relation: parent3Relation,
+            phone: parent3Phone,
+            email: parent3Email,
+          },
+        ])
+        return {
+          ...p,
+          fatherName: father?.name ?? null,
+          fatherPhone: father?.phone ?? null,
+          motherName: mother?.name ?? null,
+          motherPhone: mother?.phone ?? null,
+          // A guardian's email, else the student's own login email.
+          email: email ?? userEmail,
+        }
+      },
+    )
   },
 )
 

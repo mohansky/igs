@@ -517,11 +517,22 @@ function DocsPage() {
               </li>
               <li>
                 Search by name or admission number, and filter by class or
-                status. Tap a phone number to call it.
+                status. The list shows each student&apos;s date of birth,
+                address, mother&apos;s and father&apos;s names and numbers,
+                email and emergency number. Tap a phone number to call it.
               </li>
               <li>
-                Use the switch on a row to activate or deactivate a student.{' '}
-                <Strong>Export CSV</Strong> downloads the list.
+                Mother and Father are taken from the{' '}
+                <Strong>Parent / Guardian</Strong> entries on the profile, by
+                their Relation. Set Relation to Mother or Father if a name shows
+                in the wrong column or is missing.
+              </li>
+              <li>
+                Open the ⋮ menu at the end of a row to view the profile or mark
+                the student active or inactive
+                {isAdmin && <>, or delete them</>}. Inactive students have a red
+                badge under their name. <Strong>Export CSV</Strong> downloads
+                the list.
               </li>
             </Steps>
 
@@ -543,7 +554,7 @@ function DocsPage() {
             <SubHeading>Student page</SubHeading>
             <Bullets>
               <li>
-                Click <Strong>View</Strong> on a student. Tabs:{' '}
+                Click a student&apos;s name to open their page. Tabs:{' '}
                 <Strong>Profile</Strong>
                 {isAdmin && (
                   <>

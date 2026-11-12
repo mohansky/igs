@@ -74,6 +74,7 @@ export function CustomDataTable<TData, TValue>(
     pgSize,
     filters = [],
     defaultFilters,
+    hiddenColumns,
     filtersExtras,
     summarySlot,
     showDatePicker,
@@ -90,7 +91,9 @@ export function CustomDataTable<TData, TValue>(
     defaultFilters ?? [],
   )
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
+    React.useState<VisibilityState>(() =>
+      Object.fromEntries((hiddenColumns ?? []).map((id) => [id, false])),
+    )
   const [rowSelection, setRowSelection] = React.useState({})
 
   const { filteredData, dateRange, setDateRange } = useDateRangeFilter(

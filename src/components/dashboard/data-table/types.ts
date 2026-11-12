@@ -43,6 +43,9 @@ type BaseProps<TData, TValue> = {
   filters?: FilterConfig[]
   /** Initial column filter values, e.g. default a Year filter to the current year. */
   defaultFilters?: ColumnFiltersState
+  /** Column ids that are never shown but can still be filtered on, e.g. a
+   *  Status filter for a value displayed elsewhere in the row. */
+  hiddenColumns?: string[]
   filtersExtras?: React.ReactNode
   summarySlot?: React.ReactNode
   tableId?: string

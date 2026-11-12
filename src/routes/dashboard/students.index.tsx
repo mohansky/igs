@@ -1,6 +1,10 @@
 import { createFileRoute, Link, redirect } from '@tanstack/react-router'
 import TrashIcon from '#/components/icons/TrashIcon'
-import { IconButton } from '#/components/dashboard/IconButton'
+import {
+  MoreVerticalIcon,
+  UserBlock01Icon,
+  UserCheck01Icon,
+} from 'hugeicons-react'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -19,7 +23,13 @@ import {
 } from '#/components/ui/alert-dialog'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { Skeleton } from '#/components/ui/skeleton'
-import { Switch } from '#/components/ui/switch'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '#/components/ui/dropdown-menu'
 import { Card, CardContent } from '#/components/ui/card'
 import { Avatar, AvatarFallback, AvatarImage } from '#/components/ui/avatar'
 import {
@@ -32,6 +42,8 @@ import {
 import { listClasses } from '#/server/classes'
 import { classLabel, classLabelWithYear } from '#/lib/class-label'
 import { downloadCsv } from '#/lib/csv'
+import { genderShort } from '#/lib/guardians'
+import { formatDate } from '#/lib/utils'
 import EyeIcon from '#/components/icons/EyeIcon'
 import DownloadIcon from '#/components/icons/DownloadIcon'
 import AddIcon from '#/components/icons/AddIcon'
@@ -62,13 +74,6 @@ export const Route = createFileRoute('/dashboard/students/')({
   component: StudentsListPage,
 })
 
-interface ParentInfo {
-  parentUserId: string
-  parentName: string
-  parentEmail: string
-  relation: string | null
-}
-
 interface StudentRow {
   id: number
   studentName: string
@@ -83,12 +88,34 @@ interface StudentRow {
   currentClassAcademicYear: string | null
   admissionNumber: string | null
   gender: string | null
-  parentPhone: string | null
+  dateOfBirth: string | null
+  address: string | null
+  // Resolved from the three guardian slots by listStudents.
+  fatherName: string | null
+  fatherPhone: string | null
+  motherName: string | null
+  motherPhone: string | null
+  email: string | null
+  emergencyContact: string | null
+  emergencyPhone: string | null
   isActive: boolean | null
   photoUrl: string | null
-  userEmail: string | null
-  parents: ParentInfo[]
 }
+
+function PhoneLink({ phone }: { phone: string | null }) {
+  if (!phone) return <span className="text-muted-foreground">-</span>
+  return (
+    <a
+      href={`tel:${phone.replace(/\s+/g, '')}`}
+      className="text-primary hover:underline"
+    >
+      {phone}
+    </a>
+  )
+}
+
+const orDash = (value: string | null) =>
+  value ? value : <span className="text-muted-foreground">-</span>
 
 type ClassRowFields = {
   className: string | null
@@ -256,14 +283,42 @@ function StudentsListPage() {
     {
       accessorKey: 'studentName',
       header: 'Name',
-      cell: ({ row }) => (
-        <span className="font-medium">{row.getValue('studentName')}</span>
-      ),
-    },
-    {
-      accessorKey: 'admissionNumber',
-      header: 'Admission #',
-      cell: ({ row }) => row.getValue('admissionNumber') ?? '-',
+      // Admission number sits under the name, and the name search matches it.
+      cell: ({ row }) => {
+        const s = row.original
+        return (
+          <div className="flex flex-col">
+            <Link
+              to="/dashboard/students/$studentId"
+              params={{ studentId: String(s.id) }}
+              className="font-medium hover:underline"
+            >
+              {s.studentName}
+            </Link>
+            {(s.admissionNumber || s.isActive === false) && (
+              <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                {s.admissionNumber}
+                {s.isActive === false && (
+                  <Badge variant="destructive" className="text-[10px]">
+                    Inactive
+                  </Badge>
+                )}
+              </span>
+            )}
+          </div>
+        )
+      },
+      filterFn: (row, _id, value) => {
+        const q = String(value ?? '')
+          .trim()
+          .toLowerCase()
+        if (!q) return true
+        const s = row.original
+        return (
+          s.studentName.toLowerCase().includes(q) ||
+          (s.admissionNumber ?? '').toLowerCase().includes(q)
+        )
+      },
     },
     {
       id: 'currentClass',
@@ -273,14 +328,14 @@ function StudentsListPage() {
         const { label, year } = effectiveClass(row.original)
         if (label === '-') return <span>-</span>
         return (
-          <span className="flex items-center gap-1.5">
+          <div className="flex flex-col items-start gap-0.5">
             {label}
             {year && (
               <Badge variant="outline" className="font-mono text-[10px]">
                 {year}
               </Badge>
             )}
-          </span>
+          </div>
         )
       },
       filterFn: (row, _id, value) => {
@@ -293,84 +348,90 @@ function StudentsListPage() {
     {
       accessorKey: 'gender',
       header: 'Gender',
-      cell: ({ row }) => (
-        <span className="capitalize">{row.getValue('gender') ?? '-'}</span>
-      ),
+      cell: ({ row }) => genderShort(row.original.gender),
     },
     {
-      accessorKey: 'parentPhone',
-      header: 'Parent Phone',
-      cell: ({ row }) => {
-        const phone = row.getValue('parentPhone') as string | null
-        return phone ? (
-          <a
-            href={`tel:${phone.replace(/\s+/g, '')}`}
-            className="text-primary hover:underline"
-          >
-            {phone}
-          </a>
-        ) : (
-          '-'
-        )
-      },
+      accessorKey: 'dateOfBirth',
+      header: 'DoB',
+      cell: ({ row }) => formatDate(row.original.dateOfBirth),
     },
     {
-      id: 'linkedParents',
-      header: 'Linked Parents',
+      accessorKey: 'address',
+      header: 'Address',
       enableSorting: false,
       cell: ({ row }) => {
-        const parents = row.original.parents
-        if (!parents || parents.length === 0) {
-          return <span className="text-muted-foreground">-</span>
-        }
+        const address = row.original.address
+        if (!address) return orDash(null)
+        // Wraps to at most two lines; the full address is in the tooltip.
         return (
-          <div className="space-y-1">
-            {parents.map((p) => (
-              <div key={p.parentUserId}>
-                <p className="text-sm font-medium">
-                  {p.parentName}
-                  {p.relation && (
-                    <span className="ml-1 text-xs text-muted-foreground">
-                      ({p.relation})
-                    </span>
-                  )}
-                </p>
-                <p className="text-xs text-muted-foreground">{p.parentEmail}</p>
-              </div>
-            ))}
+          <div
+            className="line-clamp-2 min-w-48 max-w-64 whitespace-normal"
+            title={address}
+          >
+            {address}
           </div>
         )
       },
     },
     {
-      accessorKey: 'isActive',
-      header: 'Status',
+      accessorKey: 'motherName',
+      header: "Mother's Name",
+      cell: ({ row }) => orDash(row.original.motherName),
+    },
+    {
+      accessorKey: 'motherPhone',
+      header: "Mother's Contact",
+      enableSorting: false,
+      cell: ({ row }) => <PhoneLink phone={row.original.motherPhone} />,
+    },
+    {
+      accessorKey: 'fatherName',
+      header: "Father's Name",
+      cell: ({ row }) => orDash(row.original.fatherName),
+    },
+    {
+      accessorKey: 'fatherPhone',
+      header: "Father's Contact",
+      enableSorting: false,
+      cell: ({ row }) => <PhoneLink phone={row.original.fatherPhone} />,
+    },
+    {
+      accessorKey: 'email',
+      header: 'Email',
       cell: ({ row }) => {
-        const student = row.original
-        const active = student.isActive !== false
-        const pending =
-          toggleMutation.isPending &&
-          toggleMutation.variables?.studentId === student.id
+        const email = row.original.email
+        return email ? (
+          <a href={`mailto:${email}`} className="text-primary hover:underline">
+            {email}
+          </a>
+        ) : (
+          orDash(null)
+        )
+      },
+    },
+    {
+      accessorKey: 'emergencyPhone',
+      header: 'Emergency Contact',
+      enableSorting: false,
+      cell: ({ row }) => {
+        const s = row.original
         return (
-          <div className="flex items-center gap-2">
-            <Switch
-              checked={active}
-              disabled={pending}
-              onCheckedChange={(checked) =>
-                toggleMutation.mutate({
-                  studentId: student.id,
-                  isActive: checked,
-                })
-              }
-            />
-            {active ? (
-              <Badge variant="default">Active</Badge>
-            ) : (
-              <Badge variant="destructive">Inactive</Badge>
+          <div className="flex flex-col">
+            <PhoneLink phone={s.emergencyPhone} />
+            {s.emergencyContact && (
+              <span className="text-xs text-muted-foreground">
+                {s.emergencyContact}
+              </span>
             )}
           </div>
         )
       },
+    },
+    {
+      // Not shown (hiddenColumns below): inactive students get a badge under
+      // their name instead. Kept as a column so the Status filter works.
+      accessorKey: 'isActive',
+      header: 'Status',
       filterFn: (row, _id, value) => {
         if (!value || value === 'all') return true
         const active = row.getValue('isActive') as boolean | null
@@ -381,29 +442,72 @@ function StudentsListPage() {
     },
     {
       id: 'actions',
-      header: 'Actions',
+      header: () => <span className="sr-only">Actions</span>,
       enableSorting: false,
+      // Pinned to the right edge while the other columns scroll sideways,
+      // as on the Fees table.
+      meta: {
+        className:
+          'sticky right-0 z-10 bg-muted shadow-[-6px_0_6px_-6px_rgba(0,0,0,0.25)]',
+      },
       cell: ({ row }) => {
         const student = row.original
+        const active = student.isActive !== false
+        const pending =
+          toggleMutation.isPending &&
+          toggleMutation.variables?.studentId === student.id
         return (
-          <div className="flex gap-1">
-            <Link
-              to="/dashboard/students/$studentId"
-              params={{ studentId: String(student.id) }}
-            >
-              <Button variant="ghost" size="xs" title="View">
-                <EyeIcon size={16} />
-              </Button>
-            </Link>
-            {userRole === 'admin' && (
-              <IconButton
-                tooltip="Delete"
-                icon={TrashIcon}
-                className="text-destructive"
-                size="xs"
-                onClick={() => setDeleteTarget(student)}
-              />
-            )}
+          <div className="flex justify-end">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon-xs"
+                  aria-label={`Actions for ${student.studentName}`}
+                >
+                  <MoreVerticalIcon className="size-4" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem asChild>
+                  <Link
+                    to="/dashboard/students/$studentId"
+                    params={{ studentId: String(student.id) }}
+                  >
+                    <EyeIcon className="size-4" />
+                    View profile
+                  </Link>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  disabled={pending}
+                  onSelect={() =>
+                    toggleMutation.mutate({
+                      studentId: student.id,
+                      isActive: !active,
+                    })
+                  }
+                >
+                  {active ? (
+                    <UserBlock01Icon className="size-4" />
+                  ) : (
+                    <UserCheck01Icon className="size-4" />
+                  )}
+                  {active ? 'Mark as inactive' : 'Mark as active'}
+                </DropdownMenuItem>
+                {userRole === 'admin' && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      variant="destructive"
+                      onSelect={() => setDeleteTarget(student)}
+                    >
+                      <TrashIcon className="size-4" />
+                      Delete
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         )
       },
@@ -421,6 +525,7 @@ function StudentsListPage() {
               downloadCsv(
                 students.map((s) => ({
                   ...s,
+                  gender: genderShort(s.gender),
                   class: classLabelWithYear(
                     s.className,
                     s.classSection,
@@ -438,8 +543,18 @@ function StudentsListPage() {
                   { key: 'class', label: 'Admitted to' },
                   { key: 'currentClass', label: 'Current Class' },
                   { key: 'gender', label: 'Gender' },
-                  { key: 'parentPhone', label: 'Parent Phone' },
-                  { key: 'userEmail', label: 'Email' },
+                  { key: 'dateOfBirth', label: 'DoB' },
+                  { key: 'address', label: 'Address' },
+                  { key: 'motherName', label: "Mother's Name" },
+                  { key: 'motherPhone', label: "Mother's Contact Number" },
+                  { key: 'fatherName', label: "Father's Name" },
+                  { key: 'fatherPhone', label: "Father's Contact Number" },
+                  { key: 'email', label: 'Email Id' },
+                  { key: 'emergencyContact', label: 'Emergency Contact' },
+                  {
+                    key: 'emergencyPhone',
+                    label: 'Emergency Contact Number',
+                  },
                   { key: 'isActive', label: 'Active' },
                 ],
                 'students-export',
@@ -520,16 +635,12 @@ function StudentsListPage() {
             data={students}
             enableSelection={userRole === 'admin'}
             onSelectionChange={setSelected}
+            hiddenColumns={['isActive']}
             filters={[
               {
                 column: 'studentName',
-                placeholder: 'Search by name...',
-                label: 'Name',
-              },
-              {
-                column: 'admissionNumber',
-                placeholder: 'Search admission #...',
-                label: 'Admission #',
+                placeholder: 'Name or admission #...',
+                label: 'Search',
               },
               {
                 column: 'currentClass',
