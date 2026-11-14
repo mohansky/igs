@@ -1,9 +1,15 @@
+import { useMemo, useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
 import { useQuery } from '@tanstack/react-query'
 import { Badge } from '#/components/ui/badge'
 import { formatDate } from '#/lib/utils'
 import { getStudentAttendance } from '#/server/attendance'
 import { CustomDataTable } from './CustomDataTable'
+import {
+  MONTH_COLUMN_ID,
+  monthColumn,
+  monthFilterOptions,
+} from './data-table/month-filter'
 
 interface AttendanceRecord {
   id: number
@@ -26,6 +32,8 @@ const statusBadgeVariant = (status: string) => {
 }
 
 const columns: ColumnDef<AttendanceRecord>[] = [
+  // Hidden; only there for the Month filter.
+  monthColumn<AttendanceRecord>(),
   {
     accessorKey: 'date',
     header: 'Date',
@@ -67,11 +75,21 @@ export function AttendanceHistory({
       }) as Promise<AttendanceRecord[]>,
   })
 
+  const monthOptions = useMemo(
+    () => monthFilterOptions(records.map((r) => r.date)),
+    [records],
+  )
+
+  // The badges count the rows the filters leave visible.
+  const [visibleRows, setVisibleRows] = useState<AttendanceRecord[] | null>(
+    null,
+  )
+  const summaryRows = visibleRows ?? records
   const summary = {
-    total: records.length,
-    present: records.filter((r) => r.status === 'present').length,
-    absent: records.filter((r) => r.status === 'absent').length,
-    late: records.filter((r) => r.status === 'late').length,
+    total: summaryRows.length,
+    present: summaryRows.filter((r) => r.status === 'present').length,
+    absent: summaryRows.filter((r) => r.status === 'absent').length,
+    late: summaryRows.filter((r) => r.status === 'late').length,
   }
 
   if (isLoading) {
@@ -97,7 +115,16 @@ export function AttendanceHistory({
         data={records}
         showDatePicker
         dateField="date"
+        hiddenColumns={[MONTH_COLUMN_ID]}
+        onFilteredRowsChange={setVisibleRows}
         filters={[
+          {
+            column: MONTH_COLUMN_ID,
+            placeholder: 'Filter by month',
+            label: 'Month',
+            type: 'select',
+            options: monthOptions,
+          },
           {
             column: 'status',
             placeholder: 'Filter by status',

@@ -21,6 +21,10 @@ function DocsPage() {
   const isParent = userRole === 'student'
   const isAuditor = userRole === 'auditor'
   const isSchool = isAdmin || isStaff
+  // Pages the view-only auditor can open; they read the same sections
+  // (add/edit controls are hidden for them on the pages themselves).
+  const viewsSchool = isSchool || isAuditor
+  const viewsAdmin = isAdmin || isAuditor
 
   // Sections in page order; each renders only for the roles that can use it.
   const sections: { id: string; title: string; show: boolean }[] = [
@@ -35,15 +39,15 @@ function DocsPage() {
       title: isAdmin ? 'Fee Categories & Fee Summary' : 'Fee Summary',
       show: isAdmin || isAuditor,
     },
-    { id: 'students', title: 'Students', show: isSchool },
-    { id: 'enquiries', title: 'Enquiries', show: isSchool },
-    { id: 'submissions', title: 'Contact Submissions', show: isSchool },
+    { id: 'students', title: 'Students', show: viewsSchool },
+    { id: 'enquiries', title: 'Enquiries', show: viewsSchool },
+    { id: 'submissions', title: 'Contact Submissions', show: viewsSchool },
     { id: 'calendar', title: 'Calendar', show: true },
-    { id: 'staff', title: 'Staff', show: isAdmin },
-    { id: 'staff-attendance', title: 'Staff Attendance', show: isAdmin },
-    { id: 'salaries', title: 'Staff Salaries', show: isAdmin },
-    { id: 'expenses', title: 'Expenses & Income', show: isAdmin },
-    { id: 'classes', title: 'Classes', show: isAdmin },
+    { id: 'staff', title: 'Staff', show: viewsAdmin },
+    { id: 'staff-attendance', title: 'Staff Attendance', show: viewsAdmin },
+    { id: 'salaries', title: 'Staff Salaries', show: viewsAdmin },
+    { id: 'expenses', title: 'Expenses & Income', show: viewsAdmin },
+    { id: 'classes', title: 'Classes', show: viewsAdmin },
     { id: 'users', title: 'Users', show: isAdmin },
     { id: 'gallery', title: 'Gallery', show: isAdmin },
     { id: 'profile', title: 'Profile & Preferences', show: true },
@@ -184,7 +188,8 @@ function DocsPage() {
               and Classes, plus the <Strong>Concessions</Strong> and{' '}
               <Strong>Fee Summary</Strong> tabs under <NavLink>Fees</NavLink>.
               Add and edit controls are hidden, and nothing you open can be
-              changed.
+              changed. The sections below describe each page; skip the steps
+              that add or edit.
             </li>
           )}
         </Bullets>
@@ -206,9 +211,10 @@ function DocsPage() {
                   <Strong>tabs</Strong> to switch between them.
                 </li>
                 <li>
-                  Use the <Strong>date range</Strong> and{' '}
-                  <Strong>status</Strong> filters to see only Present, Absent or
-                  Late days. Badges at the top show the totals.
+                  Use the <Strong>month</Strong>, <Strong>date range</Strong>{' '}
+                  and <Strong>status</Strong> filters to see, say, one
+                  month&apos;s absences. The badges at the top total whatever
+                  the filters show.
                 </li>
               </Steps>
             ) : (
@@ -279,8 +285,9 @@ function DocsPage() {
               </li>
               <li>
                 <NavLink>My Salaries</NavLink> lists your monthly salary records
-                with their status. Click <Strong>Slip</Strong> to open a
-                printable salary slip (use Print / Save as PDF).
+                with their status. The Total, Paid and Pending cards follow the
+                status filter. Click <Strong>Slip</Strong> to open a printable
+                salary slip (use Print / Save as PDF).
               </li>
             </Bullets>
           </Section>
@@ -511,7 +518,7 @@ function DocsPage() {
       )}
 
       {/* Students — admin/staff */}
-      {isSchool && (
+      {viewsSchool && (
         <>
           <Section id="students" title={titleOf('students')}>
             <SubHeading first>Finding students</SubHeading>
@@ -592,7 +599,7 @@ function DocsPage() {
       )}
 
       {/* Enquiries — admin/staff */}
-      {isSchool && (
+      {viewsSchool && (
         <>
           <Section id="enquiries" title={titleOf('enquiries')}>
             <Bullets>
@@ -621,7 +628,7 @@ function DocsPage() {
       )}
 
       {/* Submissions — admin/staff */}
-      {isSchool && (
+      {viewsSchool && (
         <>
           <Section id="submissions" title={titleOf('submissions')}>
             <Bullets>
@@ -689,7 +696,7 @@ function DocsPage() {
       <Separator />
 
       {/* Staff — admin */}
-      {isAdmin && (
+      {viewsAdmin && (
         <>
           <Section id="staff" title={titleOf('staff')}>
             <Bullets>
@@ -725,7 +732,7 @@ function DocsPage() {
       )}
 
       {/* Staff Attendance — admin */}
-      {isAdmin && (
+      {viewsAdmin && (
         <>
           <Section id="staff-attendance" title={titleOf('staff-attendance')}>
             <SubHeading first>Marking</SubHeading>
@@ -786,7 +793,7 @@ function DocsPage() {
       )}
 
       {/* Staff Salaries — admin */}
-      {isAdmin && (
+      {viewsAdmin && (
         <>
           <Section id="salaries" title={titleOf('salaries')}>
             <Steps>
@@ -822,7 +829,7 @@ function DocsPage() {
       )}
 
       {/* Expenses — admin */}
-      {isAdmin && (
+      {viewsAdmin && (
         <>
           <Section id="expenses" title={titleOf('expenses')}>
             <Bullets>
@@ -866,7 +873,7 @@ function DocsPage() {
       )}
 
       {/* Classes — admin */}
-      {isAdmin && (
+      {viewsAdmin && (
         <>
           <Section id="classes" title={titleOf('classes')}>
             <Bullets>

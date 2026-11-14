@@ -1,11 +1,12 @@
 import { createFileRoute, Link } from '@tanstack/react-router'
 import { requireRouteRole } from '#/lib/route-guards'
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { format, parseISO } from 'date-fns'
 import { Badge } from '#/components/ui/badge'
 import { Button } from '#/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { StatCard, StatCardSkeleton } from '#/components/dashboard/StatCard'
 import { Skeleton } from '#/components/ui/skeleton'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { getStaffSalaryHistory } from '#/server/staff'
@@ -44,12 +45,16 @@ function MySalariesPage() {
       getStaffSalaryHistory({ data: { userId } }) as Promise<SalaryRow[]>,
   })
 
-  const totalPaid = salaries
-    .filter((s) => s.status === 'paid')
-    .reduce((sum, s) => sum + s.netPay, 0)
-  const totalPending = salaries
-    .filter((s) => s.status === 'pending')
-    .reduce((sum, s) => sum + s.netPay, 0)
+  // The cards total the rows the table's filters leave visible.
+  const [visibleRows, setVisibleRows] = useState<SalaryRow[] | null>(null)
+  const summaryRows = visibleRows ?? salaries
+  const totalNet = summaryRows.reduce((sum, r) => sum + r.netPay, 0)
+  const totalPaid = summaryRows
+    .filter((r) => r.status === 'paid')
+    .reduce((sum, r) => sum + r.netPay, 0)
+  const totalPending = summaryRows
+    .filter((r) => r.status === 'pending')
+    .reduce((sum, r) => sum + r.netPay, 0)
 
   const columns: ColumnDef<SalaryRow>[] = [
     {
@@ -142,16 +147,9 @@ function MySalariesPage() {
     return (
       <div className="space-y-6">
         <h1 className="text-2xl font-bold">My Salaries</h1>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {Array.from({ length: 2 }).map((_, i) => (
-            <Card key={i}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-4 w-24" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-7 w-32" />
-              </CardContent>
-            </Card>
+        <div className="grid gap-3 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <StatCardSkeleton key={i} />
           ))}
         </div>
         <Skeleton className="h-64 w-full" />
@@ -163,37 +161,24 @@ function MySalariesPage() {
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">My Salaries</h1>
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Paid
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-2xl font-bold text-green-600">
-              {formatCurrency(totalPaid)}
-            </p>
-          </CardContent>
-        </Card>
-        <Card>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">
-              Pending
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p
-              className={
-                totalPending > 0
-                  ? 'text-2xl font-bold text-amber-600'
-                  : 'text-2xl font-bold text-muted-foreground'
-              }
-            >
-              {formatCurrency(totalPending)}
-            </p>
-          </CardContent>
-        </Card>
+      <div className="grid gap-3 sm:grid-cols-3">
+        <StatCard
+          label="Total"
+          value={formatCurrency(totalNet)}
+          note={`${summaryRows.length} record${summaryRows.length === 1 ? '' : 's'}`}
+        />
+        <StatCard
+          label="Paid"
+          value={formatCurrency(totalPaid)}
+          valueClassName="text-green-600"
+        />
+        <StatCard
+          label="Pending"
+          value={formatCurrency(totalPending)}
+          valueClassName={
+            totalPending > 0 ? 'text-amber-600' : 'text-muted-foreground'
+          }
+        />
       </div>
 
       {salaries.length === 0 ? (
@@ -203,6 +188,7 @@ function MySalariesPage() {
           tableId="my-salaries"
           columns={columns}
           data={salaries}
+          onFilteredRowsChange={setVisibleRows}
           filters={[
             {
               column: 'status',
