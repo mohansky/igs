@@ -11,7 +11,7 @@ pnpm test         # Run tests (Vitest)
 pnpm lint         # ESLint check — runs, but the backlog of pre-existing errors is not yet cleared
 pnpm format       # Prettier check
 pnpm check        # Auto-fix format + lint
-pnpm exec tsc --noEmit  # Type check (no script for it)
+pnpm typecheck    # Type check
 
 # Database (Drizzle ORM + SQLite) — see "Database workflow" below before
 # touching schema.ts. In practice only db:push / db:push:prod are used.
