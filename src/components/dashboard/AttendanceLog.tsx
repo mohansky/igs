@@ -10,6 +10,11 @@ import { listClasses } from '#/server/classes'
 import { currentAcademicYear } from '#/lib/financial-year'
 import { CustomDataTable } from './CustomDataTable'
 import { MarkedBy } from './MarkedBy'
+import {
+  MONTH_COLUMN_ID,
+  monthColumn,
+  monthFilterOptions,
+} from './data-table/month-filter'
 
 interface AttendanceRecord {
   id: number
@@ -169,6 +174,7 @@ export function AttendanceLog() {
           />
         ),
       },
+      monthColumn<AttendanceRecord>(),
     ],
     [classLabelById, classYearById],
   )
@@ -199,6 +205,11 @@ export function AttendanceLog() {
         .map((id) => ({ label: labelFor(id), value: String(id) })),
     ]
   }, [records, classLabelById, classYearById])
+
+  const monthOptions = useMemo(
+    () => monthFilterOptions(records.map((r) => r.date)),
+    [records],
+  )
 
   // Distinct academic years present in the records, most recent first.
   const yearOptions = useMemo(() => {
@@ -285,6 +296,7 @@ export function AttendanceLog() {
         showDatePicker
         dateField="date"
         onFilteredRowsChange={setFilteredRows}
+        hiddenColumns={[MONTH_COLUMN_ID]}
         filtersExtras={exportButton}
         summarySlot={summaryBar}
         defaultFilters={
@@ -297,6 +309,13 @@ export function AttendanceLog() {
             label: 'Year',
             type: 'select',
             options: yearOptions,
+          },
+          {
+            column: MONTH_COLUMN_ID,
+            placeholder: 'Filter by month',
+            label: 'Month',
+            type: 'select',
+            options: monthOptions,
           },
           {
             column: 'studentName',

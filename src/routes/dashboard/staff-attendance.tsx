@@ -33,6 +33,11 @@ import { LastSavedBy, MarkedBy } from '#/components/dashboard/MarkedBy'
 import { fyStartYearOf } from '#/lib/financial-year'
 import { attendanceStatusLabel } from '#/lib/leave-policy'
 import type { LeaveType } from '#/lib/leave-policy'
+import {
+  MONTH_COLUMN_ID,
+  monthColumn,
+  monthFilterOptions,
+} from '#/components/dashboard/data-table/month-filter'
 
 export const Route = createFileRoute('/dashboard/staff-attendance')({
   beforeLoad: ({ context }) => {
@@ -491,6 +496,7 @@ const historyColumns: ColumnDef<StaffAttendanceRecord>[] = [
       <MarkedBy name={row.original.markedByName} at={row.original.markedAt} />
     ),
   },
+  monthColumn<StaffAttendanceRecord>(),
 ]
 
 function StaffAttendanceHistory() {
@@ -511,6 +517,11 @@ function StaffAttendanceHistory() {
       leave: filteredRows.filter((r) => r.status === 'leave').length,
     }),
     [filteredRows],
+  )
+
+  const monthOptions = useMemo(
+    () => monthFilterOptions(records.map((r) => r.date)),
+    [records],
   )
 
   const staffOptions = useMemo(() => {
@@ -574,7 +585,15 @@ function StaffAttendanceHistory() {
         dateField="date"
         onFilteredRowsChange={setFilteredRows}
         summarySlot={summaryBar}
+        hiddenColumns={[MONTH_COLUMN_ID]}
         filters={[
+          {
+            column: MONTH_COLUMN_ID,
+            placeholder: 'Filter by month',
+            label: 'Month',
+            type: 'select',
+            options: monthOptions,
+          },
           {
             column: 'staffName',
             placeholder: 'Select staff...',

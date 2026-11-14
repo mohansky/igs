@@ -245,10 +245,11 @@ function DocsPage() {
                     Open the <Strong>View History</Strong> tab.
                   </li>
                   <li>
-                    Filter by <Strong>date range</Strong>,{' '}
-                    <Strong>student</Strong> or <Strong>status</Strong>. The{' '}
-                    <Strong>Marked by</Strong> column shows who saved each
-                    record.
+                    Filter by <Strong>month</Strong>,{' '}
+                    <Strong>date range</Strong>, <Strong>student</Strong> or{' '}
+                    <Strong>status</Strong>. The counts and attendance rate
+                    follow the filters. The <Strong>Marked by</Strong> column
+                    shows who saved each record.
                   </li>
                   <li>
                     Click <Strong>Export CSV</Strong> to download what&apos;s
@@ -745,9 +746,10 @@ function DocsPage() {
             <SubHeading>History</SubHeading>
             <Bullets>
               <li>
-                <Strong>View History</Strong> filters by staff, status or date.
-                Badges total Present, Absent, Late and Leave, and the{' '}
-                <Strong>Marked by</Strong> column shows who saved each record.
+                <Strong>View History</Strong> filters by month, staff, status or
+                date range. Badges total Present, Absent, Late and Leave, and
+                the <Strong>Marked by</Strong> column shows who saved each
+                record.
               </li>
             </Bullets>
 
