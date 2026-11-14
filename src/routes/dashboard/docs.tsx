@@ -796,6 +796,11 @@ function DocsPage() {
                 one-off record with <Strong>New Salary Record</Strong>.
               </li>
               <li>
+                The Total, Paid and Pending cards and{' '}
+                <Strong>Export CSV</Strong> follow the month, staff and status
+                filters, e.g. pick a month to see that month&apos;s payroll.
+              </li>
+              <li>
                 Mark salaries paid one at a time or select several and{' '}
                 <Strong>Mark salaries as paid</Strong> with the paid date and
                 method.

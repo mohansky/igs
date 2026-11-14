@@ -40,8 +40,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '#/components/ui/select'
-import { Card, CardContent, CardHeader, CardTitle } from '#/components/ui/card'
+import { Card, CardContent } from '#/components/ui/card'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
+import { StatCard, StatCardSkeleton } from '#/components/dashboard/StatCard'
 import { MarkedBy } from '#/components/dashboard/MarkedBy'
 import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import { Skeleton } from '#/components/ui/skeleton'
@@ -130,6 +131,7 @@ function SalariesPage() {
   )
   const [bulkDeleteOpen, setBulkDeleteOpen] = useState(false)
 
+  const [visibleRows, setVisibleRows] = useState<SalaryRecord[] | null>(null)
   const { data: salaries = [], isLoading } = useQuery({
     queryKey: ['salaries'],
     queryFn: () => listSalaries() as Promise<SalaryRecord[]>,
@@ -334,12 +336,14 @@ function SalariesPage() {
     saveMutation.mutate()
   }
 
-  // Summary
-  const totalNet = salaries.reduce((sum, s) => sum + s.netPay, 0)
-  const totalPaid = salaries
+  // Summary: follows the table's filters (month, staff, status), like the
+  // Fees and Expenses cards. Null until the table reports its rows.
+  const summaryRows = visibleRows ?? salaries
+  const totalNet = summaryRows.reduce((sum, s) => sum + s.netPay, 0)
+  const totalPaid = summaryRows
     .filter((s) => s.status === 'paid')
     .reduce((sum, s) => sum + s.netPay, 0)
-  const totalPending = salaries
+  const totalPending = summaryRows
     .filter((s) => s.status === 'pending')
     .reduce((sum, s) => sum + s.netPay, 0)
 
@@ -498,7 +502,7 @@ function SalariesPage() {
             variant="outline"
             onClick={() =>
               downloadCsv(
-                salaries,
+                summaryRows,
                 [
                   { key: 'month', label: 'Month' },
                   { key: 'staffName', label: 'Staff Name' },
@@ -514,7 +518,7 @@ function SalariesPage() {
                 'salaries-export',
               )
             }
-            disabled={salaries.length === 0}
+            disabled={summaryRows.length === 0}
           >
             <DownloadIcon className="h-4 w-4" />
             Export CSV
@@ -527,16 +531,9 @@ function SalariesPage() {
 
       {isLoading ? (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
+          <div className="grid gap-3 sm:grid-cols-3">
             {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i}>
-                <CardHeader className="pb-2">
-                  <Skeleton className="h-4 w-24" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-7 w-28" />
-                </CardContent>
-              </Card>
+              <StatCardSkeleton key={i} />
             ))}
           </div>
           <Card>
@@ -560,46 +557,24 @@ function SalariesPage() {
         </>
       ) : (
         <>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Salaries
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold">{formatCurrency(totalNet)}</p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Paid
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-2xl font-bold text-green-600">
-                  {formatCurrency(totalPaid)}
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Pending
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p
-                  className={cn(
-                    'text-2xl font-bold',
-                    totalPending > 0 ? 'text-amber-600' : 'text-green-600',
-                  )}
-                >
-                  {formatCurrency(totalPending)}
-                </p>
-              </CardContent>
-            </Card>
+          <div className="grid gap-3 sm:grid-cols-3">
+            <StatCard
+              label="Total Salaries"
+              value={formatCurrency(totalNet)}
+              note={`${summaryRows.length} record${summaryRows.length === 1 ? '' : 's'}`}
+            />
+            <StatCard
+              label="Paid"
+              value={formatCurrency(totalPaid)}
+              valueClassName="text-green-600"
+            />
+            <StatCard
+              label="Pending"
+              value={formatCurrency(totalPending)}
+              valueClassName={
+                totalPending > 0 ? 'text-amber-600' : 'text-green-600'
+              }
+            />
           </div>
 
           {selected.length > 0 && (
@@ -645,6 +620,7 @@ function SalariesPage() {
             data={salaries}
             enableSelection
             onSelectionChange={setSelected}
+            onFilteredRowsChange={setVisibleRows}
             filters={[
               {
                 column: 'month',
