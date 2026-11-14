@@ -34,3 +34,5 @@ igs-google-ads-action-plan.md
 
 # One-off DB scripts (seeders, fixers, resets) — local only, not deployed
 scripts/
+# Local planning notes — never commit
+notes/

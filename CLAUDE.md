@@ -8,9 +8,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev          # Dev server on port 3000
 pnpm build        # Production build (Cloudflare Workers)
 pnpm test         # Run tests (Vitest)
-pnpm lint         # ESLint check — currently fails: `eslint` isn't a direct devDependency, so it has no bin shim
+pnpm lint         # ESLint check — runs, but the backlog of pre-existing errors is not yet cleared
 pnpm format       # Prettier check
-pnpm check        # Auto-fix format + lint (the eslint half fails, as above)
+pnpm check        # Auto-fix format + lint
 pnpm exec tsc --noEmit  # Type check (no script for it)
 
 # Database (Drizzle ORM + SQLite) — see "Database workflow" below before
