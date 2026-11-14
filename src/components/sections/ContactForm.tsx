@@ -28,7 +28,7 @@ export function ContactForm() {
       email: formData.get('email') as string,
       childAgeOrClass: formData.get('childAgeOrClass') as string,
       message: formData.get('message') as string,
-      website: (formData.get('website') as string) ?? '',
+      website: (formData.get('website') as string | null) ?? '',
       formStartedAt: formStartedAt.current,
     }
 

@@ -5,6 +5,11 @@
 // rows, so renames/reordering/deactivation done in the app are kept.
 import { config } from 'dotenv'
 
+import { sql } from 'drizzle-orm'
+import { drizzle } from 'drizzle-orm/libsql'
+import { feeCategories } from './schema'
+import { DEFAULT_FEE_CATEGORIES } from '../lib/fee-categories'
+
 const PROD = process.argv.includes('--prod')
 if (PROD) {
   config({ path: '.env.prod.local', override: true })
@@ -20,11 +25,6 @@ if (!process.env.DATABASE_URL) {
 console.log(
   `${PROD ? '⚠️  PRODUCTION' : 'Staging'} database: ${new URL(process.env.DATABASE_URL).host}`,
 )
-
-import { sql } from 'drizzle-orm'
-import { drizzle } from 'drizzle-orm/libsql'
-import { feeCategories } from './schema'
-import { DEFAULT_FEE_CATEGORIES } from '../lib/fee-categories'
 
 const db = drizzle({
   connection: {

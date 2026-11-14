@@ -44,7 +44,7 @@ export function TableFilters<TData>({
     <div className="my-2 grid grid-cols-2 items-end gap-3 sm:flex sm:flex-wrap sm:gap-4">
       {filters.map((filter) => {
         const column = table.getColumn(filter.column)
-        const current = (column?.getFilterValue() as string) ?? ''
+        const current = (column?.getFilterValue() as string | undefined) ?? ''
 
         return (
           <div key={filter.column} className="flex min-h-14 flex-col gap-1">

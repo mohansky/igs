@@ -115,10 +115,10 @@ export const getFeePlanOptions = createServerFn({ method: 'GET' })
     const tuition =
       candidateFees.find((f) => f.categoryId === tuitionId) ??
       candidateFees.find((f) => /tuition/i.test(f.description ?? '')) ??
-      candidateFees[0]
+      candidateFees.at(0)
     let suggestedReferenceFee: number | null = tuition?.amount ?? null
     if (suggestedReferenceFee === null) {
-      const [common] = await db
+      const commonRows = await db
         .select({ amount: fees.amount, n: count() })
         .from(fees)
         .innerJoin(studentProfiles, eq(fees.studentUserId, studentProfiles.id))
@@ -134,7 +134,7 @@ export const getFeePlanOptions = createServerFn({ method: 'GET' })
         .groupBy(fees.amount)
         .orderBy(desc(count()))
         .limit(1)
-      suggestedReferenceFee = common?.amount ?? null
+      suggestedReferenceFee = commonRows.at(0)?.amount ?? null
     }
 
     return {
@@ -168,16 +168,18 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
 
     return db.transaction(async (tx) => {
       const tuitionId = await getTuitionCategoryId(tx)
-      const [existing] = await tx
-        .select()
-        .from(studentFeePlans)
-        .where(
-          and(
-            eq(studentFeePlans.studentProfileId, data.studentProfileId),
-            eq(studentFeePlans.academicYear, data.academicYear),
-          ),
-        )
-        .limit(1)
+      const existing = (
+        await tx
+          .select()
+          .from(studentFeePlans)
+          .where(
+            and(
+              eq(studentFeePlans.studentProfileId, data.studentProfileId),
+              eq(studentFeePlans.academicYear, data.academicYear),
+            ),
+          )
+          .limit(1)
+      ).at(0)
       const wasConcession = existing?.planType === 'concession'
 
       // Nothing recorded and nothing to change.
@@ -190,18 +192,20 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
         if (data.referenceFee === undefined) {
           throw new Error('Enter the reference fee (the standard annual fee).')
         }
-        openFeeId = wasConcession && existing ? existing.openFeeId : null
+        openFeeId = wasConcession ? existing.openFeeId : null
         if (!openFeeId && data.convertFeeId) {
-          const [fee] = await tx
-            .select({
-              id: fees.id,
-              studentUserId: fees.studentUserId,
-              isOpen: fees.isOpen,
-              categoryId: fees.categoryId,
-            })
-            .from(fees)
-            .where(eq(fees.id, data.convertFeeId))
-            .limit(1)
+          const fee = (
+            await tx
+              .select({
+                id: fees.id,
+                studentUserId: fees.studentUserId,
+                isOpen: fees.isOpen,
+                categoryId: fees.categoryId,
+              })
+              .from(fees)
+              .where(eq(fees.id, data.convertFeeId))
+              .limit(1)
+          ).at(0)
           if (!fee || fee.studentUserId !== studentKey) {
             throw new Error('That fee does not belong to this student.')
           }
@@ -235,7 +239,7 @@ export const setStudentFeePlan = createServerFn({ method: 'POST' })
           openFeeId = created.id
         }
         await syncFeeFromPayments(openFeeId, tx)
-      } else if (wasConcession && existing?.openFeeId) {
+      } else if (wasConcession && existing.openFeeId) {
         const amount = existing.referenceFee
         if (!amount) {
           throw new Error(

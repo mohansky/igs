@@ -143,7 +143,7 @@ function ChangePlanDialog({
     referenceFee !== ''
       ? referenceFee
       : alreadyConcession
-        ? String(existing?.referenceFee ?? '')
+        ? String(existing.referenceFee ?? '')
         : options?.suggestedReferenceFee != null
           ? String(options.suggestedReferenceFee)
           : ''
@@ -246,7 +246,7 @@ function ChangePlanDialog({
           {planType === 'standard' ? (
             <p className="text-sm text-muted-foreground">
               {alreadyConcession
-                ? `The open fee for ${year} becomes a normal fee of ${formatCurrency(existing?.referenceFee ?? 0)}, with payments so far counted against it.`
+                ? `The open fee for ${year} becomes a normal fee of ${formatCurrency(existing.referenceFee ?? 0)}, with payments so far counted against it.`
                 : `The student is already on the standard plan for ${year}.`}
             </p>
           ) : (

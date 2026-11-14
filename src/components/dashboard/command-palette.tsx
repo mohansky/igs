@@ -249,7 +249,7 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
 
     if (q && isStaffOrAdmin) {
       for (const s of students) {
-        const name = s.studentName?.toLowerCase() ?? ''
+        const name = s.studentName.toLowerCase()
         const adm = (s.admissionNumber ?? '').toLowerCase()
         if (name.includes(q) || adm.includes(q)) {
           items.push({
@@ -266,7 +266,7 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
 
     if (q) {
       for (const e of events) {
-        if (e.title?.toLowerCase().includes(q)) {
+        if (e.title.toLowerCase().includes(q)) {
           items.push({
             kind: 'event',
             id: `event-${e.id}`,
@@ -319,7 +319,7 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
       setActiveIndex((i) => Math.max(i - 1, 0))
     } else if (e.key === 'Enter') {
       e.preventDefault()
-      const item = results[activeIndex]
+      const item = results.at(activeIndex)
       if (item) go(item.to)
     }
   }

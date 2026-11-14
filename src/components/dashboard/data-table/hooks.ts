@@ -91,7 +91,7 @@ export function useDateRangeFilter<TData>(
   const [dateRange, setDateRange] = React.useState<DateRange | undefined>()
 
   const filteredData = React.useMemo(() => {
-    if (!enabled || !dateField || !dateRange?.from || !dateRange?.to) {
+    if (!enabled || !dateField || !dateRange?.from || !dateRange.to) {
       return data
     }
     const start = startOfDay(dateRange.from)

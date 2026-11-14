@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 pnpm dev          # Dev server on port 3000
 pnpm build        # Production build (Cloudflare Workers)
 pnpm test         # Run tests (Vitest)
-pnpm lint         # ESLint check — runs, but the backlog of pre-existing errors is not yet cleared
+pnpm lint         # ESLint check
 pnpm format       # Prettier check
 pnpm check        # Auto-fix format + lint
 pnpm typecheck    # Type check

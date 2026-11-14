@@ -3,7 +3,8 @@ import { requireRouteRole } from '#/lib/route-guards'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '#/components/ui/button'
-import { StaffForm, type StaffFormData } from '#/components/dashboard/StaffForm'
+import { StaffForm } from '#/components/dashboard/StaffForm'
+import type { StaffFormData } from '#/components/dashboard/StaffForm'
 import { createStaff } from '#/server/staff'
 
 export const Route = createFileRoute('/dashboard/staff/new')({

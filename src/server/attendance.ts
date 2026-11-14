@@ -10,12 +10,12 @@ import {
   studentParents,
   user,
 } from '#/db/schema'
+import { getSession } from './auth'
+import { requireRole } from './auth-utils'
 
 // Who last saved a record. Every save re-stamps all rows in it, so this is
 // "last saved by", not "first marked by".
 const markedBy = alias(user, 'marked_by')
-import { getSession } from './auth'
-import { requireRole } from './auth-utils'
 
 const dateString = z
   .string()
@@ -183,11 +183,13 @@ export const getStudentAttendance = createServerFn({ method: 'GET' })
     // If a specific student profile ID is given, verify access
     let studentUserId = session.user.id
     if (data.studentProfileId) {
-      const [profile] = await db
-        .select()
-        .from(studentProfiles)
-        .where(eq(studentProfiles.id, data.studentProfileId))
-        .limit(1)
+      const profile = (
+        await db
+          .select()
+          .from(studentProfiles)
+          .where(eq(studentProfiles.id, data.studentProfileId))
+          .limit(1)
+      ).at(0)
       if (!profile) throw new Error('Forbidden')
 
       // Staff/admin can view any student; others must own or be a linked parent

@@ -5,7 +5,7 @@ import { db } from '#/db'
 import {
   user,
   account,
-  session,
+  session as sessionTable,
   staffProfiles,
   staffSalaries,
   staffSalaryHikes,
@@ -139,7 +139,7 @@ export const getStaffProfile = createServerFn({ method: 'GET' })
       .where(eq(user.id, data.userId))
       .limit(1)
     if (!userRow[0]) return null
-    const raw = profile[0] ?? null
+    const raw = profile.at(0) ?? null
     return {
       user: userRow[0],
       profile: raw
@@ -346,7 +346,7 @@ export const deleteStaff = createServerFn({ method: 'POST' })
       .where(eq(staffAttendance.userId, data.userId))
     await db.delete(staffSalaries).where(eq(staffSalaries.userId, data.userId))
     await db.delete(staffProfiles).where(eq(staffProfiles.userId, data.userId))
-    await db.delete(session).where(eq(session.userId, data.userId))
+    await db.delete(sessionTable).where(eq(sessionTable.userId, data.userId))
     await db.delete(account).where(eq(account.userId, data.userId))
     await db.delete(user).where(eq(user.id, data.userId))
     return { success: true }

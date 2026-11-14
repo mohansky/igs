@@ -3,15 +3,15 @@ import { and, count, eq, gte, lte } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { db } from '#/db'
 import { staffAttendance, staffProfiles, user } from '#/db/schema'
-
-// Who last saved a record. The marker saves the whole roster at once, so
-// this is "last saved by" for the day.
-const markedBy = alias(user, 'marked_by')
 import { requireRole } from './auth-utils'
 import { currentFyStartYear } from '#/lib/financial-year'
 import { LEAVE_TYPES, leavePolicyFor } from '#/lib/leave-policy'
 import type { LeavePolicy } from '#/lib/leave-policy'
 import { z } from 'zod'
+
+// Who last saved a record. The marker saves the whole roster at once, so
+// this is "last saved by" for the day.
+const markedBy = alias(user, 'marked_by')
 
 const dateString = z
   .string()

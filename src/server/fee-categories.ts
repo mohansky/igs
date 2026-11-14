@@ -29,11 +29,13 @@ type Db = typeof db | Parameters<Parameters<typeof db.transaction>[0]>[0]
 
 // The Tuition category's id, found by key (not name) so renames are safe.
 export async function getTuitionCategoryId(tx: Db = db): Promise<number> {
-  const [row] = await tx
-    .select({ id: feeCategories.id })
-    .from(feeCategories)
-    .where(eq(feeCategories.key, TUITION_KEY))
-    .limit(1)
+  const row = (
+    await tx
+      .select({ id: feeCategories.id })
+      .from(feeCategories)
+      .where(eq(feeCategories.key, TUITION_KEY))
+      .limit(1)
+  ).at(0)
   if (!row) {
     throw new Error(
       'Fee categories are not set up yet. Run `pnpm db:seed:categories`.',
@@ -44,11 +46,13 @@ export async function getTuitionCategoryId(tx: Db = db): Promise<number> {
 
 // A category new fees may use: it must exist and be active.
 export async function assertActiveCategory(categoryId: number, tx: Db = db) {
-  const [row] = await tx
-    .select({ isActive: feeCategories.isActive })
-    .from(feeCategories)
-    .where(eq(feeCategories.id, categoryId))
-    .limit(1)
+  const row = (
+    await tx
+      .select({ isActive: feeCategories.isActive })
+      .from(feeCategories)
+      .where(eq(feeCategories.id, categoryId))
+      .limit(1)
+  ).at(0)
   if (!row) throw new Error('Fee category not found.')
   if (!row.isActive) throw new Error('That fee category is no longer active.')
 }
@@ -107,11 +111,13 @@ export const updateFeeCategory = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireRole(['admin'])
     const { id, ...updates } = data
-    const [existing] = await db
-      .select({ key: feeCategories.key })
-      .from(feeCategories)
-      .where(eq(feeCategories.id, id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ key: feeCategories.key })
+        .from(feeCategories)
+        .where(eq(feeCategories.id, id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Fee category not found.')
     if (existing.key === TUITION_KEY && updates.isActive === false) {
       throw new Error(
@@ -149,11 +155,13 @@ export const deleteFeeCategory = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({ key: feeCategories.key })
-      .from(feeCategories)
-      .where(eq(feeCategories.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ key: feeCategories.key })
+        .from(feeCategories)
+        .where(eq(feeCategories.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Fee category not found.')
     if (existing.key === TUITION_KEY) {
       throw new Error('Tuition Fee cannot be deleted.')

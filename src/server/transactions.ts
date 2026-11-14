@@ -111,16 +111,18 @@ export const updateTransaction = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({
-        date: transactions.date,
-        type: transactions.type,
-        category: transactions.category,
-        description: transactions.description,
-      })
-      .from(transactions)
-      .where(eq(transactions.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({
+          date: transactions.date,
+          type: transactions.type,
+          category: transactions.category,
+          description: transactions.description,
+        })
+        .from(transactions)
+        .where(eq(transactions.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Transaction not found')
     const before = {
       type: existing.type as TransactionType,
@@ -150,11 +152,13 @@ export const deleteTransaction = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({ date: transactions.date })
-      .from(transactions)
-      .where(eq(transactions.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ date: transactions.date })
+        .from(transactions)
+        .where(eq(transactions.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Transaction not found')
     await assertDatesUnlocked(existing.date)
     await db.delete(transactions).where(eq(transactions.id, data.id))
@@ -185,11 +189,13 @@ export const splitTransaction = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [original] = await db
-      .select()
-      .from(transactions)
-      .where(eq(transactions.id, data.id))
-      .limit(1)
+    const original = (
+      await db
+        .select()
+        .from(transactions)
+        .where(eq(transactions.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!original) throw new Error('Transaction not found')
     await assertDatesUnlocked(original.date)
 

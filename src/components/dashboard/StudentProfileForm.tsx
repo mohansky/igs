@@ -505,14 +505,14 @@ export function StudentProfileForm({
                 <div className="space-y-2">
                   <Label>Name</Label>
                   <Input
-                    value={(data[nameKey] as string) ?? ''}
+                    value={(data[nameKey] as string | null) ?? ''}
                     onChange={(e) => update(nameKey, e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Relation</Label>
                   <Input
-                    value={(data[relationKey] as string) ?? ''}
+                    value={(data[relationKey] as string | null) ?? ''}
                     onChange={(e) => update(relationKey, e.target.value)}
                     placeholder="e.g. Father, Mother, Guardian"
                   />
@@ -520,7 +520,7 @@ export function StudentProfileForm({
                 <div className="space-y-2">
                   <Label>Phone</Label>
                   <Input
-                    value={(data[phoneKey] as string) ?? ''}
+                    value={(data[phoneKey] as string | null) ?? ''}
                     onChange={(e) => update(phoneKey, e.target.value)}
                   />
                 </div>
@@ -528,14 +528,14 @@ export function StudentProfileForm({
                   <Label>Email</Label>
                   <Input
                     type="email"
-                    value={(data[emailKey] as string) ?? ''}
+                    value={(data[emailKey] as string | null) ?? ''}
                     onChange={(e) => update(emailKey, e.target.value)}
                   />
                 </div>
                 <div className="space-y-2">
                   <Label>Occupation</Label>
                   <Input
-                    value={(data[occupationKey] as string) ?? ''}
+                    value={(data[occupationKey] as string | null) ?? ''}
                     onChange={(e) => update(occupationKey, e.target.value)}
                   />
                 </div>

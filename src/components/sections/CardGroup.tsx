@@ -1,5 +1,6 @@
 import type { VariantProps } from 'class-variance-authority'
-import { Card, cardVariants } from '#/components/ui/card'
+import type { cardVariants } from '#/components/ui/card'
+import { Card } from '#/components/ui/card'
 import { cn } from '#/lib/utils'
 
 interface CardGroupProps<T> {

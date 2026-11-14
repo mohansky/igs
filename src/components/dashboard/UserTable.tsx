@@ -65,7 +65,7 @@ export function UserTable({
   const [confirmUserId, setConfirmUserId] = useState<string | null>(null)
 
   const isLoading = (id: string) =>
-    (roleMutation.isPending && roleMutation.variables?.userId === id) ||
+    (roleMutation.isPending && roleMutation.variables.userId === id) ||
     (removeMutation.isPending && removeMutation.variables === id)
 
   const columns: ColumnDef<User>[] = [
@@ -84,7 +84,7 @@ export function UserTable({
       accessorKey: 'role',
       header: 'Role',
       cell: ({ row }) => {
-        const role = (row.getValue('role') as string) ?? 'student'
+        const role = (row.getValue('role') as string | null) ?? 'student'
         return <Badge variant={getRoleVariant(role)}>{role}</Badge>
       },
       filterFn: (row, _id, value) => {

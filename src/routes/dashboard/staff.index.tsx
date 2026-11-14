@@ -242,7 +242,7 @@ function StaffListPage() {
         const active = s.isActive !== false
         const pending =
           toggleMutation.isPending &&
-          toggleMutation.variables?.userId === s.userId
+          toggleMutation.variables.userId === s.userId
         return (
           <div className="flex items-center gap-2">
             <Switch

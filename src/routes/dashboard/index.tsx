@@ -7,13 +7,13 @@ import { Skeleton } from '#/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '#/components/ui/toggle-group'
 import { getChildrenByParent } from '#/server/students'
 import { getDashboardStats } from '#/server/analytics'
-import { listBirthdays, type Birthday } from '#/server/birthdays'
+import { listBirthdays } from '#/server/birthdays'
+import type { Birthday } from '#/server/birthdays'
 import {
   getMonthlyOverview,
   getTransactionCategoryTotals,
-  type MonthlyOverviewRow,
-  type TransactionType,
 } from '#/server/transactions'
+import type { MonthlyOverviewRow, TransactionType } from '#/server/transactions'
 import { cn, formatCurrency, formatDate } from '#/lib/utils'
 import { OTHER_CATEGORY } from '#/lib/transaction-categories'
 import {
@@ -78,7 +78,7 @@ function DashboardOverview() {
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold">
-          Welcome, {session.user.name ?? 'User'}
+          Welcome, {session.user.name || 'User'}
         </h1>
         <p className="text-muted-foreground">
           {userRole === 'admin' && 'Manage your school from here.'}

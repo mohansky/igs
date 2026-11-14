@@ -197,7 +197,7 @@ export const Route = createRootRouteWithContext<MyRouterContext>()({
 // carry internals (DB driver text, SQL, stack frames), so show a generic
 // message and keep the detail server-side.
 function RootErrorComponent({ error }: { error: Error }) {
-  const message = error.message ?? ''
+  const message = error.message || ''
   const isAuthError =
     message === 'Unauthorized' ||
     message === 'Forbidden' ||

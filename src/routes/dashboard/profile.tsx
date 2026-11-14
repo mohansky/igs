@@ -36,15 +36,11 @@ import {
   setThemeMode,
   subscribeToPreferences,
   LANDING_OPTIONS,
-  type DateFormat,
-  type Density,
-  type ThemeMode,
 } from '#/lib/preferences'
+import type { DateFormat, Density, ThemeMode } from '#/lib/preferences'
 import { Switch } from '#/components/ui/switch'
-import {
-  StudentProfileForm,
-  type ProfileData,
-} from '#/components/dashboard/StudentProfileForm'
+import { StudentProfileForm } from '#/components/dashboard/StudentProfileForm'
+import type { ProfileData } from '#/components/dashboard/StudentProfileForm'
 import {
   getStudentProfile,
   createStudentProfile,

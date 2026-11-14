@@ -1,16 +1,18 @@
 import * as React from 'react'
 import {
-  type ColumnDef,
-  type ColumnFiltersState,
-  type PaginationState,
-  type SortingState,
-  type VisibilityState,
   flexRender,
   getCoreRowModel,
   getFilteredRowModel,
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
+} from '@tanstack/react-table'
+import type {
+  ColumnDef,
+  ColumnFiltersState,
+  PaginationState,
+  SortingState,
+  VisibilityState,
 } from '@tanstack/react-table'
 import { ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react'
 import {
@@ -198,7 +200,6 @@ export function CustomDataTable<TData, TValue>(
   const filteredRowsForParent = React.useMemo(
     () => table.getFilteredRowModel().rows.map((r) => r.original),
     // Re-compute whenever column filters or source data change.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
     [table, columnFilters, filteredData],
   )
 
@@ -280,7 +281,7 @@ export function CustomDataTable<TData, TValue>(
               ))}
             </TableHeader>
             <TableBody>
-              {table.getRowModel().rows?.length ? (
+              {table.getRowModel().rows.length ? (
                 table.getRowModel().rows.map((row) => (
                   <TableRow
                     key={row.id}

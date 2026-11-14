@@ -2,10 +2,8 @@ import { createFileRoute, useNavigate } from '@tanstack/react-router'
 import { requireRouteRole } from '#/lib/route-guards'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
-import {
-  StudentProfileForm,
-  type ProfileData,
-} from '#/components/dashboard/StudentProfileForm'
+import { StudentProfileForm } from '#/components/dashboard/StudentProfileForm'
+import type { ProfileData } from '#/components/dashboard/StudentProfileForm'
 import { createStudentProfile } from '#/server/students'
 import { listClasses } from '#/server/classes'
 

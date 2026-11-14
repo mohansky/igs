@@ -3,7 +3,8 @@ import { createFileRoute } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { site, SITE_TITLE } from '#/lib/site'
 import { Image } from '#/components/ui/image'
-import { listGalleryItems, type GalleryItem } from '#/server/gallery'
+import { listGalleryItems } from '#/server/gallery'
+import type { GalleryItem } from '#/server/gallery'
 
 import { Dialog, DialogContent, DialogTitle } from '#/components/ui/dialog'
 import {
@@ -12,8 +13,8 @@ import {
   CarouselItem,
   CarouselPrevious,
   CarouselNext,
-  type CarouselApi,
 } from '#/components/ui/carousel'
+import type { CarouselApi } from '#/components/ui/carousel'
 import { VisuallyHidden } from 'radix-ui'
 
 export const Route = createFileRoute('/gallery')({

@@ -53,11 +53,12 @@ export const createRazorpayOrderForFee = createServerFn({ method: 'POST' })
     const session = await requireSession()
     const { keyId, keySecret } = getKeys()
 
-    const [fee] = await db
+    const fee = (await db
       .select()
       .from(fees)
       .where(eq(fees.id, data.feeId))
       .limit(1)
+    ).at(0)
 
     if (!fee) throw new Error('Fee record not found')
     await assertCanPayFee(session, fee.studentUserId)
@@ -159,11 +160,12 @@ export const verifyRazorpayPayment = createServerFn({ method: 'POST' })
     )
     if (!valid) throw new Error('Invalid Razorpay signature')
 
-    const [existing] = await db
+    const existing = (await db
       .select()
       .from(fees)
       .where(eq(fees.id, data.feeId))
       .limit(1)
+    ).at(0)
 
     if (!existing) throw new Error('Fee record not found')
     await assertCanPayFee(session, existing.studentUserId)

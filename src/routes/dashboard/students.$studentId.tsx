@@ -11,11 +11,9 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { FeeTable } from '#/components/dashboard/FeeTable'
 import { RecordPaymentDialog } from '#/components/dashboard/RecordPaymentDialog'
 import { EditFeeDialog } from '#/components/dashboard/EditFeeDialog'
-import { deleteFeeRecord } from '#/server/fees'
-import {
-  StudentProfileForm,
-  type ProfileData,
-} from '#/components/dashboard/StudentProfileForm'
+import { deleteFeeRecord, getStudentFees } from '#/server/fees'
+import { StudentProfileForm } from '#/components/dashboard/StudentProfileForm'
+import type { ProfileData } from '#/components/dashboard/StudentProfileForm'
 import { Input } from '#/components/ui/input'
 import { Separator } from '#/components/ui/separator'
 import {
@@ -25,7 +23,6 @@ import {
   addParentToStudent,
   removeParentFromStudent,
 } from '#/server/students'
-import { getStudentFees } from '#/server/fees'
 import { listStudentFeePlans } from '#/server/fee-plans'
 import { FeePlanCard } from '#/components/dashboard/FeePlanCard'
 import { academicYearLabel, currentFyStartYear } from '#/lib/financial-year'
@@ -167,8 +164,9 @@ function StudentDetailPage() {
         data: { studentProfileId: Number(studentId) },
       })) as FeeRecordRaw[]
       const className =
-        ((profile as unknown as { currentClassName?: string | null })
-          ?.currentClassName ??
+        ((
+          profile as unknown as { currentClassName?: string | null } | undefined
+        )?.currentClassName ??
           null) ||
         (profile?.className ?? null)
       const classId = profile?.classId ?? null

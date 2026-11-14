@@ -283,7 +283,8 @@ function SalariesPage() {
     format(new Date(), 'yyyy-MM'),
   )
   const payrollMutation = useMutation({
-    mutationFn: (month: string) => generatePayroll({ data: { month } }),
+    mutationFn: (payMonth: string) =>
+      generatePayroll({ data: { month: payMonth } }),
     onSuccess: (res) => {
       invalidate()
       if (res.created > 0) {

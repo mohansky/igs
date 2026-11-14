@@ -34,7 +34,8 @@ export function LastSavedBy({
     .sort(
       (a, b) =>
         new Date(b.updatedAt!).getTime() - new Date(a.updatedAt!).getTime(),
-    )[0]
+    )
+    .at(0)
   if (!latest) return null
   return (
     <span className="text-xs text-muted-foreground">

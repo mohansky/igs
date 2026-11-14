@@ -8,9 +8,8 @@ import {
   createEnquiry,
   updateEnquiry,
   deleteEnquiry,
-  type EnquiryStatus,
-  type Enquiry,
 } from '#/server/enquiries'
+import type { EnquiryStatus, Enquiry } from '#/server/enquiries'
 import { Card, CardContent, CardDescription } from '#/components/ui/card'
 import { Button } from '#/components/ui/button'
 import { Input } from '#/components/ui/input'

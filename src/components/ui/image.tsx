@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, type ImgHTMLAttributes } from 'react'
+import { useState, useRef, useEffect } from 'react'
+import type { ImgHTMLAttributes } from 'react'
 import { cn } from '#/lib/utils'
 
 const R2_BASE_URL = import.meta.env.VITE_R2_BASE_URL ?? ''

@@ -83,11 +83,13 @@ export const updateSalary = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({ paidDate: staffSalaries.paidDate })
-      .from(staffSalaries)
-      .where(eq(staffSalaries.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ paidDate: staffSalaries.paidDate })
+        .from(staffSalaries)
+        .where(eq(staffSalaries.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Salary record not found')
     await assertDatesUnlocked(existing.paidDate, data.updates.paidDate)
     const result = await db
@@ -102,11 +104,13 @@ export const deleteSalary = createServerFn({ method: 'POST' })
   .inputValidator(z.object({ id: z.number().int().positive() }))
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({ paidDate: staffSalaries.paidDate })
-      .from(staffSalaries)
-      .where(eq(staffSalaries.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ paidDate: staffSalaries.paidDate })
+        .from(staffSalaries)
+        .where(eq(staffSalaries.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Salary record not found')
     await assertDatesUnlocked(existing.paidDate)
     await db.delete(staffSalaries).where(eq(staffSalaries.id, data.id))
@@ -123,11 +127,13 @@ export const markSalaryPaid = createServerFn({ method: 'POST' })
   )
   .handler(async ({ data }) => {
     await requireRole(['admin'])
-    const [existing] = await db
-      .select({ paidDate: staffSalaries.paidDate })
-      .from(staffSalaries)
-      .where(eq(staffSalaries.id, data.id))
-      .limit(1)
+    const existing = (
+      await db
+        .select({ paidDate: staffSalaries.paidDate })
+        .from(staffSalaries)
+        .where(eq(staffSalaries.id, data.id))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Salary record not found')
     await assertDatesUnlocked(existing.paidDate, data.paidDate)
     const result = await db

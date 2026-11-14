@@ -51,7 +51,7 @@ export function Values({
             </div>
             <div className="values-grid">
               {items.map((v, i) => {
-                const Icon = valueIcons[i % valueIcons.length]
+                const Icon = valueIcons.at(i % valueIcons.length)
                 return (
                   <div className="value" key={v.title}>
                     {Icon && (

@@ -453,7 +453,7 @@ function StudentsListPage() {
         const active = student.isActive !== false
         const pending =
           toggleMutation.isPending &&
-          toggleMutation.variables?.studentId === student.id
+          toggleMutation.variables.studentId === student.id
         return (
           <div className="flex justify-end">
             <DropdownMenu>
@@ -786,7 +786,7 @@ function TableSkeleton({
         <div className="divide-y">
           {Array.from({ length: rows }).map((_, r) => (
             <div key={r} className="flex items-center gap-4 px-4 py-3">
-              {Array.from({ length: cols }).map((_, c) => (
+              {Array.from({ length: cols }).map((_col, c) => (
                 <Skeleton
                   key={c}
                   className="h-4 flex-1"

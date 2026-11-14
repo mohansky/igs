@@ -8,8 +8,8 @@ import {
   getThemeMode,
   setThemeMode,
   subscribeToPreferences,
-  type ThemeMode,
 } from '#/lib/preferences'
+import type { ThemeMode } from '#/lib/preferences'
 
 export default function ThemeToggle() {
   const [mode, setMode] = useState<ThemeMode>('auto')

@@ -27,7 +27,7 @@ export interface HeroCollageImage {
   src: string
   alt: string
   /** Inline placement — uses CSS percent values for top/left/right/bottom and width/height */
-  style: CSSProperties
+  style?: CSSProperties
   /** Fallback caption shown when src is empty */
   fallback?: string
 }
@@ -158,7 +158,7 @@ export function Hero({
         {content}
         <div className="relative mx-auto aspect-square w-full max-w-130">
           {collage.images.map((img, i) => {
-            const placement = img.style ?? DEFAULT_COLLAGE_PLACEMENT[i] ?? {}
+            const placement = img.style ?? DEFAULT_COLLAGE_PLACEMENT.at(i) ?? {}
             return (
               <div
                 key={img.src || `slot-${i}`}

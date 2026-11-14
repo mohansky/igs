@@ -23,12 +23,12 @@ const dateString = z
 const BOOKS_LOCKED_THROUGH_KEY = 'books_locked_through'
 
 export async function getBooksLockedThrough(): Promise<string | null> {
-  const [row] = await db
+  const rows = await db
     .select({ value: appSettings.value })
     .from(appSettings)
     .where(eq(appSettings.key, BOOKS_LOCKED_THROUGH_KEY))
     .limit(1)
-  return row?.value ?? null
+  return rows.at(0)?.value ?? null
 }
 
 export function assertUnlocked(

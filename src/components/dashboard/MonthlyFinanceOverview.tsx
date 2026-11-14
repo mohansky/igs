@@ -12,10 +12,8 @@ import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import DownloadIcon from '#/components/icons/DownloadIcon'
 import { cn, formatCurrency } from '#/lib/utils'
 import { downloadCsv } from '#/lib/csv'
-import {
-  getMonthlyOverview,
-  type MonthlyOverviewRow,
-} from '#/server/transactions'
+import { getMonthlyOverview } from '#/server/transactions'
+import type { MonthlyOverviewRow } from '#/server/transactions'
 
 type RangeValue = '3' | '6' | '9' | '12' | 'all'
 

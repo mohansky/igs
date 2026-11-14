@@ -686,8 +686,8 @@ function EventFormDialog({
   const [type, setType] = useState<CalendarEventType>('event')
 
   // Reset form when dialog opens
-  const handleOpenChange = (open: boolean) => {
-    if (open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
       if (event) {
         setTitle(event.title)
         setDescription(event.description ?? '')
@@ -702,7 +702,7 @@ function EventFormDialog({
         setType('event')
       }
     }
-    onOpenChange(open)
+    onOpenChange(nextOpen)
   }
 
   const handleSubmit = (e: React.FormEvent) => {

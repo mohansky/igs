@@ -31,7 +31,8 @@ import {
 import { IconButton } from '#/components/dashboard/IconButton'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { formatCurrency, formatDate } from '#/lib/utils'
-import { StaffForm, type StaffFormData } from '#/components/dashboard/StaffForm'
+import { StaffForm } from '#/components/dashboard/StaffForm'
+import type { StaffFormData } from '#/components/dashboard/StaffForm'
 import {
   getStaffProfile,
   updateStaffProfile,
@@ -154,13 +155,13 @@ function StaffDetailPage() {
     })
 
   const createHikeMutation = useMutation({
-    mutationFn: (data: {
+    mutationFn: (hike: {
       oldSalary: number
       newSalary?: number
       effectiveFrom: string
       effectiveTo: string
       notes?: string
-    }) => createSalaryHike({ data: { userId: staffId, ...data } }),
+    }) => createSalaryHike({ data: { userId: staffId, ...hike } }),
     onSuccess: () => {
       invalidateHikes()
       setHikeDialogOpen(false)

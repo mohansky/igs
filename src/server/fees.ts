@@ -68,11 +68,13 @@ async function assertFeePaymentsUnlocked(feeIds: Array<number>) {
 // and "latest payment" metadata are all derived from fee_payments rows.
 // Open (concession) fees always keep status 'open'.
 export async function syncFeeFromPayments(feeId: number, tx: Tx) {
-  const [existing] = await tx
-    .select({ amount: fees.amount, isOpen: fees.isOpen })
-    .from(fees)
-    .where(eq(fees.id, feeId))
-    .limit(1)
+  const existing = (
+    await tx
+      .select({ amount: fees.amount, isOpen: fees.isOpen })
+      .from(fees)
+      .where(eq(fees.id, feeId))
+      .limit(1)
+  ).at(0)
   if (!existing) throw new Error('Fee record not found')
 
   const [{ total }] = await tx
@@ -80,13 +82,14 @@ export async function syncFeeFromPayments(feeId: number, tx: Tx) {
     .from(feePayments)
     .where(eq(feePayments.feeId, feeId))
 
-  const [latest] = await tx
+  const latestRows = await tx
     .select()
     .from(feePayments)
     .where(eq(feePayments.feeId, feeId))
     .orderBy(sql`paid_date DESC, id DESC`)
     .limit(1)
 
+  const latest = latestRows.at(0)
   const paidAmount = Number(total) || 0
   const status = existing.isOpen
     ? 'open'
@@ -164,15 +167,17 @@ export const recordPayment = createServerFn({ method: 'POST' })
     // Ledger insert + cached-row sync must commit together, or `fees` drifts
     // from `fee_payments`.
     return db.transaction(async (tx) => {
-      const [fee] = await tx
-        .select({
-          amount: fees.amount,
-          paidAmount: fees.paidAmount,
-          isOpen: fees.isOpen,
-        })
-        .from(fees)
-        .where(eq(fees.id, data.feeId))
-        .limit(1)
+      const fee = (
+        await tx
+          .select({
+            amount: fees.amount,
+            paidAmount: fees.paidAmount,
+            isOpen: fees.isOpen,
+          })
+          .from(fees)
+          .where(eq(fees.id, data.feeId))
+          .limit(1)
+      ).at(0)
       if (!fee) throw new Error('Fee record not found')
 
       // An open (concession) fee has no balance to exceed: any positive
@@ -300,16 +305,18 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
     const session = await requireRole(['admin'])
     const { feeId, ...updates } = data
 
-    const [existing] = await db
-      .select({
-        status: fees.status,
-        isOpen: fees.isOpen,
-        categoryId: fees.categoryId,
-        studentUserId: fees.studentUserId,
-      })
-      .from(fees)
-      .where(eq(fees.id, feeId))
-      .limit(1)
+    const existing = (
+      await db
+        .select({
+          status: fees.status,
+          isOpen: fees.isOpen,
+          categoryId: fees.categoryId,
+          studentUserId: fees.studentUserId,
+        })
+        .from(fees)
+        .where(eq(fees.id, feeId))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Fee record not found')
 
     // Moving a fee to another student: fees.studentUserId is the student
@@ -325,19 +332,19 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
         )
       }
       const profileId = Number(updates.studentUserId)
-      const [profile] = Number.isInteger(profileId)
+      const profileRows = Number.isInteger(profileId)
         ? await db
             .select({ id: studentProfiles.id })
             .from(studentProfiles)
             .where(eq(studentProfiles.id, profileId))
             .limit(1)
         : []
-      if (!profile) throw new Error('Student not found.')
+      if (!profileRows.at(0)) throw new Error('Student not found.')
     }
 
     // A concession fee's amount and status come from the student's fee plan.
     if (
-      existing?.isOpen &&
+      existing.isOpen &&
       (updates.amount !== undefined || updates.status !== undefined)
     ) {
       throw new Error(
@@ -346,13 +353,13 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
     }
     if (
       updates.categoryId !== undefined &&
-      updates.categoryId !== existing?.categoryId
+      updates.categoryId !== existing.categoryId
     ) {
       // Moving to a different category: it must be active (keeping an old,
       // now-inactive one is fine).
       await assertActiveCategory(updates.categoryId)
       if (
-        existing?.isOpen &&
+        existing.isOpen &&
         updates.categoryId !== (await getTuitionCategoryId())
       ) {
         throw new Error('A concession fee is always Tuition Fee.')
@@ -361,7 +368,7 @@ export const updateFeeRecord = createServerFn({ method: 'POST' })
 
     // If status is being changed, record who did it
     let statusChangerPatch: { receivedByUserId?: string } = {}
-    if (updates.status && existing && existing.status !== updates.status) {
+    if (updates.status && existing.status !== updates.status) {
       statusChangerPatch = { receivedByUserId: session.user.id }
     }
 
@@ -528,11 +535,12 @@ export const createBulkFees = createServerFn({ method: 'POST' })
     // Concession students for the class's academic year pay what they can
     // into their open (tuition) fee instead of getting the standard tuition
     // fee. Other categories (books, uniform, …) are billed to them as usual.
-    const [cls] = await db
+    const clsRows = await db
       .select({ academicYear: classes.academicYear })
       .from(classes)
       .where(eq(classes.id, data.classId))
       .limit(1)
+    const cls = clsRows.at(0)
     const concessionIds = new Set(
       cls && categoryId === tuitionId
         ? (
@@ -605,15 +613,17 @@ export const deleteFeePayment = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireRole(['admin'])
 
-    const [existing] = await db
-      .select({
-        id: feePayments.id,
-        feeId: feePayments.feeId,
-        paidDate: feePayments.paidDate,
-      })
-      .from(feePayments)
-      .where(eq(feePayments.id, data.paymentId))
-      .limit(1)
+    const existing = (
+      await db
+        .select({
+          id: feePayments.id,
+          feeId: feePayments.feeId,
+          paidDate: feePayments.paidDate,
+        })
+        .from(feePayments)
+        .where(eq(feePayments.id, data.paymentId))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Payment not found')
     await assertDatesUnlocked(existing.paidDate)
 
@@ -638,15 +648,17 @@ export const updateFeePayment = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     await requireRole(['admin'])
 
-    const [existing] = await db
-      .select({
-        feeId: feePayments.feeId,
-        amount: feePayments.amount,
-        paidDate: feePayments.paidDate,
-      })
-      .from(feePayments)
-      .where(eq(feePayments.id, data.paymentId))
-      .limit(1)
+    const existing = (
+      await db
+        .select({
+          feeId: feePayments.feeId,
+          amount: feePayments.amount,
+          paidDate: feePayments.paidDate,
+        })
+        .from(feePayments)
+        .where(eq(feePayments.id, data.paymentId))
+        .limit(1)
+    ).at(0)
     if (!existing) throw new Error('Payment not found')
 
     const newDate = data.paidDate ?? existing.paidDate
@@ -657,15 +669,17 @@ export const updateFeePayment = createServerFn({ method: 'POST' })
     await assertDatesUnlocked(existing.paidDate, newDate)
 
     return db.transaction(async (tx) => {
-      const [fee] = await tx
-        .select({
-          amount: fees.amount,
-          paidAmount: fees.paidAmount,
-          isOpen: fees.isOpen,
-        })
-        .from(fees)
-        .where(eq(fees.id, existing.feeId))
-        .limit(1)
+      const fee = (
+        await tx
+          .select({
+            amount: fees.amount,
+            paidAmount: fees.paidAmount,
+            isOpen: fees.isOpen,
+          })
+          .from(fees)
+          .where(eq(fees.id, existing.feeId))
+          .limit(1)
+      ).at(0)
       if (!fee) throw new Error('Fee record not found')
 
       if (!fee.isOpen) {
