@@ -63,7 +63,9 @@ export const listCalendarEvents = createServerFn({ method: 'GET' })
       .from(calendarEvents)
       .leftJoin(user, eq(user.id, calendarEvents.createdByUserId))
     const result =
-      conditions.length > 0 ? await query.where(and(...conditions)) : await query
+      conditions.length > 0
+        ? await query.where(and(...conditions))
+        : await query
 
     // Parents/students see the calendar too; who added an event is staff-only.
     const role = (session.user as { role?: string }).role ?? 'student'

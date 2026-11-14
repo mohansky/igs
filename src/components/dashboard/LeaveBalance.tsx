@@ -58,13 +58,12 @@ export function LeaveBalance({
       {unspecified > 0 && (
         <p className="text-xs text-amber-600">
           {unspecified} leave day{unspecified === 1 ? '' : 's'} with no type
-          recorded — not counted above. Mark them as casual or sick on the
-          Staff Attendance page.
+          recorded — not counted above. Mark them as casual or sick on the Staff
+          Attendance page.
         </p>
       )}
       <p className="text-xs text-muted-foreground">
-        {leaveWindowLabel(policy)}. Absent days don&apos;t count against
-        leave.
+        {leaveWindowLabel(policy)}. Absent days don&apos;t count against leave.
       </p>
     </div>
   )
@@ -83,11 +82,17 @@ export function LeaveBalanceCompact({
   const unspecified = used?.unspecified ?? 0
   return (
     <span className="whitespace-nowrap text-xs text-muted-foreground">
-      <span className={cn(casual > policy.casual && 'font-semibold text-destructive')}>
+      <span
+        className={cn(
+          casual > policy.casual && 'font-semibold text-destructive',
+        )}
+      >
         CL {casual}/{policy.casual}
       </span>
       {' · '}
-      <span className={cn(sick > policy.sick && 'font-semibold text-destructive')}>
+      <span
+        className={cn(sick > policy.sick && 'font-semibold text-destructive')}
+      >
         SL {sick}/{policy.sick}
       </span>
       {unspecified > 0 && (

@@ -49,7 +49,9 @@ export const auth = betterAuth({
       if (isPlaceholderEmail(user.email)) return
       const apiKey = process.env.RESEND_API_KEY
       if (!apiKey) {
-        console.error('RESEND_API_KEY is not set; password reset email not sent.')
+        console.error(
+          'RESEND_API_KEY is not set; password reset email not sent.',
+        )
         return
       }
       // Loaded on demand: auth runs on every request, and Resend + react-email

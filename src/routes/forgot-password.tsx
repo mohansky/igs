@@ -58,11 +58,14 @@ function ForgotPassword() {
         {sent ? (
           <div className="space-y-4 text-center">
             <p className="text-sm text-(--sea-ink-soft)">
-              If an account exists for <strong>{email}</strong>, we&apos;ve
-              sent a link to reset your password. It expires in 1 hour. Check
-              your spam folder if you don&apos;t see it.
+              If an account exists for <strong>{email}</strong>, we&apos;ve sent
+              a link to reset your password. It expires in 1 hour. Check your
+              spam folder if you don&apos;t see it.
             </p>
-            <Link to="/sign-in" className="text-sm text-primary hover:underline">
+            <Link
+              to="/sign-in"
+              className="text-sm text-primary hover:underline"
+            >
               Back to sign in
             </Link>
           </div>

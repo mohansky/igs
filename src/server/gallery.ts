@@ -66,7 +66,10 @@ function sortTopLevel<T extends { key: string; lastModified: number }>(
   })
 }
 
-function sortFolderPhotos(photos: GalleryPhoto[], positions: Map<string, number>) {
+function sortFolderPhotos(
+  photos: GalleryPhoto[],
+  positions: Map<string, number>,
+) {
   return [...photos].sort((a, b) => {
     const pa = positions.get(a.key)
     const pb = positions.get(b.key)

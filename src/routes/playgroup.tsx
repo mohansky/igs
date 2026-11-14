@@ -16,7 +16,7 @@ import {
 const PAGE_TITLE =
   'Playgroup & Play School in Kasturi Nagar for Toddlers | Indo-German School'
 const PAGE_DESCRIPTION =
-  "Looking for a playgroup near you? Our play school in Kasturi Nagar welcomes toddlers aged 1.5–2 years into a warm, caring playgroup — small groups, a safe & hygienic campus, and rolling admissions. Call or WhatsApp us today."
+  'Looking for a playgroup near you? Our play school in Kasturi Nagar welcomes toddlers aged 1.5–2 years into a warm, caring playgroup — small groups, a safe & hygienic campus, and rolling admissions. Call or WhatsApp us today.'
 
 export const Route = createFileRoute('/playgroup')({
   head: () => ({
@@ -44,14 +44,15 @@ const phoneDetail = contact.details.items.find((i: { label: string }) =>
 const PHONE = phoneDetail?.value ?? site.header.phone
 const PHONE_DISPLAY = '+91 80507 18044'
 const WHATSAPP_DIGITS = (whatsappDetail?.value ?? PHONE).replace(/\D/g, '')
-const WHATSAPP_TEXT = "Hi, I'd like to enquire about the playgroup for my child."
+const WHATSAPP_TEXT =
+  "Hi, I'd like to enquire about the playgroup for my child."
 const WHATSAPP_HREF = `https://wa.me/${WHATSAPP_DIGITS}?text=${encodeURIComponent(WHATSAPP_TEXT)}`
 
 const REASSURANCE_ITEMS = [
   {
     icon: SketchHand,
     title: 'Small, inclusive groups',
-    desc: "Our playgroup keeps class sizes small and welcoming, so every toddler — whatever their pace — gets noticed, comforted, and encouraged.",
+    desc: 'Our playgroup keeps class sizes small and welcoming, so every toddler — whatever their pace — gets noticed, comforted, and encouraged.',
   },
   {
     icon: SketchKidWaving,
@@ -71,12 +72,30 @@ const REASSURANCE_ITEMS = [
 ]
 
 const PHOTO_ITEMS = [
-  { src: 'gallery/activityroom.jpg', alt: 'Playgroup activity room at Indo-German School, Kasturi Nagar' },
-  { src: 'gallery/hygienic.jpg', alt: 'Safe, hygienic play school washroom for toddlers' },
-  { src: 'gallery/classrooms.jpg', alt: 'Bright, toddler-friendly playgroup classroom' },
-  { src: 'gallery/IMG_5904.jpg', alt: 'Toddlers at play in our Kasturi Nagar playgroup' },
-  { src: 'gallery/IMG_5938.jpg', alt: 'Playgroup children exploring the outdoor play area' },
-  { src: 'gallery/IMG_5952.jpg', alt: 'Story time in the Indo-German School playgroup' },
+  {
+    src: 'gallery/activityroom.jpg',
+    alt: 'Playgroup activity room at Indo-German School, Kasturi Nagar',
+  },
+  {
+    src: 'gallery/hygienic.jpg',
+    alt: 'Safe, hygienic play school washroom for toddlers',
+  },
+  {
+    src: 'gallery/classrooms.jpg',
+    alt: 'Bright, toddler-friendly playgroup classroom',
+  },
+  {
+    src: 'gallery/IMG_5904.jpg',
+    alt: 'Toddlers at play in our Kasturi Nagar playgroup',
+  },
+  {
+    src: 'gallery/IMG_5938.jpg',
+    alt: 'Playgroup children exploring the outdoor play area',
+  },
+  {
+    src: 'gallery/IMG_5952.jpg',
+    alt: 'Story time in the Indo-German School playgroup',
+  },
 ]
 
 const JOIN_STEPS = [
@@ -220,9 +239,8 @@ function Playgroup() {
                 How to join our playgroup.
               </h2>
               <p>
-                We're in Kasturi Nagar, Bengaluru, and we run rolling
-                admissions — so your toddler can join the playgroup any
-                time of year.
+                We're in Kasturi Nagar, Bengaluru, and we run rolling admissions
+                — so your toddler can join the playgroup any time of year.
               </p>
             </div>
           </div>
@@ -243,9 +261,7 @@ function Playgroup() {
                   {s.step.padStart(2, '0')}
                 </div>
                 <h4 className="font-serif text-xl mb-2">{s.title}</h4>
-                <p className="text-(--ink-soft) text-[14.5px] m-0">
-                  {s.desc}
-                </p>
+                <p className="text-(--ink-soft) text-[14.5px] m-0">{s.desc}</p>
               </article>
             ))}
           </div>
@@ -264,8 +280,8 @@ function Playgroup() {
                 Ready when you are
               </div>
               <h2 className="text-[clamp(36px,5vw,64px)] leading-[1.05] text-(--paper) max-w-[18ch]">
-                Come meet our <em className="italic text-(--accent-3)">playgroup</em>{' '}
-                family.
+                Come meet our{' '}
+                <em className="italic text-(--accent-3)">playgroup</em> family.
               </h2>
               <p className="text-primary max-w-[38ch] mt-5 mb-7">
                 Call or WhatsApp us to ask a question or book a visit to our

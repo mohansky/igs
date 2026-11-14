@@ -76,8 +76,8 @@ function ResetPassword() {
         {linkError || !token ? (
           <div className="space-y-4 text-center">
             <p className="text-sm text-(--sea-ink-soft)">
-              This reset link is invalid or has expired. Links work once, for
-              1 hour.
+              This reset link is invalid or has expired. Links work once, for 1
+              hour.
             </p>
             <Link
               to="/forgot-password"

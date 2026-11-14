@@ -33,7 +33,5 @@ self.addEventListener('fetch', (event) => {
   // network normally (no caching of assets or API responses).
   if (event.request.mode !== 'navigate') return
 
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(OFFLINE_URL)),
-  )
+  event.respondWith(fetch(event.request).catch(() => caches.match(OFFLINE_URL)))
 })

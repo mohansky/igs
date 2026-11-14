@@ -52,7 +52,10 @@ function Gallery() {
   )
 
   const looseImages = useMemo(
-    () => items.filter((i): i is GalleryItem & { type: 'image' } => i.type === 'image'),
+    () =>
+      items.filter(
+        (i): i is GalleryItem & { type: 'image' } => i.type === 'image',
+      ),
     [items],
   )
 
@@ -87,7 +90,9 @@ function Gallery() {
               ))}
             </div>
           ) : items.length === 0 ? (
-            <p className="text-(--ink-soft)">No photos yet — check back soon.</p>
+            <p className="text-(--ink-soft)">
+              No photos yet — check back soon.
+            </p>
           ) : (
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
               {items.map((item, i) => {
