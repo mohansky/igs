@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { Badge } from '#/components/ui/badge'
@@ -13,11 +14,7 @@ import { formatDate } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/my-attendance')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'staff' && userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['staff', 'admin'], { allowAuditor: false })
   },
   component: MyAttendancePage,
 })
@@ -194,7 +191,9 @@ function MyAttendancePage() {
       {leave?.policy && (
         <Card className="max-w-xl">
           <CardHeader>
-            <CardTitle className="text-base">My leave this school year</CardTitle>
+            <CardTitle className="text-base">
+              My leave this school year
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <LeaveBalance policy={leave.policy} used={leave.used[0]} />

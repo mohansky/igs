@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { UserTable } from '#/components/dashboard/UserTable'
 import { CreateUserDialog } from '#/components/dashboard/CreateUserDialog'
@@ -8,11 +9,7 @@ import { listAllUsers } from '#/server/users'
 
 export const Route = createFileRoute('/dashboard/users')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'], { allowAuditor: false })
   },
   component: UsersPage,
 })

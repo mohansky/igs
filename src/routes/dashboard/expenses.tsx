@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import { useMemo, useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -127,11 +128,7 @@ function errorMessage(err: unknown, fallback: string): string {
 
 export const Route = createFileRoute('/dashboard/expenses')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'])
   },
   component: ExpensesPage,
 })
@@ -157,6 +154,7 @@ interface Transaction {
 const paymentMethods = ['Cash', 'Bank Transfer', 'Cheque', 'UPI', 'Card']
 
 function ExpensesPage() {
+  const isAuditor = useIsAuditor()
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<Transaction | null>(null)
@@ -696,12 +694,14 @@ function ExpensesPage() {
           )}
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreate}>
-              <AddIcon className="h-4 w-4" />
-              Add Transaction
-            </Button>
-          </DialogTrigger>
+          {!isAuditor && (
+            <DialogTrigger asChild>
+              <Button onClick={openCreate}>
+                <AddIcon className="h-4 w-4" />
+                Add Transaction
+              </Button>
+            </DialogTrigger>
+          )}
           <DialogContent>
             <DialogHeader>
               <DialogTitle>
@@ -1085,9 +1085,13 @@ function ExpensesPage() {
 
               <CustomDataTable
                 tableId="expenses"
-                columns={columns}
+                columns={
+                  isAuditor
+                    ? columns.filter((c) => c.id !== 'actions')
+                    : columns
+                }
                 data={filteredItems}
-                enableSelection
+                enableSelection={!isAuditor}
                 onSelectionChange={setSelected}
                 onFilteredRowsChange={setVisibleItems}
                 showDatePicker

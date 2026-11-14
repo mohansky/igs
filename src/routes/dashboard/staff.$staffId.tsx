@@ -1,4 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -54,11 +55,7 @@ import type { LeaveBalances } from '#/server/staff-attendance'
 
 export const Route = createFileRoute('/dashboard/staff/$staffId')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'])
   },
   component: StaffDetailPage,
 })
@@ -105,6 +102,7 @@ interface SalaryHikeRow {
 }
 
 function StaffDetailPage() {
+  const isAuditor = useIsAuditor()
   const { staffId } = Route.useParams()
   const queryClient = useQueryClient()
   const [editing, setEditing] = useState(false)
@@ -354,10 +352,12 @@ function StaffDetailPage() {
           <p className="text-sm text-muted-foreground">
             {displayEmail(data.user.email) || 'No login email'}
           </p>
-          <Button size="sm" className="mt-3" onClick={() => setEditing(true)}>
-            <EditIcon className="h-4 w-4" />
-            Edit Profile
-          </Button>
+          {!isAuditor && (
+            <Button size="sm" className="mt-3" onClick={() => setEditing(true)}>
+              <EditIcon className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
         </div>
       </div>
 
@@ -552,6 +552,7 @@ function StaffDetailPage() {
           <SalaryHikesCard
             hikes={salaryHikes}
             currentSalary={p.basicPay ?? undefined}
+            readOnly={isAuditor}
             onAdd={() => setHikeDialogOpen(true)}
             onDelete={(hike) => setDeleteHikeTarget(hike)}
           />
@@ -565,7 +566,11 @@ function StaffDetailPage() {
 
         <TabsContent value="documents">
           {typeof profile.id === 'number' ? (
-            <AttachmentsSection profileId={profile.id} entityType="staff" />
+            <AttachmentsSection
+              profileId={profile.id}
+              entityType="staff"
+              readOnly={isAuditor}
+            />
           ) : (
             <p className="text-sm text-muted-foreground">Profile not found.</p>
           )}
@@ -592,9 +597,8 @@ function StaffDetailPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Salary Hike Record</AlertDialogTitle>
             <AlertDialogDescription>
-              This removes the record only — it does not change the
-              staff&apos;s current salary or any generated payroll. This
-              cannot be undone.
+              This removes the record only — it does not change the staff&apos;s
+              current salary or any generated payroll. This cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -602,7 +606,8 @@ function StaffDetailPage() {
             <AlertDialogAction
               variant="destructive"
               onClick={() =>
-                deleteHikeTarget && deleteHikeMutation.mutate(deleteHikeTarget.id)
+                deleteHikeTarget &&
+                deleteHikeMutation.mutate(deleteHikeTarget.id)
               }
             >
               Delete
@@ -634,11 +639,13 @@ function InfoRow({
 function SalaryHikesCard({
   hikes,
   currentSalary,
+  readOnly,
   onAdd,
   onDelete,
 }: {
   hikes: SalaryHikeRow[]
   currentSalary?: number
+  readOnly?: boolean
   onAdd: () => void
   onDelete: (hike: SalaryHikeRow) => void
 }) {
@@ -646,10 +653,12 @@ function SalaryHikesCard({
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base">Salary Hikes</CardTitle>
-        <Button size="sm" onClick={onAdd}>
-          <AddIcon className="h-3 w-3" />
-          <span>Record Hike</span>
-        </Button>
+        {!readOnly && (
+          <Button size="sm" onClick={onAdd}>
+            <AddIcon className="h-3 w-3" />
+            <span>Record Hike</span>
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         {hikes.length === 0 ? (
@@ -689,13 +698,15 @@ function SalaryHikesCard({
                     </p>
                   )}
                 </div>
-                <IconButton
-                  tooltip="Delete"
-                  icon={TrashIcon}
-                  className="text-destructive"
-                  size="xs"
-                  onClick={() => onDelete(h)}
-                />
+                {!readOnly && (
+                  <IconButton
+                    tooltip="Delete"
+                    icon={TrashIcon}
+                    className="text-destructive"
+                    size="xs"
+                    onClick={() => onDelete(h)}
+                  />
+                )}
               </div>
             ))}
           </div>

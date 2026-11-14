@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
@@ -35,11 +36,7 @@ import { toast } from 'sonner'
 
 export const Route = createFileRoute('/dashboard/enquiries')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (!['admin', 'staff'].includes(userRole)) {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin', 'staff'])
   },
   component: EnquiriesPage,
 })
@@ -330,6 +327,7 @@ function EnquiryDetail({
   onUpdate: () => void
   onDelete: () => void
 }) {
+  const readOnly = userRole === 'auditor'
   const [editNotes, setEditNotes] = useState(enquiry.notes ?? '')
   const [editVisitDate, setEditVisitDate] = useState(enquiry.visitDate ?? '')
   const [editVisitTime, setEditVisitTime] = useState(enquiry.visitTime ?? '')
@@ -394,6 +392,7 @@ function EnquiryDetail({
             <Input
               type="date"
               className="h-8 text-sm"
+              disabled={readOnly}
               value={editVisitDate}
               onChange={(e) => {
                 setEditVisitDate(e.target.value)
@@ -406,6 +405,7 @@ function EnquiryDetail({
             <Input
               type="time"
               className="h-8 text-sm"
+              disabled={readOnly}
               value={editVisitTime}
               onChange={(e) => {
                 setEditVisitTime(e.target.value)
@@ -439,6 +439,7 @@ function EnquiryDetail({
         <Label className="text-xs text-muted-foreground">Internal Notes</Label>
         <Textarea
           rows={3}
+          disabled={readOnly}
           value={editNotes}
           onChange={(e) => {
             setEditNotes(e.target.value)
@@ -465,17 +466,18 @@ function EnquiryDetail({
       {/* Status buttons */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap gap-2">
-          {STATUS_OPTIONS.map((s) => (
-            <Button
-              key={s}
-              size="sm"
-              variant={enquiry.status === s ? 'default' : 'outline'}
-              disabled={enquiry.status === s || updateMutation.isPending}
-              onClick={() => updateMutation.mutate({ status: s })}
-            >
-              {STATUS_LABELS[s]}
-            </Button>
-          ))}
+          {!readOnly &&
+            STATUS_OPTIONS.map((s) => (
+              <Button
+                key={s}
+                size="sm"
+                variant={enquiry.status === s ? 'default' : 'outline'}
+                disabled={enquiry.status === s || updateMutation.isPending}
+                onClick={() => updateMutation.mutate({ status: s })}
+              >
+                {STATUS_LABELS[s]}
+              </Button>
+            ))}
         </div>
         {userRole === 'admin' && (
           <Button
@@ -553,7 +555,7 @@ function EnquiriesPage() {
             Prospective families who have reached out
           </p>
         </div>
-        <NewEnquiryDialog onCreated={invalidate} />
+        {userRole !== 'auditor' && <NewEnquiryDialog onCreated={invalidate} />}
       </div>
 
       {/* Filter tabs */}

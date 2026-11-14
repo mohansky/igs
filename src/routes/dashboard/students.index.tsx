@@ -1,4 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import TrashIcon from '#/components/icons/TrashIcon'
 import {
   MoreVerticalIcon,
@@ -65,11 +66,7 @@ import {
 
 export const Route = createFileRoute('/dashboard/students/')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin' && userRole !== 'staff') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin', 'staff'])
   },
   component: StudentsListPage,
 })
@@ -175,6 +172,7 @@ function resolvePhotoUrl(image: string | null | undefined) {
 function StudentsListPage() {
   const { session } = Route.useRouteContext()
   const userRole = (session.user as { role?: string }).role ?? 'student'
+  const isAuditor = userRole === 'auditor'
   const queryClient = useQueryClient()
   const [deleteTarget, setDeleteTarget] = useState<StudentRow | null>(null)
   const [selected, setSelected] = useState<StudentRow[]>([])
@@ -565,11 +563,13 @@ function StudentsListPage() {
             <DownloadIcon className="h-4 w-4" />
             Export CSV
           </Button>
-          <Link to="/dashboard/students/new">
-            <Button>
-              <AddIcon className="h-4 w-4" /> Add Student
-            </Button>
-          </Link>
+          {!isAuditor && (
+            <Link to="/dashboard/students/new">
+              <Button>
+                <AddIcon className="h-4 w-4" /> Add Student
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
@@ -631,7 +631,9 @@ function StudentsListPage() {
           )}
           <CustomDataTable
             tableId="students"
-            columns={columns}
+            columns={
+              isAuditor ? columns.filter((c) => c.id !== 'actions') : columns
+            }
             data={students}
             enableSelection={userRole === 'admin'}
             onSelectionChange={setSelected}

@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -19,11 +20,7 @@ import {
 
 export const Route = createFileRoute('/dashboard/gallery')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'], { allowAuditor: false })
   },
   component: GalleryOrderPage,
 })

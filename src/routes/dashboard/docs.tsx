@@ -179,9 +179,11 @@ function DocsPage() {
           )}
           {isAuditor && (
             <li>
-              As an auditor you have view-only access to reports: open{' '}
-              <NavLink>Fees</NavLink> for the <Strong>Concessions</Strong> and{' '}
-              <Strong>Fee Summary</Strong> tabs. Nothing you open can be
+              As an auditor you can open most pages read-only: Students, Staff,
+              Staff Attendance and Salaries, Expenses, Enquiries, Submissions
+              and Classes, plus the <Strong>Concessions</Strong> and{' '}
+              <Strong>Fee Summary</Strong> tabs under <NavLink>Fees</NavLink>.
+              Add and edit controls are hidden, and nothing you open can be
               changed.
             </li>
           )}
@@ -919,8 +921,8 @@ function DocsPage() {
                     linked children.
                   </li>
                   <li>
-                    <Strong>Auditor</Strong>: view-only access to reports, for
-                    trustees.
+                    <Strong>Auditor</Strong>: view-only access to most pages and
+                    reports, for trustees.
                   </li>
                 </ul>
               </li>

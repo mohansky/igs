@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -41,11 +42,7 @@ import {
 
 export const Route = createFileRoute('/dashboard/staff-attendance')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'])
   },
   component: StaffAttendancePage,
 })
@@ -624,17 +621,23 @@ function StaffAttendanceHistory() {
 // ── Page ──────────────────────────────────────────────────────
 
 function StaffAttendancePage() {
+  // Auditors are view-only: history, no marking.
+  const isAuditor = useIsAuditor()
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Staff Attendance</h1>
-      <Tabs defaultValue="mark">
+      <Tabs defaultValue={isAuditor ? 'history' : 'mark'}>
         <TabsList>
-          <TabsTrigger value="mark">Mark Attendance</TabsTrigger>
+          {!isAuditor && (
+            <TabsTrigger value="mark">Mark Attendance</TabsTrigger>
+          )}
           <TabsTrigger value="history">View History</TabsTrigger>
         </TabsList>
-        <TabsContent value="mark">
-          <StaffAttendanceMarker />
-        </TabsContent>
+        {!isAuditor && (
+          <TabsContent value="mark">
+            <StaffAttendanceMarker />
+          </TabsContent>
+        )}
         <TabsContent value="history">
           <StaffAttendanceHistory />
         </TabsContent>

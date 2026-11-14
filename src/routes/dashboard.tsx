@@ -69,6 +69,7 @@ import {
   AvatarFallback,
   AvatarImage,
 } from '#/components/ui/avatar'
+import { AUDITOR_HIDDEN_ROUTES } from '#/lib/roles'
 import { CommandPalette } from '#/components/dashboard/command-palette'
 import IGSIcon from '#/components/icons/IGSIcon'
 // import Logo from '#/components/icons/Logo'
@@ -243,20 +244,14 @@ function DashboardLayout() {
   const matchRoute = useMatchRoute()
   const [sidebarOpen, setSidebarOpenState] = useState(getSidebarOpen)
 
-  // The view-only auditor sees every route except user management and the
-  // staff-personal "My …" pages (which have no data for an auditor).
+  // The view-only auditor sees every route except the ones in
+  // AUDITOR_HIDDEN_ROUTES (shared with the command palette and the route
+  // guards -- edit it in src/lib/roles.ts only).
   const isAuditor = userRole === 'auditor'
-  const auditorHidden = new Set([
-    '/dashboard/users',
-    '/dashboard/my-attendance',
-    '/dashboard/my-salaries',
-    // Admin-only editing pages (their routes redirect auditors anyway).
-    '/dashboard/gallery',
-  ])
   const filteredNav = navItems.filter(
     (item) =>
       item.roles.includes(userRole) ||
-      (isAuditor && !auditorHidden.has(item.to)),
+      (isAuditor && !AUDITOR_HIDDEN_ROUTES.has(item.to)),
   )
   // The Administration group renders for admins and auditors; everyone else
   // gets their items as one flat list (e.g. Fees is admin-grouped but also

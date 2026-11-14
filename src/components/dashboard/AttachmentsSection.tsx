@@ -43,9 +43,11 @@ interface Attachment {
 interface Props {
   profileId: number
   entityType: 'student' | 'staff'
+  // View-only (e.g. the auditor): no adding or removing documents.
+  readOnly?: boolean
 }
 
-export function AttachmentsSection({ profileId, entityType }: Props) {
+export function AttachmentsSection({ profileId, entityType, readOnly }: Props) {
   const queryClient = useQueryClient()
   const queryKey = [
     entityType === 'student' ? 'student-attachments' : 'staff-attachments',
@@ -162,7 +164,7 @@ export function AttachmentsSection({ profileId, entityType }: Props) {
     <Card>
       <CardHeader className="flex flex-row items-center justify-between pb-3">
         <CardTitle className="text-base">Documents &amp; Attachments</CardTitle>
-        {!addOpen && (
+        {!addOpen && !readOnly && (
           <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
             Add Document
           </Button>
@@ -321,14 +323,16 @@ export function AttachmentsSection({ profileId, entityType }: Props) {
                       {att.attachmentType === 'link' ? 'External link' : 'File'}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    className="text-xs text-muted-foreground hover:text-destructive"
-                    onClick={() => setDeleteId(att.id)}
-                    disabled={deleteMutation.isPending}
-                  >
-                    Remove
-                  </button>
+                  {!readOnly && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground hover:text-destructive"
+                      onClick={() => setDeleteId(att.id)}
+                      disabled={deleteMutation.isPending}
+                    >
+                      Remove
+                    </button>
+                  )}
                 </div>
               )
             })}

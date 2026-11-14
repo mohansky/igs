@@ -1,4 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useQuery } from '@tanstack/react-query'
 import type { ColumnDef } from '@tanstack/react-table'
 import { format, parseISO } from 'date-fns'
@@ -12,11 +13,7 @@ import { formatCurrency, formatDate } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/my-salaries')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'staff' && userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['staff', 'admin'], { allowAuditor: false })
   },
   component: MySalariesPage,
 })

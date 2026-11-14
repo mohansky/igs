@@ -1,4 +1,5 @@
-import { createFileRoute, Link, redirect } from '@tanstack/react-router'
+import { createFileRoute, Link } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -28,11 +29,7 @@ import { downloadCsv } from '#/lib/csv'
 
 export const Route = createFileRoute('/dashboard/staff/')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'])
   },
   component: StaffListPage,
 })
@@ -76,6 +73,7 @@ function resolvePhotoUrl(image: string | null | undefined) {
 }
 
 function StaffListPage() {
+  const isAuditor = useIsAuditor()
   const queryClient = useQueryClient()
   const [deleteTarget, setDeleteTarget] = useState<StaffRow | null>(null)
 
@@ -283,13 +281,15 @@ function StaffListPage() {
                 <EyeIcon size={16} />
               </Button>
             </Link>
-            <IconButton
-              tooltip="Delete"
-              icon={TrashIcon}
-              className="text-destructive"
-              size="xs"
-              onClick={() => setDeleteTarget(s)}
-            />
+            {!isAuditor && (
+              <IconButton
+                tooltip="Delete"
+                icon={TrashIcon}
+                className="text-destructive"
+                size="xs"
+                onClick={() => setDeleteTarget(s)}
+              />
+            )}
           </div>
         )
       },
@@ -322,9 +322,11 @@ function StaffListPage() {
           >
             Export CSV
           </Button>
-          <Link to="/dashboard/staff/new">
-            <Button>Add Staff</Button>
-          </Link>
+          {!isAuditor && (
+            <Link to="/dashboard/staff/new">
+              <Button>Add Staff</Button>
+            </Link>
+          )}
         </div>
       </div>
 

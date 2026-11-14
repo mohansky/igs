@@ -1,4 +1,5 @@
-import { createFileRoute, redirect, useNavigate } from '@tanstack/react-router'
+import { createFileRoute, useNavigate } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { Button } from '#/components/ui/button'
@@ -7,11 +8,7 @@ import { createStaff } from '#/server/staff'
 
 export const Route = createFileRoute('/dashboard/staff/new')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'], { allowAuditor: false })
   },
   component: NewStaffPage,
 })

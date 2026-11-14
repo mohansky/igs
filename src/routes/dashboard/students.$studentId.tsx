@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole } from '#/lib/route-guards'
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
@@ -39,11 +40,7 @@ import EditIcon from '#/components/icons/EditIcon'
 
 export const Route = createFileRoute('/dashboard/students/$studentId')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin' && userRole !== 'staff') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin', 'staff'])
   },
   component: StudentDetailPage,
 })
@@ -145,8 +142,9 @@ function StudentDetailPage() {
   const { studentId } = Route.useParams()
   const { session } = Route.useRouteContext()
   // Fees are admin-only; staff see the rest of the student profile
-  const isAdmin =
-    ((session.user as { role?: string }).role ?? 'student') === 'admin'
+  const userRole = (session.user as { role?: string }).role ?? 'student'
+  const isAdmin = userRole === 'admin'
+  const isAuditor = userRole === 'auditor'
   const queryClient = useQueryClient()
   const [selectedFee, setSelectedFee] = useState<FeeRecord | null>(null)
   const [paymentOpen, setPaymentOpen] = useState(false)
@@ -392,10 +390,12 @@ function StudentDetailPage() {
               {profile.bloodGroup ? ` · ${profile.bloodGroup}` : ''}
             </p>
           )}
-          <Button size="sm" className="mt-3" onClick={() => setEditing(true)}>
-            <EditIcon className="h-4 w-4" />
-            Edit Profile
-          </Button>
+          {!isAuditor && (
+            <Button size="sm" className="mt-3" onClick={() => setEditing(true)}>
+              <EditIcon className="h-4 w-4" />
+              Edit Profile
+            </Button>
+          )}
         </div>
       </div>
 
@@ -609,15 +609,19 @@ function StudentDetailPage() {
                             {parent.parentEmail}
                           </p>
                         </div>
-                        <Button
-                          variant="ghost"
-                          size="xs"
-                          className="text-destructive"
-                          onClick={() => removeParentMutation.mutate(parent.id)}
-                          disabled={removeParentMutation.isPending}
-                        >
-                          Unlink
-                        </Button>
+                        {!isAuditor && (
+                          <Button
+                            variant="ghost"
+                            size="xs"
+                            className="text-destructive"
+                            onClick={() =>
+                              removeParentMutation.mutate(parent.id)
+                            }
+                            disabled={removeParentMutation.isPending}
+                          >
+                            Unlink
+                          </Button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -678,7 +682,7 @@ function StudentDetailPage() {
                       Cancel
                     </Button>
                   </div>
-                ) : (
+                ) : isAuditor ? null : (
                   <Button
                     variant="outline"
                     size="sm"
@@ -733,6 +737,7 @@ function StudentDetailPage() {
           <AttachmentsSection
             profileId={Number(studentId)}
             entityType="student"
+            readOnly={isAuditor}
           />
         </TabsContent>
       </Tabs>

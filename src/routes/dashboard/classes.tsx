@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import TrashIcon from '#/components/icons/TrashIcon'
 import EditIcon from '#/components/icons/EditIcon'
 import { IconButton } from '#/components/dashboard/IconButton'
@@ -30,11 +31,7 @@ import AddIcon from '#/components/icons/AddIcon'
 
 export const Route = createFileRoute('/dashboard/classes')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (userRole !== 'admin') {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin'])
   },
   component: ClassesPage,
 })
@@ -49,6 +46,7 @@ interface ClassItem {
 }
 
 function ClassesPage() {
+  const isAuditor = useIsAuditor()
   const queryClient = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editingClass, setEditingClass] = useState<ClassItem | null>(null)
@@ -182,62 +180,64 @@ function ClassesPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold">Classes</h1>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={openCreate}>
-              <AddIcon className="h-4 w-4" /> Add Class
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>
-                {editingClass ? 'Edit Class' : 'Create Class'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <Label>Name</Label>
-                <Input
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Nursery"
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Section (optional)</Label>
-                <Input
-                  value={section}
-                  onChange={(e) => setSection(e.target.value)}
-                  placeholder="e.g. A"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Academic Year</Label>
-                <Input
-                  value={academicYear}
-                  onChange={(e) => setAcademicYear(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label>Capacity (optional)</Label>
-                <Input
-                  type="number"
-                  value={capacity}
-                  onChange={(e) => setCapacity(e.target.value)}
-                />
-              </div>
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={saveMutation.isPending}
-              >
-                {saveMutation.isPending ? 'Saving...' : 'Save'}
+        {!isAuditor && (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button onClick={openCreate}>
+                <AddIcon className="h-4 w-4" /> Add Class
               </Button>
-            </form>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>
+                  {editingClass ? 'Edit Class' : 'Create Class'}
+                </DialogTitle>
+              </DialogHeader>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Name</Label>
+                  <Input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="e.g. Nursery"
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Section (optional)</Label>
+                  <Input
+                    value={section}
+                    onChange={(e) => setSection(e.target.value)}
+                    placeholder="e.g. A"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Academic Year</Label>
+                  <Input
+                    value={academicYear}
+                    onChange={(e) => setAcademicYear(e.target.value)}
+                    required
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label>Capacity (optional)</Label>
+                  <Input
+                    type="number"
+                    value={capacity}
+                    onChange={(e) => setCapacity(e.target.value)}
+                  />
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={saveMutation.isPending}
+                >
+                  {saveMutation.isPending ? 'Saving...' : 'Save'}
+                </Button>
+              </form>
+            </DialogContent>
+          </Dialog>
+        )}
       </div>
 
       {isLoading ? (
@@ -261,7 +261,9 @@ function ClassesPage() {
         </Card>
       ) : (
         <CustomDataTable
-          columns={columns}
+          columns={
+            isAuditor ? columns.filter((c) => c.id !== 'actions') : columns
+          }
           data={classes}
           filters={[{ column: 'name', placeholder: 'Search by name...' }]}
         />

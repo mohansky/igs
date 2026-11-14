@@ -16,12 +16,16 @@ function AttendancePage() {
   const { session } = Route.useRouteContext()
   const userRole = (session.user as { role?: string }).role ?? 'student'
   const isStaffOrAdmin = userRole === 'admin' || userRole === 'staff'
+  // Auditors are view-only: the history log, no marking.
+  const isAuditor = userRole === 'auditor'
 
   return (
     <div className="space-y-6">
       <h1 className="text-2xl font-bold">Attendance</h1>
 
-      {isStaffOrAdmin ? (
+      {isAuditor ? (
+        <AttendanceLog />
+      ) : isStaffOrAdmin ? (
         <Tabs defaultValue="mark">
           <TabsList>
             <TabsTrigger value="mark">Mark Attendance</TabsTrigger>

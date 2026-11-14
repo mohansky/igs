@@ -1,4 +1,5 @@
-import { createFileRoute, redirect } from '@tanstack/react-router'
+import { createFileRoute } from '@tanstack/react-router'
+import { requireRouteRole, useIsAuditor } from '#/lib/route-guards'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { format } from 'date-fns'
@@ -15,11 +16,7 @@ import { cn } from '#/lib/utils'
 
 export const Route = createFileRoute('/dashboard/submissions')({
   beforeLoad: ({ context }) => {
-    const userRole =
-      (context.session.user as { role?: string }).role ?? 'student'
-    if (!['admin', 'staff'].includes(userRole)) {
-      throw redirect({ to: '/dashboard' })
-    }
+    requireRouteRole(context, ['admin', 'staff'])
   },
   component: SubmissionsPage,
 })
@@ -37,6 +34,7 @@ const statusColors: Record<SubmissionStatus, string> = {
 const statusOptions: SubmissionStatus[] = ['new', 'read', 'replied', 'archived']
 
 function SubmissionsPage() {
+  const isAuditor = useIsAuditor()
   const queryClient = useQueryClient()
   const [filter, setFilter] = useState<SubmissionStatus | 'all'>('all')
   const [expandedId, setExpandedId] = useState<number | null>(null)
@@ -224,23 +222,24 @@ function SubmissionsPage() {
 
                       {/* Status actions */}
                       <div className="flex flex-wrap gap-2">
-                        {statusOptions.map((status) => (
-                          <Button
-                            key={status}
-                            variant={
-                              submission.status === status
-                                ? 'default'
-                                : 'outline'
-                            }
-                            size="sm"
-                            disabled={submission.status === status}
-                            onClick={() =>
-                              handleStatusChange(submission.id, status)
-                            }
-                          >
-                            Mark as {status}
-                          </Button>
-                        ))}
+                        {!isAuditor &&
+                          statusOptions.map((status) => (
+                            <Button
+                              key={status}
+                              variant={
+                                submission.status === status
+                                  ? 'default'
+                                  : 'outline'
+                              }
+                              size="sm"
+                              disabled={submission.status === status}
+                              onClick={() =>
+                                handleStatusChange(submission.id, status)
+                              }
+                            >
+                              Mark as {status}
+                            </Button>
+                          ))}
                       </div>
                     </div>
                   )}

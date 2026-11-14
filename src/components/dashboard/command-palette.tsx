@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { AUDITOR_HIDDEN_ROUTES } from '#/lib/roles'
 import { useQuery } from '@tanstack/react-query'
 import { Dialog, DialogContent, DialogTitle } from '#/components/ui/dialog'
 import { listStudents } from '#/server/students'
@@ -22,6 +23,7 @@ import {
   Discount01Icon,
   ChartBarLineIcon,
   Tag01Icon,
+  UserSearch01Icon,
 } from 'hugeicons-react'
 import { cn } from '#/lib/utils'
 
@@ -75,6 +77,20 @@ const NAV_LINKS: NavLink[] = [
     kind: 'nav',
     label: 'Students',
     to: '/dashboard/students',
+    roles: ['admin', 'staff'],
+    icon: StudentIcon,
+  },
+  {
+    kind: 'nav',
+    label: 'Enquiries',
+    to: '/dashboard/enquiries',
+    roles: ['admin', 'staff'],
+    icon: UserSearch01Icon,
+  },
+  {
+    kind: 'nav',
+    label: 'Add Student',
+    to: '/dashboard/students/new',
     roles: ['admin', 'staff'],
     icon: StudentIcon,
   },
@@ -165,12 +181,6 @@ const NAV_LINKS: NavLink[] = [
   },
 ]
 
-const AUDITOR_HIDDEN = new Set([
-  '/dashboard/users',
-  '/dashboard/fee-categories',
-  '/dashboard/gallery',
-])
-
 interface CommandPaletteProps {
   userRole: Role
 }
@@ -223,7 +233,7 @@ export function CommandPalette({ userRole }: CommandPaletteProps) {
     const navItems = NAV_LINKS.filter(
       (l) =>
         l.roles.includes(userRole) ||
-        (userRole === 'auditor' && !AUDITOR_HIDDEN.has(l.to)),
+        (userRole === 'auditor' && !AUDITOR_HIDDEN_ROUTES.has(l.to)),
     )
     for (const link of navItems) {
       if (!q || link.label.toLowerCase().includes(q)) {

@@ -470,10 +470,7 @@ function CalendarPage() {
                             item.event.endDate !== item.event.startDate && (
                               <p className="text-xs text-muted-foreground">
                                 Until{' '}
-                                {format(
-                                  parseISO(item.event.endDate),
-                                  'MMM d',
-                                )}
+                                {format(parseISO(item.event.endDate), 'MMM d')}
                               </p>
                             )}
                           {item.event.createdByName && (
@@ -546,9 +543,7 @@ function CalendarPage() {
           {canEdit && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">
-                  Upcoming Birthdays
-                </CardTitle>
+                <CardTitle className="text-base">Upcoming Birthdays</CardTitle>
               </CardHeader>
               <CardContent>
                 {currentMonthBirthdays.length === 0 ? (
@@ -591,7 +586,9 @@ function CalendarPage() {
                 ))}
                 {canEdit && (
                   <div className="flex items-center gap-1.5">
-                    <div className={`size-2.5 rounded-full ${BIRTHDAY_COLOR}`} />
+                    <div
+                      className={`size-2.5 rounded-full ${BIRTHDAY_COLOR}`}
+                    />
                     <span className="text-xs text-muted-foreground">
                       Birthday
                     </span>
