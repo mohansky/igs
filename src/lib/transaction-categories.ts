@@ -11,6 +11,9 @@
 //   split into Books / Uniforms and Stationery / Printing.
 // - Insurance: part of Professional & Compliance.
 //
+// Not in the income list: Sale of Books & Uniforms (briefly used), split
+// into Sale of Books and Sale of Uniforms to mirror the expense side.
+//
 // Each transaction stores its category as plain text, so renaming one here
 // leaves old rows on the old name: migrate them as well.
 
@@ -38,7 +41,7 @@ export const EXPENSE_CATEGORIES = [
   // insurance.
   'Professional & Compliance',
   // Textbooks and uniforms the school buys (mostly to sell on to parents;
-  // those sales are income under Sale of Books & Uniforms).
+  // those sales are income under Sale of Books / Sale of Uniforms).
   'Books',
   'Uniforms',
   OTHER_CATEGORY,
@@ -50,7 +53,8 @@ export const INCOME_CATEGORIES = [
   'Rentals',
   'Events',
   'Interest',
-  'Sale of Books & Uniforms',
+  'Sale of Books',
+  'Sale of Uniforms',
   OTHER_CATEGORY,
 ] as const
 

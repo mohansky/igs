@@ -27,8 +27,11 @@ describe('transaction categories', () => {
     expect(isValidCategory('expense', 'Stationery')).toBe(true)
     expect(isValidCategory('expense', 'Printing')).toBe(true)
     expect(isValidCategory('income', 'Teaching Materials')).toBe(false)
-    expect(isValidCategory('income', 'Sale of Books & Uniforms')).toBe(true)
-    expect(isValidCategory('expense', 'Sale of Books & Uniforms')).toBe(false)
+    expect(isValidCategory('income', 'Sale of Books')).toBe(true)
+    expect(isValidCategory('income', 'Sale of Uniforms')).toBe(true)
+    expect(isValidCategory('expense', 'Sale of Books')).toBe(false)
+    // Retired combined name.
+    expect(isValidCategory('income', 'Sale of Books & Uniforms')).toBe(false)
     // Shared names are valid for both.
     expect(isValidCategory('expense', 'Events')).toBe(true)
     expect(isValidCategory('income', 'Events')).toBe(true)
