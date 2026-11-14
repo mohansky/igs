@@ -26,7 +26,11 @@ import { Checkbox } from '#/components/ui/checkbox'
 import { TableDateRangePicker } from './data-table/TableDateRangePicker'
 import { TableFilters } from './data-table/TableFilters'
 import { TablePagination } from './data-table/TablePagination'
-import { usePersistedPageSize, useDateRangeFilter } from './data-table/hooks'
+import {
+  usePersistedPageSize,
+  useDateRangeFilter,
+  useDragScroll,
+} from './data-table/hooks'
 import type { DataTableProps } from './data-table/types'
 
 export type { FilterConfig, DataTableProps } from './data-table/types'
@@ -108,6 +112,7 @@ export function CustomDataTable<TData, TValue>(
   )
 
   const [pageIndex, setPageIndex] = React.useState(0)
+  const dragScrollRef = useDragScroll<HTMLDivElement>()
 
   React.useEffect(() => {
     setPageIndex(0)
@@ -226,7 +231,11 @@ export function CustomDataTable<TData, TValue>(
       {summarySlot}
 
       <div className="rounded-lg bg-muted p-1">
-        <div className="overflow-x-auto">
+        {/* Wide tables can be dragged sideways with the mouse. */}
+        <div
+          ref={dragScrollRef}
+          className="overflow-x-auto data-[dragging=true]:cursor-grabbing data-[dragging=true]:select-none data-[scrollable=true]:cursor-grab"
+        >
           <Table className="min-w-full">
             <TableHeader>
               {table.getHeaderGroups().map((headerGroup) => (

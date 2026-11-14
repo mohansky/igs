@@ -105,3 +105,105 @@ export function useDateRangeFilter<TData>(
 
   return { filteredData, dateRange, setDateRange }
 }
+
+// Click-and-drag sideways scrolling for a wide table with a mouse, so you
+// don't have to reach the scrollbar at the bottom. Touch already pans
+// natively, so only mouse pointers are handled. A drag starts after 5px of
+// movement; starting on a link, button, input or checkbox is left alone,
+// and the click that ends a drag is swallowed so a row action doesn't fire.
+// Attach the ref to a wrapper; it scrolls the shadcn table container inside
+// it (or the wrapper itself if there isn't one). The wrapper gets
+// data-scrollable / data-dragging for the grab cursors.
+const DRAG_THRESHOLD_PX = 5
+const NO_DRAG_SELECTOR =
+  'a, button, input, select, textarea, label, [role="checkbox"], [role="combobox"], [role="menuitem"], [contenteditable="true"], [data-no-drag-scroll]'
+
+export function useDragScroll<T extends HTMLElement>() {
+  const ref = React.useRef<T>(null)
+
+  React.useEffect(() => {
+    const wrapper = ref.current
+    if (!wrapper) return
+    const scroller = () =>
+      wrapper.querySelector<HTMLElement>('[data-slot="table-container"]') ??
+      wrapper
+
+    // Grab cursor only when there's something to scroll.
+    const updateScrollable = () => {
+      const el = scroller()
+      wrapper.dataset.scrollable = String(el.scrollWidth > el.clientWidth + 1)
+    }
+    const resize = new ResizeObserver(updateScrollable)
+    resize.observe(wrapper)
+    const table = wrapper.querySelector('table')
+    if (table) resize.observe(table)
+    updateScrollable()
+
+    let pointerId: number | null = null
+    let startX = 0
+    let startLeft = 0
+    let dragging = false
+    let swallowClick = false
+
+    const onDown = (e: PointerEvent) => {
+      if (e.pointerType !== 'mouse' || e.button !== 0) return
+      if ((e.target as Element | null)?.closest(NO_DRAG_SELECTOR)) return
+      const el = scroller()
+      if (el.scrollWidth <= el.clientWidth + 1) return
+      pointerId = e.pointerId
+      startX = e.clientX
+      startLeft = el.scrollLeft
+      dragging = false
+    }
+    const onMove = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      const dx = e.clientX - startX
+      if (!dragging) {
+        if (Math.abs(dx) < DRAG_THRESHOLD_PX) return
+        dragging = true
+        wrapper.setPointerCapture(e.pointerId)
+        wrapper.dataset.dragging = 'true'
+        // Drop any text selection started before the threshold.
+        window.getSelection()?.removeAllRanges()
+      }
+      scroller().scrollLeft = startLeft - dx
+      e.preventDefault()
+    }
+    const onEnd = (e: PointerEvent) => {
+      if (e.pointerId !== pointerId) return
+      pointerId = null
+      if (wrapper.hasPointerCapture(e.pointerId)) {
+        wrapper.releasePointerCapture(e.pointerId)
+      }
+      delete wrapper.dataset.dragging
+      if (dragging) {
+        swallowClick = true
+        // In case no click event follows (released outside the wrapper).
+        setTimeout(() => (swallowClick = false), 0)
+      }
+      dragging = false
+    }
+    const onClick = (e: MouseEvent) => {
+      if (!swallowClick) return
+      swallowClick = false
+      e.preventDefault()
+      e.stopPropagation()
+    }
+
+    wrapper.addEventListener('pointerdown', onDown)
+    wrapper.addEventListener('pointermove', onMove)
+    wrapper.addEventListener('pointerup', onEnd)
+    wrapper.addEventListener('pointercancel', onEnd)
+    wrapper.addEventListener('click', onClick, true)
+    return () => {
+      resize.disconnect()
+      wrapper.removeEventListener('pointerdown', onDown)
+      wrapper.removeEventListener('pointermove', onMove)
+      wrapper.removeEventListener('pointerup', onEnd)
+      wrapper.removeEventListener('pointercancel', onEnd)
+      wrapper.removeEventListener('click', onClick, true)
+    }
+  }, [])
+
+  return ref
+}

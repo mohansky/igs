@@ -386,9 +386,10 @@ function DocsPage() {
                     a fee permanently.
                   </li>
                   <li>
-                    If the table is wider than the screen, scroll it sideways
-                    (shift + mouse wheel, or swipe on a phone) to see every
-                    column.
+                    If the table is wider than the screen, scroll it sideways to
+                    see every column: click and drag on the table with the
+                    mouse, use shift + mouse wheel, or swipe on a phone. This
+                    works on every table.
                   </li>
                 </Steps>
                 <Tip>
