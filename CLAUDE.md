@@ -74,7 +74,7 @@ Blog posts are markdown/MDX files in `content/blog/`. Managed by **Content Colle
 
 - Roles: `admin`, `staff`, `student` (parents share it and see only linked children), and `auditor` (view-only, for trustees). Type in `src/lib/roles.ts`.
 - Protected server functions call `requireRole([...])` (`src/server/auth-utils.ts`). The auditor passes any `requireRole` on a **GET** (unless `{ allowAuditor: false }`), never on a POST, so a GET must never write — `server-fn-invariants.test.ts` enforces this.
-- Route `beforeLoad` guards are separate from the sidebar (`navItems` / `auditorHidden` in `src/routes/dashboard.tsx`) and the command palette; keep all three in step when adding a page.
+- Route `beforeLoad` guards use `requireRouteRole` (`src/lib/route-guards.ts`); like the server, it lets the auditor through unless `{ allowAuditor: false }`. The sidebar (`navItems` in `src/routes/dashboard.tsx`) and the command palette are separate lists, so keep all three in step when adding a page. Routes the auditor must not open go in `AUDITOR_HIDDEN_ROUTES` (`src/lib/roles.ts`), which the sidebar and palette share. Pages the auditor can open hide their write controls with `useIsAuditor()`.
 - Staff have no fee access at all (nav, routes and server). Concession status is admin/auditor only, never shown to staff or parents.
 - The in-app help page is `src/routes/dashboard/docs.tsx`, role-gated per section; update it when a feature's user-facing behaviour changes.
 
