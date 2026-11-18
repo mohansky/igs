@@ -1,5 +1,5 @@
 import { createServerFn } from '@tanstack/react-start'
-import { and, eq, gte, lte, sql } from 'drizzle-orm'
+import { and, eq, gte, inArray, lte, sql } from 'drizzle-orm'
 import { alias } from 'drizzle-orm/sqlite-core'
 import { z } from 'zod'
 import { db } from '#/db'
@@ -10,6 +10,7 @@ import {
   studentParents,
   user,
 } from '#/db/schema'
+import { schoolToday } from '#/lib/fee-math'
 import { getSession } from './auth'
 import { requireRole } from './auth-utils'
 
@@ -47,6 +48,11 @@ export const markAttendance = createServerFn({ method: 'POST' })
     const session = await requireRole(['admin', 'staff'])
     const markedByUserId = session.user.id
 
+    // A day that hasn't happened can't have attendance (school time).
+    if (data.date > schoolToday()) {
+      throw new Error('Attendance cannot be marked for a future date.')
+    }
+
     // One round-trip instead of one INSERT per student — a full class was
     // previously N sequential queries against Turso.
     const statements = data.records.map((record) =>
@@ -73,6 +79,40 @@ export const markAttendance = createServerFn({ method: 'POST' })
     await db.batch(statements as [(typeof statements)[number]])
 
     return { success: true }
+  })
+
+// Undo a day: delete one class's saved records for a date, e.g. a day marked
+// by mistake (wrong or future date). Covers every student in the class, not
+// just active ones, so nothing is left behind.
+export const clearAttendance = createServerFn({ method: 'POST' })
+  .inputValidator(
+    z.object({
+      date: dateString,
+      classId: z.number().int().positive(),
+    }),
+  )
+  .handler(async ({ data }) => {
+    await requireRole(['admin', 'staff'])
+
+    const studentIds = (
+      await db
+        .select({ id: studentProfiles.id })
+        .from(studentProfiles)
+        .where(sql`${effectiveClassId} = ${data.classId}`)
+    ).map((s) => String(s.id))
+    if (studentIds.length === 0) return { deleted: 0 }
+
+    const deleted = await db
+      .delete(attendance)
+      .where(
+        and(
+          eq(attendance.date, data.date),
+          inArray(attendance.studentUserId, studentIds),
+        ),
+      )
+      .returning({ id: attendance.id })
+
+    return { deleted: deleted.length }
   })
 
 export const getAttendanceByDate = createServerFn({ method: 'GET' })

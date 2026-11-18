@@ -39,9 +39,15 @@ import { cn } from '#/lib/utils'
 import { listClasses } from '#/server/classes'
 import { classLabel } from '#/lib/class-label'
 import { currentAcademicYear } from '#/lib/financial-year'
-import { getAttendanceByDate, markAttendance } from '#/server/attendance'
+import { schoolToday } from '#/lib/fee-math'
+import {
+  clearAttendance,
+  getAttendanceByDate,
+  markAttendance,
+} from '#/server/attendance'
 import type { AttendanceStatus } from '#/server/attendance'
 import LoadIcon from '../icons/LoadIcon'
+import { ConfirmDialog } from './ConfirmDialog'
 import { LastSavedBy } from './MarkedBy'
 
 const STATUS_OPTIONS: Array<{ value: string; label: string }> = [
@@ -65,7 +71,10 @@ interface SavedRecord {
 }
 
 export function AttendanceMarker() {
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  // School time (India), not UTC, so early mornings don't default to
+  // yesterday.
+  const [date, setDate] = useState(() => schoolToday())
+  const [clearOpen, setClearOpen] = useState(false)
   const [selectedClass, setSelectedClass] = useState<{
     value: string
     label: string
@@ -224,8 +233,32 @@ export function AttendanceMarker() {
       toast.success('Attendance saved')
       setSavedRecords((await fetchDay()).records)
     },
-    onError: () => toast.error('Failed to save attendance'),
+    onError: (err) =>
+      toast.error(
+        err instanceof Error && err.message
+          ? err.message
+          : 'Failed to save attendance',
+      ),
   })
+
+  // Undo: delete the class's saved records for this date.
+  const clearMutation = useMutation({
+    mutationFn: () =>
+      clearAttendance({
+        data: { date, classId: Number(selectedClass!.value) },
+      }),
+    onSuccess: async ({ deleted }) => {
+      toast.success(
+        `Cleared ${deleted} attendance record${deleted === 1 ? '' : 's'} for ${date}`,
+      )
+      await loadAttendance()
+    },
+    onError: () => toast.error('Failed to clear attendance'),
+  })
+
+  // Attendance can't be saved for a day that hasn't happened yet; a future
+  // day saved by mistake can still be loaded and cleared.
+  const isFuture = date > schoolToday()
 
   const statusBadgeVariant = (status: string) => {
     switch (status) {
@@ -596,19 +629,38 @@ export function AttendanceMarker() {
             </TableBody>
           </Table>
 
-          {/* Save */}
-          <div className="flex items-center gap-4">
+          {/* Save / clear */}
+          <div className="flex flex-wrap items-center gap-4">
             <Button
               onClick={() => saveMutation.mutate()}
-              disabled={saveMutation.isPending}
+              disabled={saveMutation.isPending || isFuture}
             >
               {saveMutation.isPending ? 'Saving...' : 'Save Attendance'}
             </Button>
+            {savedRecords.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setClearOpen(true)}
+                disabled={clearMutation.isPending}
+              >
+                {clearMutation.isPending ? 'Clearing...' : 'Clear day'}
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground">
-              Saves attendance for all {summary.total} students, not just
-              filtered view
+              {isFuture
+                ? `${date} is in the future, so attendance can't be saved yet.${savedRecords.length > 0 ? ' Use Clear day to remove what was saved by mistake.' : ''}`
+                : `Saves attendance for all ${summary.total} students, not just filtered view`}
             </span>
           </div>
+
+          <ConfirmDialog
+            open={clearOpen}
+            onOpenChange={setClearOpen}
+            title="Clear this day's attendance?"
+            description={`Deletes the ${savedRecords.length} saved record${savedRecords.length === 1 ? '' : 's'} for ${selectedClassName ? classLabel(selectedClassName.name, selectedClassName.section) : 'this class'} on ${date}. The day will show as not marked.`}
+            confirmLabel="Clear day"
+            onConfirm={() => clearMutation.mutate()}
+          />
         </>
       )}
 

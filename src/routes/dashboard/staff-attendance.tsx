@@ -21,7 +21,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { CustomDataTable } from '#/components/dashboard/CustomDataTable'
 import { Skeleton } from '#/components/ui/skeleton'
+import { schoolToday } from '#/lib/fee-math'
+import { ConfirmDialog } from '#/components/dashboard/ConfirmDialog'
 import {
+  clearStaffAttendance,
   getStaffAttendanceByDate,
   markStaffAttendance,
   listStaffAttendance,
@@ -61,7 +64,10 @@ interface StaffRecord {
 
 function StaffAttendanceMarker() {
   const queryClient = useQueryClient()
-  const [date, setDate] = useState(new Date().toISOString().split('T')[0])
+  // School time (India), not UTC, so early mornings don't default to
+  // yesterday.
+  const [date, setDate] = useState(() => schoolToday())
+  const [clearOpen, setClearOpen] = useState(false)
   const [staff, setStaff] = useState<StaffRecord[]>([])
   const [loaded, setLoaded] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -179,8 +185,12 @@ function StaffAttendanceMarker() {
           })),
         },
       }),
-    onSuccess: async () => {
-      toast.success('Staff attendance saved')
+    onSuccess: async ({ leaveOnly }) => {
+      toast.success(
+        leaveOnly
+          ? 'Planned leave saved (future date: only CL/SL are kept)'
+          : 'Staff attendance saved',
+      )
       queryClient.invalidateQueries({ queryKey: ['leave-balances'] })
       queryClient.invalidateQueries({ queryKey: ['staff-attendance'] })
       const fresh = await getStaffAttendanceByDate({ data: { date } })
@@ -188,6 +198,23 @@ function StaffAttendanceMarker() {
     },
     onError: () => toast.error('Failed to save staff attendance'),
   })
+
+  // Undo: delete every staff record saved for this date.
+  const clearMutation = useMutation({
+    mutationFn: () => clearStaffAttendance({ data: { date } }),
+    onSuccess: async ({ deleted }) => {
+      toast.success(
+        `Cleared ${deleted} staff record${deleted === 1 ? '' : 's'} for ${date}`,
+      )
+      queryClient.invalidateQueries({ queryKey: ['leave-balances'] })
+      queryClient.invalidateQueries({ queryKey: ['staff-attendance'] })
+      await loadAttendance()
+    },
+    onError: () => toast.error('Failed to clear staff attendance'),
+  })
+
+  // A future day only keeps planned leave (the server drops the rest).
+  const isFuture = date > schoolToday()
 
   const statusVariant = (status: string) => {
     switch (status) {
@@ -376,17 +403,41 @@ function StaffAttendanceMarker() {
             </TableBody>
           </Table>
 
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-4">
             <Button
               onClick={() => saveMutation.mutate()}
               disabled={saveMutation.isPending}
             >
-              {saveMutation.isPending ? 'Saving...' : 'Save Attendance'}
+              {saveMutation.isPending
+                ? 'Saving...'
+                : isFuture
+                  ? 'Save Planned Leave'
+                  : 'Save Attendance'}
             </Button>
+            {savedRecords.length > 0 && (
+              <Button
+                variant="outline"
+                onClick={() => setClearOpen(true)}
+                disabled={clearMutation.isPending}
+              >
+                {clearMutation.isPending ? 'Clearing...' : 'Clear day'}
+              </Button>
+            )}
             <span className="text-sm text-muted-foreground">
-              Saves attendance for all {summary.total} staff members
+              {isFuture
+                ? `${date} is in the future: only CL/SL are saved. Mark everyone else on the day.`
+                : `Saves attendance for all ${summary.total} staff members`}
             </span>
           </div>
+
+          <ConfirmDialog
+            open={clearOpen}
+            onOpenChange={setClearOpen}
+            title="Clear this day's staff attendance?"
+            description={`Deletes all ${savedRecords.length} staff record${savedRecords.length === 1 ? '' : 's'} saved for ${date}, including any leave (which goes back to the balance).`}
+            confirmLabel="Clear day"
+            onConfirm={() => clearMutation.mutate()}
+          />
         </>
       )}
 

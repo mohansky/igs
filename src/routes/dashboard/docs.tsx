@@ -246,6 +246,12 @@ function DocsPage() {
                   <Strong>Last saved by</Strong> line shows who saved that day
                   last and when.
                 </Tip>
+                <Tip>
+                  Attendance can&apos;t be saved for a future date. To undo a
+                  day saved by mistake (wrong or future date), load that class
+                  and date and click <Strong>Clear day</Strong>; the day then
+                  shows as not marked.
+                </Tip>
 
                 <SubHeading>Viewing history</SubHeading>
                 <Steps>
@@ -752,6 +758,13 @@ function DocsPage() {
                 Click <Strong>Save Attendance</Strong>.
               </li>
             </Steps>
+            <Tip>
+              For a future date only planned leave (<Strong>CL</Strong>/
+              <Strong>SL</Strong>) is saved; mark everyone else on the day. To
+              undo a day saved by mistake, load it and click{' '}
+              <Strong>Clear day</Strong> (any leave that day goes back to the
+              balance).
+            </Tip>
 
             <SubHeading>History</SubHeading>
             <Bullets>

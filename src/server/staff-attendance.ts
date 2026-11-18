@@ -5,6 +5,7 @@ import { db } from '#/db'
 import { staffAttendance, staffProfiles, user } from '#/db/schema'
 import { requireRole } from './auth-utils'
 import { currentFyStartYear } from '#/lib/financial-year'
+import { schoolToday } from '#/lib/fee-math'
 import { LEAVE_TYPES, leavePolicyFor } from '#/lib/leave-policy'
 import type { LeavePolicy } from '#/lib/leave-policy'
 import { z } from 'zod'
@@ -56,7 +57,23 @@ export const markStaffAttendance = createServerFn({ method: 'POST' })
   .handler(async ({ data }) => {
     const session = await requireRole(['admin'])
 
+    // A future day can only hold planned leave (school time). Anyone not on
+    // leave gets no record yet (any saved by mistake is removed), so the
+    // whole roster can still be saved in one go.
+    const isFuture = data.date > schoolToday()
+
     for (const record of data.records) {
+      if (isFuture && record.status !== 'leave') {
+        await db
+          .delete(staffAttendance)
+          .where(
+            and(
+              eq(staffAttendance.userId, record.userId),
+              eq(staffAttendance.date, data.date),
+            ),
+          )
+        continue
+      }
       // A leave type only means something on a leave day; clear it otherwise
       // so switching a day from leave to present gives the day back.
       const leaveType =
@@ -87,7 +104,20 @@ export const markStaffAttendance = createServerFn({ method: 'POST' })
         })
     }
 
-    return { success: true }
+    return { success: true, leaveOnly: isFuture }
+  })
+
+// Undo a day: delete every staff record saved for a date (e.g. marked by
+// mistake). Also gives back any leave recorded that day.
+export const clearStaffAttendance = createServerFn({ method: 'POST' })
+  .inputValidator(z.object({ date: dateString }))
+  .handler(async ({ data }) => {
+    await requireRole(['admin'])
+    const deleted = await db
+      .delete(staffAttendance)
+      .where(eq(staffAttendance.date, data.date))
+      .returning({ id: staffAttendance.id })
+    return { deleted: deleted.length }
   })
 
 export const getStaffAttendanceByDate = createServerFn({ method: 'GET' })
