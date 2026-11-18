@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query'
 import { formatDate, formatCurrency } from '#/lib/utils'
 import { getStudentFees } from '#/server/fees'
 import { CustomDataTable } from './CustomDataTable'
+import { FeeYearSelect, useFeeYear } from './FeeYearSelect'
 
 // ⚠️ Razorpay online payments are currently DISABLED (potential future addition).
 // To re-enable, restore the imports below, the verify mutation + handlePay flow,
@@ -58,6 +59,8 @@ export function FeeStudentView({
         data: { studentProfileId },
       }) as Promise<FeeRecord[]>,
   })
+  // Opens on the current school year; totals follow the chosen year.
+  const { year, setYear, years, yearFees } = useFeeYear(fees)
 
   // ⚠️ Razorpay online payment flow — disabled. Restore alongside the imports
   // above and the "Pay Online" column to re-enable.
@@ -211,10 +214,10 @@ export function FeeStudentView({
     // },
   ]
 
-  const totalDue = fees.reduce((sum, f) => sum + f.amount, 0)
-  const totalPaid = fees.reduce((sum, f) => sum + (f.paidAmount ?? 0), 0)
+  const totalDue = yearFees.reduce((sum, f) => sum + f.amount, 0)
+  const totalPaid = yearFees.reduce((sum, f) => sum + (f.paidAmount ?? 0), 0)
   // Payments into an open fee pay off nothing that was due.
-  const balance = fees
+  const balance = yearFees
     .filter((f) => !f.isOpen)
     .reduce((sum, f) => sum + (f.amount - (f.paidAmount ?? 0)), 0)
 
@@ -224,6 +227,7 @@ export function FeeStudentView({
 
   return (
     <div className="space-y-4">
+      <FeeYearSelect year={year} years={years} onChange={setYear} />
       <div className="flex flex-wrap gap-3">
         <Badge variant="outline">Total Due: {formatCurrency(totalDue)}</Badge>
         <Badge variant="default">Total Paid: {formatCurrency(totalPaid)}</Badge>
@@ -233,8 +237,9 @@ export function FeeStudentView({
       </div>
 
       <CustomDataTable
+        key={year}
         columns={columns}
-        data={fees}
+        data={yearFees}
         showDatePicker
         dateField="dueDate"
       />

@@ -316,9 +316,15 @@ function DocsPage() {
                   <Strong>tabs</Strong> to switch between them.
                 </li>
                 <li>
+                  The list opens on the current <Strong>academic year</Strong>{' '}
+                  (May to April). Use the dropdown to see another year or{' '}
+                  <Strong>All years</Strong>.
+                </li>
+                <li>
                   Badges show <Strong>Total Due</Strong>,{' '}
-                  <Strong>Total Paid</Strong> and <Strong>Balance</Strong>. Each
-                  fee shows its category (e.g. Tuition Fee, Books).
+                  <Strong>Total Paid</Strong> and <Strong>Balance</Strong> for
+                  the chosen year. Each fee shows its category (e.g. Tuition
+                  Fee, Books).
                 </li>
                 <li>
                   Use the <Strong>date range</Strong> and{' '}
@@ -336,13 +342,20 @@ function DocsPage() {
                     and <Strong>Categories</Strong> (see below).
                   </li>
                   <li>
-                    Filter by student, description, <Strong>category</Strong>,{' '}
-                    <Strong>status</Strong>, due month, paid month or date
-                    range. Click a column header to sort.
+                    The <Strong>Academic year</Strong> dropdown opens on the
+                    current year (May to April, by due date); pick another year
+                    or <Strong>All years</Strong>. A student&apos;s profile Fees
+                    tab has the same dropdown.
                   </li>
                   <li>
-                    Click <Strong>Export CSV</Strong> to download the list
-                    (includes the category).
+                    Within that year, filter by student, description,{' '}
+                    <Strong>category</Strong>, <Strong>status</Strong>, due
+                    month, paid month or date range. Click a column header to
+                    sort.
+                  </li>
+                  <li>
+                    Click <Strong>Export CSV</Strong> to download the chosen
+                    year&apos;s fees (includes the category).
                   </li>
                 </Steps>
 

@@ -24,6 +24,8 @@ import { downloadCsv } from '#/lib/csv'
 import { UNCATEGORISED_LABEL } from '#/lib/fee-categories'
 import { getChildrenByParent, getStudentProfile } from '#/server/students'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
+import { FeeYearSelect, useFeeYear } from '#/components/dashboard/FeeYearSelect'
+import { ALL_YEARS } from '#/lib/fee-years'
 import DownloadIcon from '#/components/icons/DownloadIcon'
 
 const FEE_TABS = ['fees', 'concessions', 'summary', 'categories'] as const
@@ -156,6 +158,8 @@ function AdminFeesTab() {
     queryKey: ['fees'],
     queryFn: () => listFees({ data: {} }) as Promise<FeeRecord[]>,
   })
+  // Table, totals and CSV export all follow the chosen academic year.
+  const { year, setYear, years, yearFees } = useFeeYear(fees)
 
   const invalidateFees = () =>
     queryClient.invalidateQueries({ queryKey: ['fees'] })
@@ -207,43 +211,46 @@ function AdminFeesTab() {
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2 sm:justify-end">
-        <Button
-          variant="outline"
-          onClick={() =>
-            downloadCsv(
-              fees.map((f) => ({
-                ...f,
-                category: f.categoryName ?? UNCATEGORISED_LABEL,
-              })),
-              [
-                { key: 'category', label: 'Category' },
-                { key: 'studentName', label: 'Student' },
-                { key: 'admissionNumber', label: 'Admission #' },
-                { key: 'className', label: 'Class' },
-                { key: 'classSection', label: 'Section' },
-                { key: 'description', label: 'Description' },
-                { key: 'amount', label: 'Amount' },
-                { key: 'paidAmount', label: 'Paid' },
-                { key: 'dueDate', label: 'Due Date' },
-                { key: 'paidDate', label: 'Paid Date' },
-                { key: 'status', label: 'Status' },
-                { key: 'paymentMethod', label: 'Payment Method' },
-                { key: 'receiptNumber', label: 'Receipt #' },
-                { key: 'razorpayOrderId', label: 'Razorpay Order ID' },
-                { key: 'razorpayPaymentId', label: 'Razorpay Payment ID' },
-                { key: 'receivedByName', label: 'Received By' },
-              ],
-              'fees-export',
-            )
-          }
-          disabled={fees.length === 0}
-        >
-          <DownloadIcon className="h-4 w-4" />
-          Export CSV
-        </Button>
-        <BulkFeeDialog onCreated={invalidateFees} />
-        <CreateFeeDialog onCreated={invalidateFees} />
+      <div className="flex flex-wrap items-center gap-2">
+        <FeeYearSelect year={year} years={years} onChange={setYear} />
+        <div className="flex flex-wrap gap-2 sm:ml-auto">
+          <Button
+            variant="outline"
+            onClick={() =>
+              downloadCsv(
+                yearFees.map((f) => ({
+                  ...f,
+                  category: f.categoryName ?? UNCATEGORISED_LABEL,
+                })),
+                [
+                  { key: 'category', label: 'Category' },
+                  { key: 'studentName', label: 'Student' },
+                  { key: 'admissionNumber', label: 'Admission #' },
+                  { key: 'className', label: 'Class' },
+                  { key: 'classSection', label: 'Section' },
+                  { key: 'description', label: 'Description' },
+                  { key: 'amount', label: 'Amount' },
+                  { key: 'paidAmount', label: 'Paid' },
+                  { key: 'dueDate', label: 'Due Date' },
+                  { key: 'paidDate', label: 'Paid Date' },
+                  { key: 'status', label: 'Status' },
+                  { key: 'paymentMethod', label: 'Payment Method' },
+                  { key: 'receiptNumber', label: 'Receipt #' },
+                  { key: 'razorpayOrderId', label: 'Razorpay Order ID' },
+                  { key: 'razorpayPaymentId', label: 'Razorpay Payment ID' },
+                  { key: 'receivedByName', label: 'Received By' },
+                ],
+                year === ALL_YEARS ? 'fees-export' : `fees-${year}`,
+              )
+            }
+            disabled={yearFees.length === 0}
+          >
+            <DownloadIcon className="h-4 w-4" />
+            Export CSV
+          </Button>
+          <BulkFeeDialog onCreated={invalidateFees} />
+          <CreateFeeDialog onCreated={invalidateFees} />
+        </div>
       </div>
 
       {feesLoading ? (
@@ -251,7 +258,8 @@ function AdminFeesTab() {
       ) : (
         <>
           <FeeTable
-            fees={fees}
+            key={year}
+            fees={yearFees}
             onRecordPayment={handleRecordPayment}
             onEditFee={handleEditFee}
             onDeleteFee={handleDeleteFee}

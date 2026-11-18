@@ -9,6 +9,7 @@ import { Button } from '#/components/ui/button'
 import { Badge } from '#/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '#/components/ui/tabs'
 import { FeeTable } from '#/components/dashboard/FeeTable'
+import { FeeYearSelect, useFeeYear } from '#/components/dashboard/FeeYearSelect'
 import { RecordPaymentDialog } from '#/components/dashboard/RecordPaymentDialog'
 import { EditFeeDialog } from '#/components/dashboard/EditFeeDialog'
 import { deleteFeeRecord, getStudentFees } from '#/server/fees'
@@ -182,6 +183,7 @@ function StudentDetailPage() {
     },
     enabled: !!profile && isAdmin,
   })
+  const feeYear = useFeeYear(fees)
 
   // Admin-only, like fees: concession status never shows to staff.
   const { data: feePlans = [] } = useQuery({
@@ -700,8 +702,14 @@ function StudentDetailPage() {
               studentProfileId={Number(studentId)}
               plans={feePlans}
             />
+            <FeeYearSelect
+              year={feeYear.year}
+              years={feeYear.years}
+              onChange={feeYear.setYear}
+            />
             <FeeTable
-              fees={fees}
+              key={feeYear.year}
+              fees={feeYear.yearFees}
               onRecordPayment={(fee) => {
                 setSelectedFee(fee)
                 setPaymentOpen(true)
