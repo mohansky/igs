@@ -119,7 +119,7 @@ describe('handleWaRequest', () => {
     expect(url.searchParams.get('measurement_id')).toBe('G-TEST123')
     expect(url.searchParams.get('api_secret')).toBe('secret')
     const body = JSON.parse(init.body as string)
-    expect(body.client_id).toMatch(/^[0-9a-f-]{36}$/)
+    expect(body.client_id).toMatch(/^\d+\.\d+$/)
     expect(body.events).toEqual([
       {
         name: GA4_EVENT_NAME,

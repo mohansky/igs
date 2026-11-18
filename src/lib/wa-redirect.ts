@@ -47,6 +47,13 @@ export function scanEventParams(url: URL): Record<string, string> {
   return params
 }
 
+// A fresh client_id in gtag.js's "<random>.<unix seconds>" format, which
+// GA4's validator recommends over other shapes (e.g. UUIDs).
+export function newClientId(): string {
+  const random = crypto.getRandomValues(new Uint32Array(1))[0] & 0x7fffffff
+  return `${random}.${Math.floor(Date.now() / 1000)}`
+}
+
 async function sendScanEvent(url: URL, env: WorkerEnv): Promise<void> {
   const measurementId = env.GA4_MEASUREMENT_ID
   const apiSecret = env.GA4_API_SECRET
@@ -61,7 +68,7 @@ async function sendScanEvent(url: URL, env: WorkerEnv): Promise<void> {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       // No cookie to read on a QR scan, so every scan is its own client.
-      client_id: crypto.randomUUID(),
+      client_id: newClientId(),
       events: [{ name: GA4_EVENT_NAME, params: scanEventParams(url) }],
     }),
   })
