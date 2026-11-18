@@ -28,5 +28,11 @@
     "R2_BUCKET_NAME": "igs",
     "RESEND_FROM_EMAIL": "IGS <mail@mohankumar.dev>",
     "CONTACT_NOTIFICATION_EMAIL": "mail@mohankumar.dev",
+    // Poster QR code (/wa): WhatsApp redirect target and the GA4 property
+    // that counts scans. The GA4 API secret is a secret, not a var:
+    // wrangler secret put GA4_API_SECRET
+    "WA_URL": "https://wa.me/918050718044?text=Hi%2C%20I%27d%20like%20to%20know%20about%20Playgroup%20admissions%20at%20IGS",
+    // Fill in before deploying (GA4 Admin > Data streams > Measurement ID).
+    "GA4_MEASUREMENT_ID": "",
   },
 }
