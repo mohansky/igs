@@ -197,16 +197,16 @@ function PromoBanner() {
   return (
     <div className="promo-banner font-serif text-center text-[13px] italic leading-tight">
       <span className="inline-flex flex-wrap items-center justify-center gap-x-2.5 gap-y-1">
-        Admissions open for 2026-27
+        Admissions open for 2027-28
         <span aria-hidden className="opacity-70">
           ·
         </span>
         Call us to apply
-        <a href="tel:+919731292369">+91 97312 92369</a>
+        <a href="tel:+918050718044">+91 80507 18044</a>
         <span aria-hidden className="opacity-70">
           ·
         </span>
-        <a href="tel:+918050718044">+91 80507 18044</a>
+        <a href="tel:+919731292369">+91 97312 92369</a>
       </span>
     </div>
   )

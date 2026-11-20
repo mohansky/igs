@@ -68,7 +68,7 @@ function Home() {
               variant: 'ghost',
             },
           ]}
-          handnote={{ text: 'Admissions for 2026–27 are open' }}
+          handnote={{ text: 'Admissions for 2027–28 are open' }}
           collage={{
             images: [
               {
@@ -163,7 +163,7 @@ function Home() {
 
       {/* CTA band */}
       <CTASection
-        eyebrow="Admissions 2026–27"
+        eyebrow="Admissions 2027–28"
         title={
           cta.title.includes('open') ? (
             <>
