@@ -33,29 +33,7 @@ function Admissions() {
         />
       </div>
 
-      {/* Process steps */}
-      <ProcessSteps
-        kicker={process.kicker}
-        title={process.title}
-        steps={process.steps}
-      />
-
-      {/* Eligibility */}
-      {/* <Eligibility
-        kicker={eligibility.kicker}
-        title={eligibility.title}
-        items={eligibility.items}
-      /> */}
-
-      {/* Documents + dates */}
-      <Documents
-        kicker={documents.kicker}
-        title={documents.title}
-        items={documents.items}
-        dates={dates}
-      />
-
-      {/* Enquiry form */}
+      {/* Enquiry form, first thing after the heading */}
       <section className="pb-24">
         <div className="page-wrap">
           <div className="contact-card">
@@ -80,6 +58,28 @@ function Admissions() {
           </div>
         </div>
       </section>
+
+      {/* Process steps */}
+      <ProcessSteps
+        kicker={process.kicker}
+        title={process.title}
+        steps={process.steps}
+      />
+
+      {/* Eligibility */}
+      {/* <Eligibility
+        kicker={eligibility.kicker}
+        title={eligibility.title}
+        items={eligibility.items}
+      /> */}
+
+      {/* Documents + dates */}
+      <Documents
+        kicker={documents.kicker}
+        title={documents.title}
+        items={documents.items}
+        dates={dates}
+      />
 
       {/* CTA band */}
       <CTASection
